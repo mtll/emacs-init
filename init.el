@@ -2,7 +2,8 @@
 
 ;;; Elpaca
 
-(setq elpaca-core-date (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
+(setq elpaca-core-date
+      (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
 
 (defvar elpaca-installer-version 0.6)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
@@ -278,8 +279,7 @@
 
 ;;;; face-remap
 
-(with-eval-after-load 'face-remap
-  (diminish-after-load 'buffer-face-mode))
+(diminish-after-load 'buffer-face-mode)
 
 ;;;; recentf
 
@@ -296,7 +296,9 @@
 
 ;;;; outline
 
-(keymap-global-set "C-c L" 'outline-minor-mode)
+(progn
+  (keymap-global-set "C-c L" 'outline-minor-mode)
+  (diminish-after-load 'outline-minor-mode))
 
 ;;;; dired
 (with-eval-after-load 'dired
@@ -320,8 +322,7 @@
 ;;;; eldoc
 
 (progn
-  (with-eval-after-load 'eldoc
-    (diminish-after-load 'eldoc-mode))
+  (diminish-after-load 'eldoc-mode)
 
   (setopt eldoc-echo-area-prefer-doc-buffer t))
 
@@ -1139,8 +1140,7 @@ pressed during the dispatch, ACTION is set to replace the default
 ;;;;; all-the-icons-dired
 
 (elpaca all-the-icons-dired
-  (with-eval-after-load 'all-the-icons-dired
-    (diminish-after-load 'all-the-icons-dired-mode))
+  (diminish-after-load 'all-the-icons-dired-mode)
   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
 ;;;; magit
