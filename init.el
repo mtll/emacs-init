@@ -2,6 +2,8 @@
 
 ;;; Elpaca
 
+(setq elpaca-core-date (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
+
 (defvar elpaca-installer-version 0.6)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -566,7 +568,7 @@
 
 (elpaca (auctex :pre-build (("./autogen.sh")
                             ("./configure"
-                             "--with-texmf-dir=$(dirname $(kpsexpand '$TEXMFHOME'))")
+                             "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
                             ("make"))))
 
 ;;;; cdlatex
