@@ -1,0 +1,4 @@
+c++-mode c-mode
+
+(if "if (" p ") {" n> r> n> "}")
+(ifelse "if (" p ") {" n> r> n> "} else {" n> n> "}")
