@@ -1508,7 +1508,8 @@ pressed during the dispatch, ACTION is set to replace the default
 
 ;;;;; orderless-set-operations
 
-(elpaca (orderless-set-operations :host gitlab :repo "david.feller/orderless-set-operations")
+(elpaca (orderless-set-operations :host codeberg
+                                  :repo "crcs/orderless-set-operations")
   (with-eval-after-load 'vertico
     (with-eval-after-load 'consult
       (orderless-predicate-mode 1)
@@ -1622,7 +1623,7 @@ pressed during the dispatch, ACTION is set to replace the default
 
 ;;;;; consult-extras
 
-(elpaca (consult-extras :host gitlab :repo "david.feller/consult-extras")
+(elpaca (consult-extras :host codeberg :repo "crcs/consult-extras")
   (with-eval-after-load 'consult
     (require 'consult-extras)
     (keymap-global-set "C-h a" 'consult-apropos)
