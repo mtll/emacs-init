@@ -827,6 +827,7 @@
                    :files (:defaults "extensions/*"))
   (setopt conn-lighter nil
           conn-state-buffer-colors t
+          conn-mode-line-indicator-mode t
           conn-modes '(prog-mode
                        text-mode
                        outline-mode
@@ -839,7 +840,6 @@
           emacs-state-cursor-type 'box)
 
   (conn-mode 1)
-  (conn-mode-line-indicator-mode 1)
 
   (keymap-global-set "C-c v" 'conn-buffer-map)
   (keymap-global-set "C-c w" 'conn-window-map)
@@ -1014,6 +1014,9 @@
 ;;;; visual-regexp
 
 (elpaca visual-regexp
+  (keymap-global-set "C-M-%" #'vr/query-replace)
+  (keymap-global-set "C-M-!" #'vr/replace)
+
   (with-eval-after-load 'conn-mode
     (define-keymap
      :keymap conn-misc-edit-map
@@ -1320,7 +1323,7 @@ pressed during the dispatch, ACTION is set to replace the default
     (defun embark-alt-scroll-up (&rest _)
       (scroll-up-command)
       (move-beginning-of-line nil))
-    
+
     (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
 
     (defvar-keymap embark-alt-line-map
