@@ -46,19 +46,15 @@
 
 (elpaca compat (require 'compat))
 
-;;; Wait
-
-(elpaca-wait)
-
 ;;; Diminish
-
-(defun diminish-after-load (mode &optional to-what)
-  (with-eval-after-load 'diminish
-    (diminish mode to-what)))
 
 (elpaca diminish
   (require 'diminish)
   (diminish 'visual-line-mode))
+
+;;; Wait
+
+(elpaca-wait)
 
 ;;; Built-in
 ;;;; emacs
@@ -275,11 +271,12 @@
 (progn
   (setopt auto-revert-interval .01)
   (global-auto-revert-mode 1)
-  (diminish-after-load 'auto-revert-mode))
+  (diminish 'auto-revert-mode))
 
 ;;;; face-remap
 
-(diminish-after-load 'buffer-face-mode)
+(with-eval-after-load 'face-remap
+  (diminish 'buffer-face-mode))
 
 ;;;; recentf
 
@@ -298,7 +295,8 @@
 
 (progn
   (keymap-global-set "C-c L" 'outline-minor-mode)
-  (diminish-after-load 'outline-minor-mode))
+  (with-eval-after-load 'outline
+    (diminish 'outline-minor-mode)))
 
 ;;;; dired
 (with-eval-after-load 'dired
@@ -321,7 +319,7 @@
 ;;;; eldoc
 
 (progn
-  (diminish-after-load 'eldoc-mode)
+  (diminish 'eldoc-mode)
 
   (setopt eldoc-echo-area-prefer-doc-buffer t))
 
@@ -350,7 +348,7 @@
 
   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
 
-  (diminish-after-load 'paredit-mode)
+  (diminish 'paredit-mode)
 
   (keymap-unset paredit-mode-map "RET")
   (keymap-unset paredit-mode-map "M-s")
@@ -643,7 +641,7 @@
 
 (elpaca dtrt-indent
   ;; (dtrt-indent-global-mode 1)
-  (diminish-after-load 'dtrt-indent-mode))
+  (diminish 'dtrt-indent-mode))
 
 ;;;; exec-path-from-shell
 
@@ -827,7 +825,7 @@
 (elpaca (conn-mode :host codeberg
                    :repo "crcs/conn-mode"
                    :files (:defaults "extensions/*"))
-  (setopt conn-mode-line-indicator t
+  (setopt conn-lighter nil
           conn-state-buffer-colors t
           conn-modes '(prog-mode
                        text-mode
@@ -841,6 +839,7 @@
           emacs-state-cursor-type 'box)
 
   (conn-mode 1)
+  (conn-mode-line-indicator-mode 1)
 
   (keymap-global-set "C-c v" 'conn-buffer-map)
   (keymap-global-set "C-c w" 'conn-window-map)
@@ -1055,7 +1054,7 @@ pressed during the dispatch, ACTION is set to replace the default
           avy-line-insert-style 'below)
 
   (with-eval-after-load 'conn-mode
-    (keymap-global-set           "C-;"   'avy-goto-char-timer)
+    (keymap-global-set           "C-,"   'avy-goto-char-timer)
     (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
 
     (define-keymap
@@ -1139,7 +1138,7 @@ pressed during the dispatch, ACTION is set to replace the default
 ;;;;; all-the-icons-dired
 
 (elpaca all-the-icons-dired
-  (diminish-after-load 'all-the-icons-dired-mode)
+  (diminish 'all-the-icons-dired-mode)
   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
 ;;;; magit
@@ -1429,7 +1428,7 @@ pressed during the dispatch, ACTION is set to replace the default
 
 (elpaca projectile
   (projectile-mode 1)
-  (diminish-after-load 'projectile-mode)
+  (diminish 'projectile-mode)
 
   (define-keymap
     :keymap projectile-mode-map
