@@ -305,7 +305,6 @@
   (setopt dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
                                    (seq string-start (1+ "#")))))
 
-  (add-hook 'dired-sidebar-mode-hook #'dired-sidebar-omit)
   (define-keymap
     :keymap dired-mode-map
     "/" 'other-window-prefix
