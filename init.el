@@ -1062,8 +1062,7 @@ pressed during the dispatch, ACTION is set to replace the default
 
     (define-keymap
       :keymap conn-common-map
-      ","   'avy-goto-char-timer
-      "SPC" 'conn-set-mark-command)
+      ","   'avy-goto-char-timer)
 
     (define-keymap
       :keymap goto-map
