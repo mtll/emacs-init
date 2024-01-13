@@ -1407,16 +1407,29 @@ pressed during the dispatch, ACTION is set to replace the default
   (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
   (keymap-set corfu-map "C-j" #'corfu-quick-complete)
 
-  ;; (defun corfu-start-and-insert-sep ()
-  ;;   (interactive)
-  ;;   (completion-at-point)
-  ;;   (corfu-insert-separator))
-
   (defun corfu-sep-at-start ()
     (when completion-in-region-mode
       (corfu-insert-separator)))
 
-  (add-hook 'completion-in-region-mode-hook #'corfu-sep-at-start)
+  (define-minor-mode corfu-sep-at-start-local-mode
+    "local mode for corfu-sep-at-start-mode."
+    :init-value nil
+    :keymap nil
+    :lighter nil
+    (if corfu-sep-at-start-local-mode
+        (add-hook 'completion-in-region-mode-hook #'corfu-sep-at-start nil t)
+      (remove-hook 'completion-in-region-mode-hook #'corfu-sep-at-start t)))
+
+  (defun corfu-init-sep-at-start-mode ()
+    (corfu-sep-at-start-local-mode 1))
+
+  (define-global-minor-mode corfu-sep-at-start-mode
+    corfu-sep-at-start-local-mode
+    corfu-init-sep-at-start-mode
+    :lighter ""
+    :global (not lisp-mode))
+
+  (corfu-sep-at-start-mode 1)
 
   (defun corfu-move-to-minibuffer ()
     (interactive)
