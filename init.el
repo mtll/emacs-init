@@ -628,6 +628,7 @@
   (run-with-idle-timer 4 nil (lambda () (require 'org)))
 
   (setopt org-src-window-setup 'plain
+          org-startup-truncated nil
           org-insert-mode-line-in-empty-file t
           org-confirm-babel-evaluate nil
           org-fold-core-style 'overlays)
@@ -865,6 +866,7 @@
           conn-state-buffer-colors t
           conn-mode-line-indicator-mode t
           conn-modes '(prog-mode
+                       (not pdf-outline-buffer-mode)
                        text-mode
                        outline-mode
                        eshell-mode
@@ -1712,6 +1714,7 @@ pressed during the dispatch, ACTION is set to replace the default
         '((lsp-capf
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
+          (file buffer)
           (consult-grep buffer)
           (consult-line buffer)
           (consult-location buffer)
@@ -1813,6 +1816,8 @@ pressed during the dispatch, ACTION is set to replace the default
 ;;;; denote
 
 (elpaca denote
+  (setopt denote-directory "~/Documents/notes/")
+
   (defvar my-denote-to-agenda-regexp "_agenda"
     "Denote file names that are added to the agenda.
     See `my-add-denote-to-agenda'.")
@@ -1848,6 +1853,14 @@ pressed during the dispatch, ACTION is set to replace the default
   (keymap-global-set "C-c n" 'denote-map)
 
   (with-eval-after-load 'denote
+    (defun denote-note-buffer-p (_)
+      (eq this-command 'denote))
+
+    (setf (alist-get 'denote-note-buffer-p display-buffer-alist)
+          '((display-buffer-reuse-window display-buffer-pop-up-frame)
+            (reusable-frames . 0)
+            (inhibit-same-window . t)))
+
     (defun my-denote-add-to-agenda ()
       "Add current file to the `org-agenda-files', if needed.
     The file's name must match the `my-denote-to-agenda-regexp'.
