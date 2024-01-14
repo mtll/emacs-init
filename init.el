@@ -121,7 +121,8 @@
         electric-pair-mode t
         context-menu-mode t
         tab-bar-mode t
-        winner-mode t)
+        winner-mode t
+        undelete-frame-mode t)
 
 (define-key global-map [remap yank] 'yank-in-context)
 
