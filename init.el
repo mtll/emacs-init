@@ -82,7 +82,7 @@
         dired-listing-switches "-alFh --group-directories-first"
         isearch-lazy-count t
         isearch-yank-on-move t
-        isearch-repeat-on-direction-change t
+        ;; isearch-repeat-on-direction-change t
         enable-recursive-minibuffers t
         ediff-split-window-function #'ediff-split-fn
         uniquify-buffer-name-style 'post-forward
@@ -402,19 +402,25 @@
 ;;;; parinfer
 
 (elpaca parinfer-rust-mode
-  (setopt parinfer-rust-dim-parens nil)
+  (setopt parinfer-rust-dim-parens nil
+          parinfer-rust-troublesome-modes nil)
 
   (with-eval-after-load 'parinfer-rust-mode
     (diminish 'parinfer-rust-mode))
 
   (with-eval-after-load 'conn-mode
     (defun insert-space ()
-     (interactive)
-     (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
+      (interactive)
+      (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
 
     (define-keymap
       :keymap conn-state-map
       "S-SPC" 'insert-space))
+
+  (defun parinfer-disable-electric-pair ()
+    (electric-pair-local-mode -1))
+
+  (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
 
   (dolist (mode '(lisp-data-mode-hook
                   eshell-mode-hook
