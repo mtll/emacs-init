@@ -163,6 +163,13 @@
   "C-c C-l" 'pp-eval-last-sexp
   "C-c C-r" 'eval-region)
 
+(defun kill-frame-and-buffer ()
+  (interactive)
+  (when-let ((buf (window-buffer (frame-root-window))))
+    (kill-buffer buf))
+  (delete-frame))
+(keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
+
 (defun disable-minibuffer-max-height (fn &rest args)
   (let ((max-mini-window-height 1.0))
     (apply fn args)))
