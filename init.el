@@ -346,94 +346,94 @@
 
 ;;;; paredit
 
-;; (elpaca (paredit :host github :repo "emacsmirror/paredit")
-;;   (require 'paredit)
-
-;;   (dolist (mode '(lisp-data-mode-hook
-;;                   eshell-mode-hook
-;;                   sly-mrepl-mode-hook))
-;;     (add-hook mode #'enable-paredit-mode))
-
-;;   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
-
-;;   (diminish 'paredit-mode)
-
-;;   (keymap-unset paredit-mode-map "RET")
-;;   (keymap-unset paredit-mode-map "M-s")
-;;   (keymap-unset paredit-mode-map "M-;")
-;;   (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
-
-;;   (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
-
-;;   (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
-;;     (or endp
-;;         (cond ((eq (char-syntax delimiter) ?\()
-;;                (not (or (looking-back ",@" nil t)
-;;                         (looking-back "'" nil t)
-;;                         (looking-back "`" nil t)
-;;                         (looking-back "#." nil t))))
-;;               ((eq (char-syntax delimiter) ?\")
-;;                (not (or (looking-back "#" nil t)
-;;                         (looking-back "#." nil t))))
-;;               (else t))))
-
-;;   (add-to-list 'paredit-space-for-delimiter-predicates
-;;                'paredit-space-for-delimiter-predicates-lisp)
-
-;;   (defun paredit-kill-rectangle-advice (fn &rest args)
-;;     (if (not rectangle-mark-mode)
-;;         (apply fn args)
-;;       (setq this-command 'kill-rectangle)
-;;       (call-interactively 'kill-rectangle)))
-;;   (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
-
-;;   (defun paredit-disable-electric-pair ()
-;;     (electric-pair-local-mode -1))
-
-;;   (with-eval-after-load 'conn-mode
-;;     (define-conn-mode-map
-;;      'conn-state 'paredit-mode
-;;      (define-keymap
-;;        "C-<backspace>" 'paredit-backward-kill-word
-;;        "M-DEL"         'paredit-backward-kill-word
-;;        "DEL"           'paredit-backward-delete))
-
-;;     (define-conn-mode-map
-;;      '(conn-state dot-state) 'paredit-mode
-;;      (define-keymap
-;;        "m" 'paredit-forward
-;;        "n" 'paredit-backward))
-
-;;     (conn-add-thing-movement-command 'sexp 'paredit-forward)
-;;     (conn-add-thing-movement-command 'sexp 'paredit-backward)))
-
-;;;; parinfer
-
-(elpaca parinfer-rust-mode
-  (setopt parinfer-rust-dim-parens nil
-          parinfer-rust-troublesome-modes nil)
-
-  (with-eval-after-load 'parinfer-rust-mode
-    (diminish 'parinfer-rust-mode))
-
-  (with-eval-after-load 'conn-mode
-    (defun insert-space ()
-      (interactive)
-      (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
-
-    (define-keymap
-      :keymap conn-state-map
-      "S-SPC" 'insert-space))
-
-  (defun parinfer-disable-electric-pair ()
-    (electric-pair-local-mode -1))
-
-  (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
+(elpaca (paredit :host github :repo "emacsmirror/paredit")
+  (require 'paredit)
 
   (dolist (mode '(lisp-data-mode-hook
                   eshell-mode-hook
                   sly-mrepl-mode-hook))
-    (add-hook mode #'parinfer-rust-mode)))
+    (add-hook mode #'enable-paredit-mode))
+
+  (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
+
+  (diminish 'paredit-mode)
+
+  (keymap-unset paredit-mode-map "RET")
+  (keymap-unset paredit-mode-map "M-s")
+  (keymap-unset paredit-mode-map "M-;")
+  (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
+
+  (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
+
+  (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
+    (or endp
+        (cond ((eq (char-syntax delimiter) ?\()
+               (not (or (looking-back ",@" nil t)
+                        (looking-back "'" nil t)
+                        (looking-back "`" nil t)
+                        (looking-back "#." nil t))))
+              ((eq (char-syntax delimiter) ?\")
+               (not (or (looking-back "#" nil t)
+                        (looking-back "#." nil t))))
+              (else t))))
+
+  (add-to-list 'paredit-space-for-delimiter-predicates
+               'paredit-space-for-delimiter-predicates-lisp)
+
+  (defun paredit-kill-rectangle-advice (fn &rest args)
+    (if (not rectangle-mark-mode)
+        (apply fn args)
+      (setq this-command 'kill-rectangle)
+      (call-interactively 'kill-rectangle)))
+  (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
+
+  (defun paredit-disable-electric-pair ()
+    (electric-pair-local-mode -1))
+
+  (with-eval-after-load 'conn-mode
+    (define-conn-mode-map
+     'conn-state 'paredit-mode
+     (define-keymap
+       "C-<backspace>" 'paredit-backward-kill-word
+       "M-DEL"         'paredit-backward-kill-word
+       "DEL"           'paredit-backward-delete))
+
+    (define-conn-mode-map
+     '(conn-state dot-state) 'paredit-mode
+     (define-keymap
+       "m" 'paredit-forward
+       "n" 'paredit-backward))
+
+    (conn-add-thing-movement-command 'sexp 'paredit-forward)
+    (conn-add-thing-movement-command 'sexp 'paredit-backward)))
+
+;;;; parinfer
+
+;; (elpaca parinfer-rust-mode
+;;   (setopt parinfer-rust-dim-parens nil
+;;           parinfer-rust-troublesome-modes nil)
+
+;;   (with-eval-after-load 'parinfer-rust-mode
+;;     (diminish 'parinfer-rust-mode))
+
+;;   (with-eval-after-load 'conn-mode
+;;     (defun insert-space ()
+;;       (interactive)
+;;       (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
+
+;;     (define-keymap
+;;       :keymap conn-state-map
+;;       "S-SPC" 'insert-space))
+
+;;   (defun parinfer-disable-electric-pair ()
+;;     (electric-pair-local-mode -1))
+
+;;   (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
+
+;;   (dolist (mode '(lisp-data-mode-hook
+;;                   eshell-mode-hook
+;;                   sly-mrepl-mode-hook))
+;;     (add-hook mode #'parinfer-rust-mode)))
 
 ;;;; sly
 
@@ -594,6 +594,14 @@
 
   (pdf-loader-install))
 
+;;;;; org-pdf-tools
+
+(elpaca org-pdftools
+  (with-eval-after-load 'pdf-tools
+    (require 'org)
+    (require 'org-pdftools)
+    (add-hook 'org-mode-hook #'org-pdftools-setup-link)))
+
 ;;;;; hide-mode-line-mode
 
 (elpaca hide-mode-line)
@@ -685,7 +693,7 @@
           ( ?\? (""))
           ( ?~  ("\\approx"         "\\simeq"))
           ( ?_  ("\\downarrow"))
-          ( ?+  ("\\cup"))
+          ( ?+  ("\\cup"   "\\cap"))
           ( ?-  ("\\leftrightarrow" "\\longleftrightarrow"))
           ( ?*  ("\\times"))
           ( ?/  ("\\not"))
@@ -1117,15 +1125,20 @@
     (interactive)
     (require 'org)
     (let* ((bmk  (bmkp-completing-read-lax (format "Org link for bookmark")))
-           (link (format "bmk:%s" bmk)))
+           (link (format "bmk:%s" bmk))
+           (desc (read-string "Description: ")))
       (org-link-store-props :type "bmk"
-                            :link link)
+                            :link link
+                            :description desc)
       link))
 
   (defun bmkp-org-bookmark-link (bmk)
     (interactive (list (bmkp-completing-read-lax (format "Org link for bookmark"))))
     (require 'org)
-    (insert (org-link-make-string (format "bmk:%s" bmk))))
+    (insert (org-link-make-string (format "bmk:%s" bmk)
+                                  (let ((desc (read-string "Description: ")))
+                                    (unless (string= desc "")
+                                      desc)))))
 
   (keymap-set bookmark-map "k" #'bmkp-org-bookmark-link)
   (keymap-set bookmark-map "K" #'bmkp-org-bookmark-store-link)
@@ -1873,6 +1886,32 @@ pressed during the dispatch, ACTION is set to replace the default
 
 (elpaca marginalia
   (marginalia-mode 1)
+
+  (defun marginalia-annotate-alias (cand)
+    "Annotate CAND with the function it aliases."
+    (when-let ((sym (intern-soft cand))
+               (alias (car (last (function-alias-p sym t))))
+               (name (and (symbolp alias) (symbol-name alias))))
+      (format #(" (%s)" 1 5 (face marginalia-function)) name)))
+
+  (defun david-marginalia-annotate-binding (cand)
+    "Annotate command CAND with keybinding."
+    (when-let ((sym (intern-soft cand))
+               (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
+      (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
+
+  (defun marginalia-annotate-command-with-alias (cand)
+    "Annotate command CAND with its documentation string.
+    Similar to `marginalia-annotate-symbol', but does not show symbol class."
+    (when-let (sym (intern-soft cand))
+      (concat
+       (david-marginalia-annotate-binding cand)
+       (marginalia-annotate-alias cand)
+       (marginalia--documentation (marginalia--function-doc sym)))))
+
+  (cl-pushnew #'marginalia-annotate-command-with-alias
+              (alist-get 'command marginalia-annotator-registry))
+
   (keymap-global-set "M-A" 'marginalia-cycle)
   (keymap-set minibuffer-local-map "M-A" 'marginalia-cycle))
 
@@ -1923,24 +1962,25 @@ pressed during the dispatch, ACTION is set to replace the default
 
   (defvar-keymap denote-map
     :prefix 'denote-map
-    "n" 'denote
+    "C" 'denote-link-after-creating
+    "D" 'denote-date
+    "L" 'denote-add-links
+    "N" 'denote-type
+    "S" 'denote-signature
+    "a" 'denote-keywords-add
+    "b" 'denote-backlinks
+    "d" 'denote-goto-bookmark
+    "f" 'denote-sort-dired
+    "k b" 'denote-org-dblock-insert-backlinks
     "k f" 'denote-org-dblock-insert-files
     "k l" 'denote-org-dblock-insert-links
-    "k b" 'denote-org-dblock-insert-backlinks
-    "N" 'denote-type
-    "a" 'denote-keywords-add
-    "r" 'denote-keywords-remove
-    "D" 'denote-date
     "l" 'denote-link
-    "w" 'denote-region
+    "n" 'denote
+    "o" 'denote-open-or-create
+    "u" 'denote-find-link
+    "r" 'denote-keywords-remove
     "t" 'denote-template
-    "L" 'denote-add-links
-    "b" 'denote-backlinks
-    "o" 'denote-find-link
-    "S" 'denote-signature
-    "f" 'denote-sort-dired
-    "d" 'denote-goto-bookmark
-    "C" 'denote-link-after-creating)
+    "w" 'denote-region)
 
   (keymap-global-set "C-c n" 'denote-map)
 
