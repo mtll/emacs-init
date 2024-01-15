@@ -28,5 +28,5 @@ latex-mode org-mode
 (trivlist "\\begin{trivlist}\n" r> n> "\\end{trivlist}")
 (verbatim "\\begin{verbatim}\n" r> n> "\\end{verbatim}")
 (verbatimm "\\begin{verbatim*}\n" r> n> "\\end{verbatim*}")
-(bb "\\mathbb{" p "}")
-(cal "\\mathcal{" p "}")
+(bb "\\mathbb{" q "}")
+(cal "\\mathcal{" q "}")
