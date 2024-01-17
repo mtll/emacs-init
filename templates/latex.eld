@@ -30,3 +30,4 @@ latex-mode org-mode
 (verbatimm "\\begin{verbatim*}\n" r> n> "\\end{verbatim*}")
 (bb "\\mathbb{" q "}")
 (cal "\\mathcal{" q "}")
+(text "\\text{" q "}")

@@ -346,94 +346,94 @@
 
 ;;;; paredit
 
-(elpaca (paredit :host github :repo "emacsmirror/paredit")
-  (require 'paredit)
-
-  (dolist (mode '(lisp-data-mode-hook
-                  eshell-mode-hook
-                  sly-mrepl-mode-hook))
-    (add-hook mode #'enable-paredit-mode))
-
-  (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
-
-  (diminish 'paredit-mode)
-
-  (keymap-unset paredit-mode-map "RET")
-  (keymap-unset paredit-mode-map "M-s")
-  (keymap-unset paredit-mode-map "M-;")
-  (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
-
-  (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
-
-  (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
-    (or endp
-        (cond ((eq (char-syntax delimiter) ?\()
-               (not (or (looking-back ",@" nil t)
-                        (looking-back "'" nil t)
-                        (looking-back "`" nil t)
-                        (looking-back "#." nil t))))
-              ((eq (char-syntax delimiter) ?\")
-               (not (or (looking-back "#" nil t)
-                        (looking-back "#." nil t))))
-              (else t))))
-
-  (add-to-list 'paredit-space-for-delimiter-predicates
-               'paredit-space-for-delimiter-predicates-lisp)
-
-  (defun paredit-kill-rectangle-advice (fn &rest args)
-    (if (not rectangle-mark-mode)
-        (apply fn args)
-      (setq this-command 'kill-rectangle)
-      (call-interactively 'kill-rectangle)))
-  (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
-
-  (defun paredit-disable-electric-pair ()
-    (electric-pair-local-mode -1))
-
-  (with-eval-after-load 'conn-mode
-    (define-conn-mode-map
-     'conn-state 'paredit-mode
-     (define-keymap
-       "C-<backspace>" 'paredit-backward-kill-word
-       "M-DEL"         'paredit-backward-kill-word
-       "DEL"           'paredit-backward-delete))
-
-    (define-conn-mode-map
-     '(conn-state dot-state) 'paredit-mode
-     (define-keymap
-       "m" 'paredit-forward
-       "n" 'paredit-backward))
-
-    (conn-add-thing-movement-command 'sexp 'paredit-forward)
-    (conn-add-thing-movement-command 'sexp 'paredit-backward)))
-
-;;;; parinfer
-
-;; (elpaca parinfer-rust-mode
-;;   (setopt parinfer-rust-dim-parens nil
-;;           parinfer-rust-troublesome-modes nil)
-
-;;   (with-eval-after-load 'parinfer-rust-mode
-;;     (diminish 'parinfer-rust-mode))
-
-;;   (with-eval-after-load 'conn-mode
-;;     (defun insert-space ()
-;;       (interactive)
-;;       (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
-
-;;     (define-keymap
-;;       :keymap conn-state-map
-;;       "S-SPC" 'insert-space))
-
-;;   (defun parinfer-disable-electric-pair ()
-;;     (electric-pair-local-mode -1))
-
-;;   (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
+;; (elpaca (paredit :host github :repo "emacsmirror/paredit")
+;;   (require 'paredit)
 
 ;;   (dolist (mode '(lisp-data-mode-hook
 ;;                   eshell-mode-hook
 ;;                   sly-mrepl-mode-hook))
-;;     (add-hook mode #'parinfer-rust-mode)))
+;;     (add-hook mode #'enable-paredit-mode))
+
+;;   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
+
+;;   (diminish 'paredit-mode)
+
+;;   (keymap-unset paredit-mode-map "RET")
+;;   (keymap-unset paredit-mode-map "M-s")
+;;   (keymap-unset paredit-mode-map "M-;")
+;;   (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
+
+;;   (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
+
+;;   (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
+;;     (or endp
+;;         (cond ((eq (char-syntax delimiter) ?\()
+;;                (not (or (looking-back ",@" nil t)
+;;                         (looking-back "'" nil t)
+;;                         (looking-back "`" nil t)
+;;                         (looking-back "#." nil t))))
+;;               ((eq (char-syntax delimiter) ?\")
+;;                (not (or (looking-back "#" nil t)
+;;                         (looking-back "#." nil t))))
+;;               (else t))))
+
+;;   (add-to-list 'paredit-space-for-delimiter-predicates
+;;                'paredit-space-for-delimiter-predicates-lisp)
+
+;;   (defun paredit-kill-rectangle-advice (fn &rest args)
+;;     (if (not rectangle-mark-mode)
+;;         (apply fn args)
+;;       (setq this-command 'kill-rectangle)
+;;       (call-interactively 'kill-rectangle)))
+;;   (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
+
+;;   (defun paredit-disable-electric-pair ()
+;;     (electric-pair-local-mode -1))
+
+;;   (with-eval-after-load 'conn-mode
+;;     (define-conn-mode-map
+;;      'conn-state 'paredit-mode
+;;      (define-keymap
+;;        "C-<backspace>" 'paredit-backward-kill-word
+;;        "M-DEL"         'paredit-backward-kill-word
+;;        "DEL"           'paredit-backward-delete))
+
+;;     (define-conn-mode-map
+;;      '(conn-state dot-state) 'paredit-mode
+;;      (define-keymap
+;;        "m" 'paredit-forward
+;;        "n" 'paredit-backward))
+
+;;     (conn-add-thing-movement-command 'sexp 'paredit-forward)
+;;     (conn-add-thing-movement-command 'sexp 'paredit-backward)))
+
+;;;; parinfer
+
+(elpaca parinfer-rust-mode
+  (setopt parinfer-rust-dim-parens nil
+          parinfer-rust-troublesome-modes nil)
+
+  (with-eval-after-load 'parinfer-rust-mode
+    (diminish 'parinfer-rust-mode))
+
+  (with-eval-after-load 'conn-mode
+    (defun insert-space ()
+      (interactive)
+      (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
+
+    (define-keymap
+      :keymap conn-state-map
+      "S-SPC" 'insert-space))
+
+  (defun parinfer-disable-electric-pair ()
+    (electric-pair-local-mode -1))
+
+  (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
+
+  (dolist (mode '(lisp-data-mode-hook
+                  eshell-mode-hook
+                  sly-mrepl-mode-hook))
+    (add-hook mode #'parinfer-rust-mode)))
 
 ;;;; sly
 
@@ -586,6 +586,9 @@
 (elpaca pdf-tools
   (add-hook 'pdf-view-mode-hook #'hide-mode-line-mode)
 
+  (with-eval-after-load 'pdf-tools
+    (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode))
+
   (defun my-bmk-pdf-handler-advice (bookmark)
     (bookmark-default-handler (bookmark-get-bookmark bookmark)))
 
@@ -735,8 +738,8 @@
           org-confirm-babel-evaluate nil
           org-fold-core-style 'overlays)
 
-  (keymap-global-set "C-c o s" 'org-store-link)
-  (keymap-global-set "C-c o l" 'org-insert-link-global)
+  (keymap-global-set "C-c o" 'org-store-link)
+  (keymap-global-set "C-c l" 'org-insert-link-global)
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
 
@@ -818,6 +821,7 @@
 
 (elpaca no-littering
   (require 'no-littering)
+  (no-littering-theme-backups)
   (setopt backup-by-copying t
           auto-save-file-name-transforms
           `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
@@ -843,27 +847,27 @@
 
 ;;;; transpose-frame
 
-;; (elpaca transpose-frame
-;;   (with-eval-after-load 'conn-mode
-;;     (define-keymap
-;;      :keymap conn-window-map
-;;      "t" 'transpose-frame
-;;      ">" 'rotate-frame-clockwise
-;;      "<" 'rotate-frame-anticlockwise
-;;      "r" 'rotate-frame
-;;      "f" 'flip-frame
-;;      "p" 'flop-frame)
+(elpaca transpose-frame
+  (with-eval-after-load 'conn-mode
+    (define-keymap
+     :keymap conn-window-map
+     "t" 'transpose-frame
+     ">" 'rotate-frame-clockwise
+     "<" 'rotate-frame-anticlockwise
+     "r" 'rotate-frame
+     "f" 'flip-frame
+     "p" 'flop-frame)
 
-;;     (with-eval-after-load 'transpose-frame
-;;       (defvar-keymap rotate-frame-map
-;;         :repeat t
-;;         ">" 'rotate-frame-clockwise
-;;         "<" 'rotate-frame-anticlockwise)
+    (with-eval-after-load 'transpose-frame
+      (defvar-keymap rotate-frame-map
+        :repeat t
+        ">" 'rotate-frame-clockwise
+        "<" 'rotate-frame-anticlockwise)
 
-;;       (put 'rotate-frame 'repeat-cmd t)
-;;       (put 'flop-frame 'repeat-cmd t)
-;;       (put 'flip-frame 'repeat-cmd t)
-;;       (put 'transpose-frame 'repeat-cmd t))))
+      (put 'rotate-frame 'repeat-cmd t)
+      (put 'flop-frame 'repeat-cmd t)
+      (put 'flip-frame 'repeat-cmd t)
+      (put 'transpose-frame 'repeat-cmd t))))
 
 ;;;; popper
 
@@ -977,6 +981,32 @@
           conn-state-cursor-type 'box
           emacs-state-cursor-type 'box)
 
+  (defun conn-open-line-emacs-state (&optional arg)
+    (interactive "P")
+    (crux-smart-open-line arg)
+    (emacs-state))
+
+  (defun conn-open-line-above-emacs-state ()
+    (interactive)
+    (crux-smart-open-line-above)
+    (emacs-state))
+
+  (defun emacs-state-eol (&optional N)
+    (interactive "P")
+    (end-of-line N)
+    (emacs-state))
+
+  (defun emacs-state-bol (&optional N)
+    (interactive "P")
+    (beginning-of-line N)
+    (back-to-indentation)
+    (emacs-state))
+
+  (set-conn-transition 'conn-state "R" #'conn-open-line-emacs-state)
+  (set-conn-transition 'conn-state "E" #'conn-open-line-above-emacs-state)
+  (set-conn-transition 'conn-state "F" #'emacs-state-eol)
+  (set-conn-transition 'conn-state "D" #'emacs-state-bol)
+
   (conn-mode 1)
 
   (keymap-global-set "C-c v" 'conn-buffer-map)
@@ -984,6 +1014,8 @@
   (keymap-global-set "C-c W" 'conn-frame-map)
   (keymap-global-set "C-S-j" 'backward-page)
   (keymap-global-set "C-S-l" 'forward-page)
+
+  (keymap-set conn-state-map "#" 'tear-off-window)
 
   (define-keymap
     :keymap page-navigation-repeat-map
@@ -995,12 +1027,6 @@
     "d" 'duplicate-dwim
     "b" 'subword-mode
     "B" 'global-subword-mode)
-
-  (keymap-set conn-state-map "<f2>" 'tab-switch)
-  (keymap-set conn-state-map "W"    'other-window-prefix)
-  (keymap-set conn-state-map "F"    'other-frame-prefix)
-  (keymap-set conn-state-map "z"    'undo-redo)
-  (keymap-set conn-state-map "v"    'undo-only)
 
   (set-default-conn-state '(minibuffer-mode
                             eshell-mode
@@ -1986,7 +2012,8 @@ pressed during the dispatch, ACTION is set to replace the default
 
   (with-eval-after-load 'denote
     (defun denote-note-buffer-p (_)
-      (eq this-command 'denote))
+      (memq this-command '(denote
+                           denote-open-or-create)))
 
     (setf (alist-get 'denote-note-buffer-p display-buffer-alist)
           '((display-buffer-reuse-window display-buffer-pop-up-frame)
