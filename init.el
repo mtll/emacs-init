@@ -346,94 +346,94 @@
 
 ;;;; paredit
 
-;; (elpaca (paredit :host github :repo "emacsmirror/paredit")
-;;   (require 'paredit)
-
-;;   (dolist (mode '(lisp-data-mode-hook
-;;                   eshell-mode-hook
-;;                   sly-mrepl-mode-hook))
-;;     (add-hook mode #'enable-paredit-mode))
-
-;;   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
-
-;;   (diminish 'paredit-mode)
-
-;;   (keymap-unset paredit-mode-map "RET")
-;;   (keymap-unset paredit-mode-map "M-s")
-;;   (keymap-unset paredit-mode-map "M-;")
-;;   (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
-
-;;   (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
-
-;;   (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
-;;     (or endp
-;;         (cond ((eq (char-syntax delimiter) ?\()
-;;                (not (or (looking-back ",@" nil t)
-;;                         (looking-back "'" nil t)
-;;                         (looking-back "`" nil t)
-;;                         (looking-back "#." nil t))))
-;;               ((eq (char-syntax delimiter) ?\")
-;;                (not (or (looking-back "#" nil t)
-;;                         (looking-back "#." nil t))))
-;;               (else t))))
-
-;;   (add-to-list 'paredit-space-for-delimiter-predicates
-;;                'paredit-space-for-delimiter-predicates-lisp)
-
-;;   (defun paredit-kill-rectangle-advice (fn &rest args)
-;;     (if (not rectangle-mark-mode)
-;;         (apply fn args)
-;;       (setq this-command 'kill-rectangle)
-;;       (call-interactively 'kill-rectangle)))
-;;   (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
-
-;;   (defun paredit-disable-electric-pair ()
-;;     (electric-pair-local-mode -1))
-
-;;   (with-eval-after-load 'conn-mode
-;;     (define-conn-mode-map
-;;      'conn-state 'paredit-mode
-;;      (define-keymap
-;;        "C-<backspace>" 'paredit-backward-kill-word
-;;        "M-DEL"         'paredit-backward-kill-word
-;;        "DEL"           'paredit-backward-delete))
-
-;;     (define-conn-mode-map
-;;      '(conn-state dot-state) 'paredit-mode
-;;      (define-keymap
-;;        "m" 'paredit-forward
-;;        "n" 'paredit-backward))
-
-;;     (conn-add-thing-movement-command 'sexp 'paredit-forward)
-;;     (conn-add-thing-movement-command 'sexp 'paredit-backward)))
-
-;;;; parinfer
-
-(elpaca parinfer-rust-mode
-  (setopt parinfer-rust-dim-parens nil
-          parinfer-rust-troublesome-modes nil)
-
-  (with-eval-after-load 'parinfer-rust-mode
-    (diminish 'parinfer-rust-mode))
-
-  (with-eval-after-load 'conn-mode
-    (defun insert-space ()
-      (interactive)
-      (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
-
-    (define-keymap
-      :keymap conn-state-map
-      "S-SPC" 'insert-space))
-
-  (defun parinfer-disable-electric-pair ()
-    (electric-pair-local-mode -1))
-
-  (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
+(elpaca (paredit :host github :repo "emacsmirror/paredit")
+  (require 'paredit)
 
   (dolist (mode '(lisp-data-mode-hook
                   eshell-mode-hook
                   sly-mrepl-mode-hook))
-    (add-hook mode #'parinfer-rust-mode)))
+    (add-hook mode #'enable-paredit-mode))
+
+  (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
+
+  (diminish 'paredit-mode)
+
+  (keymap-unset paredit-mode-map "RET")
+  (keymap-unset paredit-mode-map "M-s")
+  (keymap-unset paredit-mode-map "M-;")
+  (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
+
+  (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
+
+  (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
+    (or endp
+        (cond ((eq (char-syntax delimiter) ?\()
+               (not (or (looking-back ",@" nil t)
+                        (looking-back "'" nil t)
+                        (looking-back "`" nil t)
+                        (looking-back "#." nil t))))
+              ((eq (char-syntax delimiter) ?\")
+               (not (or (looking-back "#" nil t)
+                        (looking-back "#." nil t))))
+              (else t))))
+
+  (add-to-list 'paredit-space-for-delimiter-predicates
+               'paredit-space-for-delimiter-predicates-lisp)
+
+  (defun paredit-kill-rectangle-advice (fn &rest args)
+    (if (not rectangle-mark-mode)
+        (apply fn args)
+      (setq this-command 'kill-rectangle)
+      (call-interactively 'kill-rectangle)))
+  (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
+
+  (defun paredit-disable-electric-pair ()
+    (electric-pair-local-mode -1))
+
+  (with-eval-after-load 'conn-mode
+    (define-conn-mode-map
+     'conn-state 'paredit-mode
+     (define-keymap
+       "C-<backspace>" 'paredit-backward-kill-word
+       "M-DEL"         'paredit-backward-kill-word
+       "DEL"           'paredit-backward-delete))
+
+    (define-conn-mode-map
+     '(conn-state dot-state) 'paredit-mode
+     (define-keymap
+       "m" 'paredit-forward
+       "n" 'paredit-backward))
+
+    (conn-add-thing-movement-command 'sexp 'paredit-forward)
+    (conn-add-thing-movement-command 'sexp 'paredit-backward)))
+
+;;;; parinfer
+
+;; (elpaca parinfer-rust-mode
+;;   (setopt parinfer-rust-dim-parens nil
+;;           parinfer-rust-troublesome-modes nil)
+
+;;   (with-eval-after-load 'parinfer-rust-mode
+;;     (diminish 'parinfer-rust-mode))
+
+;;   (with-eval-after-load 'conn-mode
+;;     (defun insert-space ()
+;;       (interactive)
+;;       (self-insert-command (prefix-numeric-value current-prefix-arg) ?\ ))
+
+;;     (define-keymap
+;;       :keymap conn-state-map
+;;       "S-SPC" 'insert-space))
+
+;;   (defun parinfer-disable-electric-pair ()
+;;     (electric-pair-local-mode -1))
+
+;;   (add-hook 'parinfer-rust-mode-hook #'parinfer-disable-electric-pair)
+
+;;   (dolist (mode '(lisp-data-mode-hook
+;;                   eshell-mode-hook
+;;                   sly-mrepl-mode-hook))
+;;     (add-hook mode #'parinfer-rust-mode)))
 
 ;;;; sly
 
@@ -1694,16 +1694,15 @@ pressed during the dispatch, ACTION is set to replace the default
 
 (elpaca (orderless-set-operations :host codeberg
                                   :repo "crcs/orderless-set-operations")
-  (with-eval-after-load 'vertico
-    (with-eval-after-load 'consult
-      (orderless-predicate-mode 1)
+  (orderless-predicate-mode 1)
 
-      (setq orderless-predicate-dispatchers
-            '(orderless-contents-pred orderless-annotation-pred))
+  (setq orderless-predicate-dispatchers
+        '(orderless-contents-pred orderless-annotation-pred))
 
-      (define-orderless-predicate-advice consult-buffer-advice
-        (consult-buffer read-buffer)
-        orderless-major-mode-pred orderless-buffer-modified-pred))))
+  (define-orderless-predicate-advice
+      consult-buffer-advice
+    (consult-buffer read-buffer)
+    orderless-major-mode-pred orderless-buffer-modified-pred))
 
 ;;;; consult
 
