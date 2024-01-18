@@ -1999,10 +1999,6 @@ pressed during the dispatch, ACTION is set to replace the default
 (elpaca denote
   (setopt denote-directory "~/Documents/notes/")
 
-  (defvar my-denote-to-agenda-regexp "_agenda"
-    "Denote file names that are added to the agenda.
-    See `my-add-denote-to-agenda'.")
-
   (defun denote-goto-bookmark ()
     (interactive)
     (dired denote-directory)
@@ -2035,6 +2031,36 @@ pressed during the dispatch, ACTION is set to replace the default
   (keymap-global-set "C-c n" 'denote-map)
 
   (with-eval-after-load 'denote
+    (defun denote-other-frame-ad (&rest app)
+      (when current-prefix-arg
+        (other-frame-prefix))
+      (apply app))
+
+    (advice-add 'denote :around #'denote-other-frame-ad)
+    (advice-add 'denote-open-or-create :around #'denote-other-frame-ad)
+
+    (defun my-denote-add-to-agenda ()
+      "Add current file to the `org-agenda-files', if needed.
+    The file's name must match the `my-denote-to-agenda-regexp'.
+
+    Add this to the `after-save-hook' or call it interactively."
+      (interactive)
+      (when-let* ((file (buffer-file-name))
+                  ((denote-file-is-note-p file))
+                  ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
+        (add-to-list 'org-agenda-files file)))
+
+    (add-hook 'after-save-hook #'my-denote-add-to-agenda)
+
+    (defun my-denote-remove-from-agenda ()
+      "Remove current file from the `org-agenda-files'.
+    See `my-denote-add-to-agenda' for how to add files to the Org
+    agenda."
+      (interactive)
+      (when-let* ((file (buffer-file-name))
+                  ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
+        (setq org-agenda-files (delete file org-agenda-files))))
+
     (with-eval-after-load 'consult
       (defun denote-file-prompt (&optional files-matching-regexp)
         "Prompt for file with identifier in variable `denote-directory'.
@@ -2059,29 +2085,7 @@ the given regular expression."
                        (denote-all-files)
                        nil))
 
-      (keymap-set denote-map "g" 'denote-ripgrep-notes))
-
-    (defun my-denote-add-to-agenda ()
-      "Add current file to the `org-agenda-files', if needed.
-    The file's name must match the `my-denote-to-agenda-regexp'.
-
-    Add this to the `after-save-hook' or call it interactively."
-      (interactive)
-      (when-let* ((file (buffer-file-name))
-                  ((denote-file-is-note-p file))
-                  ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
-        (add-to-list 'org-agenda-files file)))
-
-    (add-hook 'after-save-hook #'my-denote-add-to-agenda)
-
-    (defun my-denote-remove-from-agenda ()
-      "Remove current file from the `org-agenda-files'.
-    See `my-denote-add-to-agenda' for how to add files to the Org
-    agenda."
-      (interactive)
-      (when-let* ((file (buffer-file-name))
-                  ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
-        (setq org-agenda-files (delete file org-agenda-files))))))
+      (keymap-set denote-map "g" 'denote-ripgrep-notes))))
 
 ;;;; sage-shell-mode
 
