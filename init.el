@@ -1220,31 +1220,56 @@ pressed during the dispatch, ACTION is set to replace the default
                    (function-item :tag "Kill" avy-action-kill-stay)
                    function)))
 
+
+
   (setopt avy-single-candidate-jump nil
           avy-timeout-seconds 0.45
           avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?n ?o ?r ?s ?u ?v ?x)
-          avy-line-insert-style 'below)
+          avy-line-insert-style 'below
+          avy-orders-alist '((avy-goto-char . avy-order-closest)
+                             (avy-goto-char . avy-order-closest)
+                             (avy-goto-char-2 . avy-order-closest)
+                             (avy-isearch . avy-order-closest)
+                             (avy-goto-line . avy-order-closest)
+                             (avy-goto-subword-0 . avy-order-closest)
+                             (avy-goto-subword-1 . avy-order-closest)
+                             (avy-goto-word-0 . avy-order-closest)
+                             (avy-goto-word-1 . avy-order-closest)
+                             (avy-copy-line . avy-order-closest)
+                             (avy-copy-region . avy-order-closest)
+                             (avy-move-line . avy-order-closest)
+                             (avy-move-region . avy-order-closest)
+                             (avy-kill-whole-line . avy-order-closest)
+                             (avy-kill-region . avy-order-closest)
+                             (avy-kill-ring-save-whole-line . avy-order-closest)
+                             (avy-kill-ring-save-region . avy-order-closest)))
+
+  (keymap-global-set           "C-,"   'avy-goto-char-timer)
+  (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
+  (define-keymap
+    :keymap goto-map
+    "q" 'avy-goto-char-timer
+    "U" 'avy-goto-word-or-subword-1
+    "O" 'avy-goto-word-or-subword-1
+    "u" 'avy-goto-word-1-above
+    "o" 'avy-goto-word-1-below
+    "M" 'avy-goto-symbol-1
+    "N" 'avy-goto-symbol-1
+    "m" 'avy-goto-symbol-1-below
+    "n" 'avy-goto-symbol-1-above
+    "L" 'avy-goto-char
+    "K" 'avy-goto-line
+    "l" 'avy-goto-end-of-line
+    "k" 'avy-goto-line-below
+    "i" 'avy-goto-line-above
+    "z" 'avy-resume
+    "Y" 'david-avy-toggle-insertion-style
+    "I" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
-    (keymap-global-set           "C-,"   'avy-goto-char-timer)
-    (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
-
     (define-keymap
       :keymap conn-common-map
-      ","   'avy-goto-char-timer)
-
-    (define-keymap
-      :keymap goto-map
-      "q" 'avy-goto-char-timer
-      "o" 'avy-goto-word-or-subword-1
-      "u" 'avy-goto-word-1
-      "m" 'avy-goto-symbol-1
-      "n" 'avy-goto-char
-      "k" 'avy-goto-line
-      "l" 'avy-goto-end-of-line
-      "z" 'avy-resume
-      "I" 'david-avy-toggle-insertion-style
-      "i" 'avy-goto-char-in-line))
+      ","   'avy-goto-char-timer))
 
   (with-eval-after-load 'avy
     (with-eval-after-load 'embark
@@ -1797,12 +1822,12 @@ pressed during the dispatch, ACTION is set to replace the default
 
 ;;;;; consult-notes
 
-(elpaca consult-notes
-  (face-spec-set 'consult-notes-sep
-                 '((t :inherit vertico-group-title)))
-  (with-eval-after-load 'denote
-    (consult-notes-denote-mode 1)
-    (keymap-set 'denote-map "s" 'consult-notes)))
+;; (elpaca consult-notes
+;;   (face-spec-set 'consult-notes-sep
+;;                  '((t :inherit vertico-group-title)))
+;;   (with-eval-after-load 'denote
+;;     (consult-notes-denote-mode 1)
+;;     (keymap-set 'denote-map "s" 'consult-notes)))
 
 ;;;;; consult-extras
 
@@ -2010,14 +2035,31 @@ pressed during the dispatch, ACTION is set to replace the default
   (keymap-global-set "C-c n" 'denote-map)
 
   (with-eval-after-load 'denote
-    (defun denote-note-buffer-p (_)
-      (memq this-command '(denote
-                           denote-open-or-create)))
+    (with-eval-after-load 'consult
+      (defun denote-file-prompt (&optional files-matching-regexp)
+        "Prompt for file with identifier in variable `denote-directory'.
+With optional FILES-MATCHING-REGEXP, filter the candidates per
+the given regular expression."
+        (let ((files (denote-directory-files files-matching-regexp :omit-current)))
+          (consult--read
+           (mapcar #'consult--fast-abbreviate-file-name
+                   (denote-all-files))
+           :prompt "Select note: "
+           :sort nil
+           :preview-key "C-j"
+           :require-match t
+           :category 'file
+           :state (consult--file-preview)
+           :history 'denote--file-history)))
 
-    (setf (alist-get 'denote-note-buffer-p display-buffer-alist)
-          '((display-buffer-reuse-window display-buffer-pop-up-frame)
-            (reusable-frames . 0)
-            (inhibit-same-window . t)))
+      (defun denote-ripgrep-notes ()
+        (interactive)
+        (consult--grep "Ripgrep Notes: "
+                       #'consult--ripgrep-make-builder
+                       (denote-all-files)
+                       nil))
+
+      (keymap-set denote-map "g" 'denote-ripgrep-notes))
 
     (defun my-denote-add-to-agenda ()
       "Add current file to the `org-agenda-files', if needed.
