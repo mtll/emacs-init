@@ -204,11 +204,17 @@
 ;;;; diary / calendar
 
 (progn
+  (require 'calendar)
   (keymap-global-set "<f5>" #'calendar)
   (setq diary-entry-marker 'highlight)
   (setq calendar-holiday-marker 'match)
   (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
-  (add-hook 'list-diary-entries-hook 'sort-diary-entries t))
+  (add-hook 'list-diary-entries-hook 'sort-diary-entries t)
+  (add-hook 'elpaca-after-init-hook
+            (lambda ()
+              (let* ((display-buffer-overriding-action
+                      '(display-buffer-same-window)))
+                (diary-list-entries (calendar-current-date) 30)))))
 
 ;;;; cc-mode
 
