@@ -904,8 +904,6 @@
 (elpaca ace-window
   (require 'ace-window)
 
-  (ace-window-display-mode 1)
-
   (when window-system
     (ace-window-posframe-mode 1))
 
