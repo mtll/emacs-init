@@ -141,18 +141,13 @@
 (keymap-global-unset "C-z")
 (keymap-global-unset "C-x C-z")
 
+(keymap-set text-mode-map "M-TAB" #'completion-at-point)
+(keymap-set help-map "M-k" #'describe-keymap)
+
 (define-keymap
   :keymap ctl-x-map
   "s"   'save-buffer
   "C-s" 'save-some-buffers)
-
-(define-keymap
-  :keymap text-mode-map
-  "M-TAB" 'completion-at-point)
-
-(define-keymap
-  :keymap help-map
-  "M-k" 'describe-keymap)
 
 (define-keymap
   :keymap emacs-lisp-mode-map
@@ -974,6 +969,7 @@
           conn-state-buffer-colors t
           conn-mode-line-indicator-mode t
           conn-modes '(prog-mode
+                       diary-mode
                        (not pdf-outline-buffer-mode)
                        text-mode
                        outline-mode
@@ -1036,20 +1032,9 @@
                             eshell-mode
                             grep-mode
                             occur-mode
+                            diary-mode
                             "COMMIT_EDITMSG")
-                          'emacs-state)
-
-  (with-eval-after-load 'ace-window
-    (defun david-ace-display-mode-hook ()
-      (when conn-mode-line-indicator
-        (set-default
-         'mode-line-format
-         `((conn-mode
-            (:eval conn--mode-line-format))
-           ,@(assq-delete-all
-              'conn-mode
-              (default-value 'mode-line-format))))))
-    (add-hook 'ace-window-display-mode-hook 'david-ace-display-mode-hook)))
+                          'emacs-state))
 
 ;;;;; conn-expand-region
 
@@ -1071,6 +1056,7 @@
 
 (with-eval-after-load 'conn-mode
   (with-eval-after-load 'avy
+    (require 'conn-avy)
     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
 ;;;;; conn-embark
@@ -1214,6 +1200,12 @@
                              (?Y  .  avy-action-yank-line)
                              (?$  .  avy-action-ispell)
                              (?\\ .  avy-action-zap-to-char)))
+
+  (defun avy-process-disable-aw-update (&rest app)
+    (cl-letf (((symbol-function 'aw-update) #'ignore))
+      (apply app)))
+
+  (advice-add #'avy-process :around 'avy-process-disable-aw-update)
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
   (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
