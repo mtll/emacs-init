@@ -1195,36 +1195,9 @@
 ;;;; avy
 
 (elpaca avy
-  ;; Fix since avy isn't defining avy-dispatch-alist :type property correctly
-  (defcustom avy-dispatch-alist
-    '((?w  .  avy-action-kill-move)
-      (?d  .  avy-action-kill-stay)
-      (?t  .  avy-action-teleport)
-      (?c  .  avy-action-copy)
-      (?y  .  avy-action-yank)
-      (?Y  .  avy-action-yank-line)
-      (?$  .  avy-action-ispell)
-      (?\\ .  avy-action-zap-to-char))
-    "List of actions for `avy-handler-default'.
-
-Each item is (KEY . ACTION).  When KEY not on `avy-keys' is
-pressed during the dispatch, ACTION is set to replace the default
-`avy-action-goto' once a candidate is finally selected."
-    :type
-    '(alist
-      :key-type (choice (character :tag "Char"))
-      :value-type (choice
-                   (function-item :tag "Mark" avy-action-mark)
-                   (function-item :tag "Copy" avy-action-copy)
-                   (function-item :tag "Kill and move point" avy-action-kill-move)
-                   (function-item :tag "Kill" avy-action-kill-stay)
-                   function)))
-
-
-
   (setopt avy-single-candidate-jump nil
           avy-timeout-seconds 0.45
-          avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?n ?o ?r ?s ?u ?v ?x)
+          avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
           avy-line-insert-style 'below
           avy-orders-alist '((avy-goto-char . avy-order-closest)
                              (avy-goto-char . avy-order-closest)
@@ -1243,6 +1216,15 @@ pressed during the dispatch, ACTION is set to replace the default
                              (avy-kill-region . avy-order-closest)
                              (avy-kill-ring-save-whole-line . avy-order-closest)
                              (avy-kill-ring-save-region . avy-order-closest)))
+
+  (setq avy-dispatch-alist '((?w  .  avy-action-kill-move)
+                             (?d  .  avy-action-kill-stay)
+                             (?t  .  avy-action-teleport)
+                             (?c  .  avy-action-copy)
+                             (?y  .  avy-action-yank)
+                             (?Y  .  avy-action-yank-line)
+                             (?$  .  avy-action-ispell)
+                             (?\\ .  avy-action-zap-to-char)))
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
   (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
@@ -1269,7 +1251,9 @@ pressed during the dispatch, ACTION is set to replace the default
   (with-eval-after-load 'conn-mode
     (define-keymap
       :keymap conn-common-map
-      ","   'avy-goto-char-timer))
+      ","   'avy-goto-char-timer)
+
+    (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
   (with-eval-after-load 'avy
     (with-eval-after-load 'embark
@@ -1281,8 +1265,7 @@ pressed during the dispatch, ACTION is set to replace the default
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
-      (setopt avy-dispatch-alist (cons (cons ?e #'avy-action-embark)
-                                       avy-dispatch-alist))
+      (setf (alist-get ?e avy-dispatch-alist) #'avy-action-embark)
 
       (defun avy-action-embark-dwim (pt)
         (unwind-protect
@@ -1292,8 +1275,7 @@ pressed during the dispatch, ACTION is set to replace the default
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
-      (setopt avy-dispatch-alist (cons (cons ?h #'avy-action-embark-dwim)
-                                       avy-dispatch-alist))
+      (setf (alist-get ?h avy-dispatch-alist) #'avy-action-embark-dwim)
 
       (defun avy-action-embark-alt-dwim (pt)
         (unwind-protect
@@ -1303,8 +1285,7 @@ pressed during the dispatch, ACTION is set to replace the default
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
-      (setopt avy-dispatch-alist (cons (cons ?H #'avy-action-embark-alt-dwim)
-                                       avy-dispatch-alist)))
+      (setf (alist-get ?H avy-dispatch-alist) #'avy-action-embark-alt-dwim))
 
     (defun david-avy-toggle-insertion-style ()
       (interactive)
@@ -1997,7 +1978,10 @@ pressed during the dispatch, ACTION is set to replace the default
 ;;;; denote
 
 (elpaca denote
-  (setopt denote-directory "~/Documents/notes/")
+  (setopt denote-directory (expand-file-name "~/Documents/notes/"))
+
+  (with-eval-after-load 'recentf
+    (push denote-directory recentf-exclude))
 
   (defun denote-goto-bookmark ()
     (interactive)
