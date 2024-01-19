@@ -24,11 +24,12 @@
  '(menu-bar-mode nil)
  '(visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
  '(frame-title-format (list "%b"))
- '(initial-buffer-choice t)
  `(custom-file ,(expand-file-name "custom.el" user-emacs-directory))
  '(native-comp-async-report-warnings-errors 'silent)
  '(frame-inhibit-implied-resize t)
- '(package-enable-at-startup nil))
+ '(package-enable-at-startup nil)
+ '(initial-buffer-choice nil)
+ '(inhibit-startup-screen t))
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
