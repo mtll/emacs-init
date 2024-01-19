@@ -1198,24 +1198,9 @@
   (setopt avy-single-candidate-jump nil
           avy-timeout-seconds 0.45
           avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
-          avy-line-insert-style 'below
-          avy-orders-alist '((avy-goto-char . avy-order-closest)
-                             (avy-goto-char . avy-order-closest)
-                             (avy-goto-char-2 . avy-order-closest)
-                             (avy-isearch . avy-order-closest)
-                             (avy-goto-line . avy-order-closest)
-                             (avy-goto-subword-0 . avy-order-closest)
-                             (avy-goto-subword-1 . avy-order-closest)
-                             (avy-goto-word-0 . avy-order-closest)
-                             (avy-goto-word-1 . avy-order-closest)
-                             (avy-copy-line . avy-order-closest)
-                             (avy-copy-region . avy-order-closest)
-                             (avy-move-line . avy-order-closest)
-                             (avy-move-region . avy-order-closest)
-                             (avy-kill-whole-line . avy-order-closest)
-                             (avy-kill-region . avy-order-closest)
-                             (avy-kill-ring-save-whole-line . avy-order-closest)
-                             (avy-kill-ring-save-region . avy-order-closest)))
+          avy-line-insert-style 'below)
+
+  (setf (alist-get 'avy-goto-char-timer avy-orders-alist) #'avy-order-closest)
 
   (setq avy-dispatch-alist '((?w  .  avy-action-kill-move)
                              (?d  .  avy-action-kill-stay)
