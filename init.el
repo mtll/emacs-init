@@ -916,7 +916,7 @@
    'aw-leading-char-face
    '((t (:inherit ace-jump-face-foreground :height 5.0))))
 
-  (keymap-global-set "C-'" 'ace-window)
+  (keymap-global-set "C-;" 'ace-window)
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-common-map ";" 'ace-window)
