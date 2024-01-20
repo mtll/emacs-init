@@ -742,6 +742,7 @@
   (keymap-global-set "C-c l" 'org-insert-link-global)
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
+  (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
     (setopt org-startup-indented t)
@@ -1106,7 +1107,7 @@
 (with-eval-after-load 'conn-mode
   (with-eval-after-load 'consult
     (require 'conn-consult)
-    (keymap-set goto-map "t" 'conn-consult-thing)))
+    (keymap-set search-map "t" 'conn-consult-thing)))
 
 ;;;; ialign
 
@@ -1442,6 +1443,12 @@
                          (embark--quit-p action)))
         (user-error "No target found")))
 
+    ;; (defun embark-keybind-target-finder ()
+    ;;   (when-let ((bounds (org-in-regexp "{.*}"))
+    ;;              (keys (buffer-substring-no-properties (car bounds) (cdr bounds))))
+    ;;     (when (key-valid-p keys)
+    ;;       (cons 'keys (cons keys bounds)))))
+
     (defun embark-alt-line-target-finder ()
       (when (and (not (minibufferp))
                  (bolp))
@@ -1536,26 +1543,25 @@
   (require 'embark-consult)
 
   (define-keymap
-   :keymap embark-region-map
-   "j" 'consult-line
-   "u f" 'consult-find
-   "u g" 'consult-git-grep
-   "u /" 'consult-locate
-   "u h" 'consult-imenu
-   "u H" 'consult-imenu-multi
-   "u J" 'consult-line-multi
-   "u r" 'consult-ripgrep)
+    :keymap embark-region-map
+    "o" 'consult-line
+    "u f" 'consult-find
+    "u g" 'consult-git-grep
+    "u l" 'consult-locate
+    "u i" 'consult-imenu
+    "u I" 'consult-imenu-multi
+    "u O" 'consult-line-multi
+    "u r" 'consult-ripgrep)
 
   (define-keymap
-   :keymap embark-general-map
-   "u j" 'consult-line
-   "u f" 'consult-find
-   "u g" 'consult-git-grep
-   "u /" 'consult-locate
-   "u h" 'consult-imenu
-   "u H" 'consult-imenu-multi
-   "u J" 'consult-line-multi
-   "u r" 'consult-ripgrep))
+    :keymap embark-general-map
+    "u f" 'consult-find
+    "u g" 'consult-git-grep
+    "u l" 'consult-locate
+    "u i" 'consult-imenu
+    "u I" 'consult-imenu-multi
+    "u O" 'consult-line-multi
+    "u r" 'consult-ripgrep))
 
 ;;;; corfu
 
@@ -1732,21 +1738,22 @@
   (keymap-set minibuffer-local-map "M-r" 'consult-history)
 
   (define-keymap
-    :keymap goto-map
+    :keymap search-map
     "e" 'consult-isearch-history
-    "K" 'consult-goto-line
-    "d" 'consult-outline
-    "j" 'consult-line
-    "J" 'consult-line-multi
+    "t" 'consult-outline
+    "o" 'consult-line
+    "O" 'consult-line-multi
     "r" 'consult-ripgrep
     "G" 'consult-grep
     "g" 'consult-git-grep
     "f" 'consult-find
-    "/" 'consult-locate
+    "l" 'consult-locate
     "v" 'consult-focus-lines
-    "-" 'consult-keep-lines
-    "h" 'consult-imenu
-    "H" 'consult-imenu-multi)
+    "k" 'consult-keep-lines
+    "i" 'consult-imenu
+    "I" 'consult-imenu-multi)
+
+  (keymap-set goto-map "g" 'consult-goto-line)
 
   (define-keymap
     :keymap isearch-mode-map
@@ -1969,98 +1976,219 @@
 
 ;;;; denote
 
-(elpaca denote
-  (setopt denote-directory (expand-file-name "~/Documents/notes/"))
+;; (elpaca denote
+;;   (setopt denote-directory (expand-file-name "~/Documents/notes/"))
 
-  (with-eval-after-load 'recentf
-    (push denote-directory recentf-exclude))
+;;   (with-eval-after-load 'recentf
+;;     (push denote-directory recentf-exclude))
 
-  (defun denote-goto-bookmark ()
-    (interactive)
-    (dired denote-directory)
-    (dired-hide-details-mode 1)
-    (dired-omit-mode 1)
-    (denote-dired-mode 1))
+;;   (defun denote-goto-bookmark ()
+;;     (interactive)
+;;     (dired denote-directory)
+;;     (dired-hide-details-mode 1)
+;;     (dired-omit-mode 1)
+;;     (denote-dired-mode 1))
 
-  (defvar-keymap denote-map
-    :prefix 'denote-map
-    "C" 'denote-link-after-creating
-    "D" 'denote-date
-    "L" 'denote-add-links
-    "N" 'denote-type
-    "S" 'denote-signature
-    "a" 'denote-keywords-add
-    "b" 'denote-backlinks
-    "d" 'denote-goto-bookmark
-    "f" 'denote-sort-dired
-    "k b" 'denote-org-dblock-insert-backlinks
-    "k f" 'denote-org-dblock-insert-files
-    "k l" 'denote-org-dblock-insert-links
-    "l" 'denote-link
-    "n" 'denote
-    "o" 'denote-open-or-create
-    "u" 'denote-find-link
-    "r" 'denote-keywords-remove
-    "t" 'denote-template
-    "w" 'denote-region)
+;;   (defvar-keymap denote-map
+;;     :prefix 'denote-map
+;;     "C" 'denote-link-after-creating
+;;     "D" 'denote-date
+;;     "L" 'denote-add-links
+;;     "N" 'denote-type
+;;     "S" 'denote-signature
+;;     "a" 'denote-keywords-add
+;;     "b" 'denote-backlinks
+;;     "d" 'denote-goto-bookmark
+;;     "f" 'denote-sort-dired
+;;     "k b" 'denote-org-dblock-insert-backlinks
+;;     "k f" 'denote-org-dblock-insert-files
+;;     "k l" 'denote-org-dblock-insert-links
+;;     "l" 'denote-link
+;;     "n" 'denote
+;;     "o" 'denote-open-or-create
+;;     "u" 'denote-find-link
+;;     "r" 'denote-keywords-remove
+;;     "t" 'denote-template
+;;     "w" 'denote-region)
 
-  (keymap-global-set "C-c n" 'denote-map)
+;;   (keymap-global-set "C-c n" 'denote-map)
 
-  (with-eval-after-load 'denote
-    (defun denote-other-frame-ad (&rest app)
-      (when current-prefix-arg
-        (other-frame-prefix))
-      (apply app))
+;;   (with-eval-after-load 'denote
+;;     (defun denote-other-frame-ad (&rest app)
+;;       (when current-prefix-arg
+;;         (other-frame-prefix))
+;;       (apply app))
 
-    (advice-add 'denote :around #'denote-other-frame-ad)
-    (advice-add 'denote-open-or-create :around #'denote-other-frame-ad)
+;;     (advice-add 'denote :around #'denote-other-frame-ad)
+;;     (advice-add 'denote-open-or-create :around #'denote-other-frame-ad)
 
-    (defun my-denote-add-to-agenda ()
-      "Add current file to the `org-agenda-files', if needed.
-    The file's name must match the `my-denote-to-agenda-regexp'.
+;;     (defun my-denote-add-to-agenda ()
+;;       "Add current file to the `org-agenda-files', if needed.
+;;     The file's name must match the `my-denote-to-agenda-regexp'.
 
-    Add this to the `after-save-hook' or call it interactively."
-      (interactive)
-      (when-let* ((file (buffer-file-name))
-                  ((denote-file-is-note-p file))
-                  ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
-        (add-to-list 'org-agenda-files file)))
+;;     Add this to the `after-save-hook' or call it interactively."
+;;       (interactive)
+;;       (when-let* ((file (buffer-file-name))
+;;                   ((denote-file-is-note-p file))
+;;                   ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
+;;         (add-to-list 'org-agenda-files file)))
 
-    (add-hook 'after-save-hook #'my-denote-add-to-agenda)
+;;     (add-hook 'after-save-hook #'my-denote-add-to-agenda)
 
-    (defun my-denote-remove-from-agenda ()
-      "Remove current file from the `org-agenda-files'.
-    See `my-denote-add-to-agenda' for how to add files to the Org
-    agenda."
-      (interactive)
-      (when-let* ((file (buffer-file-name))
-                  ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
-        (setq org-agenda-files (delete file org-agenda-files))))
+;;     (defun my-denote-remove-from-agenda ()
+;;       "Remove current file from the `org-agenda-files'.
+;;     See `my-denote-add-to-agenda' for how to add files to the Org
+;;     agenda."
+;;       (interactive)
+;;       (when-let* ((file (buffer-file-name))
+;;                   ((string-match-p my-denote-to-agenda-regexp (buffer-file-name))))
+;;         (setq org-agenda-files (delete file org-agenda-files))))
 
-    (with-eval-after-load 'consult
-      (defun denote-file-prompt (&optional files-matching-regexp)
-        "Prompt for file with identifier in variable `denote-directory'.
-With optional FILES-MATCHING-REGEXP, filter the candidates per
-the given regular expression."
-        (let ((files (denote-directory-files files-matching-regexp :omit-current)))
-          (consult--read
-           (mapcar #'consult--fast-abbreviate-file-name
-                   (denote-all-files))
-           :prompt "Select note: "
-           :sort nil
-           :preview-key "C-j"
-           :require-match t
-           :category 'file
-           :state (consult--file-preview)
-           :history 'denote--file-history)))))
+;;     (with-eval-after-load 'consult
+;;       (defun denote-file-prompt (&optional files-matching-regexp)
+;;         "Prompt for file with identifier in variable `denote-directory'.
+;; With optional FILES-MATCHING-REGEXP, filter the candidates per
+;; the given regular expression."
+;;         (let ((files (denote-directory-files files-matching-regexp :omit-current)))
+;;           (consult--read
+;;            (mapcar #'consult--fast-abbreviate-file-name
+;;                    (denote-all-files))
+;;            :prompt "Select note: "
+;;            :sort nil
+;;            :preview-key "C-j"
+;;            :require-match t
+;;            :category 'file
+;;            :state (consult--file-preview)
+;;            :history 'denote--file-history)))))
+
+;;   (with-eval-after-load 'consult
+;;     (defun denote-ripgrep-notes (&optional initial)
+;;       (interactive)
+;;       (require 'denote)
+;;       (let* ((consult-ripgrep-args (concat consult-ripgrep-args " -torg"))
+;;              (default-directory (denote-directory))
+;;              (builder (consult--ripgrep-make-builder '("."))))
+;;         (consult--read
+;;          (consult--async-command builder
+;;            (consult--grep-format builder))
+;;          :prompt "Notes: "
+;;          :lookup #'consult--lookup-member
+;;          :state (consult--grep-state)
+;;          :initial (consult--async-split-initial initial)
+;;          :add-history (consult--async-split-thingatpt 'symbol)
+;;          :require-match t
+;;          :category 'consult-grep
+;;          :group #'consult--prefix-group
+;;          :history '(:input consult--grep-history)
+;;          :sort nil)))
+
+;;     (keymap-set denote-map "g" 'denote-ripgrep-notes))
+
+;;   (with-eval-after-load 'embark
+;;     (cl-defun embark-denote-ripgrep
+;;         (&key target candidates &allow-other-keys)
+;;       (denote-ripgrep-notes (or target (string-join candidates " "))))
+
+;;     (cl-pushnew 'denote-ripgrep-notes embark-multitarget-actions)
+;;     (cl-pushnew #'embark-denote-ripgrep
+;;                 (alist-get 'denote-ripgrep-notes embark-around-action-hooks))
+
+;;     (setf (alist-get 'denote-ripgrep-notes embark-target-injection-hooks)
+;;           (list #'embark--allow-edit))
+
+;;     (keymap-set embark-general-map "u n" 'denote-ripgrep-notes)
+;;     (keymap-set embark-region-map "u n" 'denote-ripgrep-notes)))
+
+;;;; howm
+
+(elpaca howm
+  (setq howm-prefix "n")
+
+  (require 'howm)
+
+  (setq howm-home-directory "~/Documents/howm"
+        howm-directory "~/Documents/howm"
+        howm-view-use-grep t
+        howm-view-grep-command "rg"
+        howm-view-grep-option "-nH --no-heading --color never"
+        howm-view-grep-extended-option nil
+        howm-view-grep-fixed-option "-F"
+        howm-view-grep-expr-option "-e"
+        howm-view-grep-file-stdin-option "-f -"
+        howm-iigrep-preview-items 100
+        ;; iigrep-command "rg"
+        ;; iigrep-options "-nH --no-heading --color never"
+        ;; iigrep-recursive-option ""
+        howm-keyword-file (expand-file-name ".howm-keys" howm-home-directory)
+        howm-history-file (expand-file-name ".howm-history" howm-home-directory)
+        howm-file-name-format "%Y/%m/%Y-%m-%d-%H%M%S.org"
+        howm-content-from-region 1
+        howm-menu-refresh-after-save nil)
+
+  (keymap-global-set "C-c n m" 'howm-menu)
+
+  ;; Default recent to sorting by mtime
+  (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
+  ;; Default all to sorting by creation, newest first
+  (advice-add 'howm-list-all :after #'(lambda () (howm-view-sort-by-date t)))
+
+  (define-key howm-menu-mode-map "\C-h" nil)
+  (define-key riffle-summary-mode-map "\C-h" nil)
+  (define-key howm-view-contents-mode-map "\C-h" nil)
+
+  (add-hook 'howm-mode-hook 'howm-mode-set-buffer-name)
+  (add-hook 'after-save-hook 'howm-mode-set-buffer-name)
+
+  (with-eval-after-load 'org
+    (define-abbrev org-mode-abbrev-table "kkf" "<<<")
+    (define-abbrev org-mode-abbrev-table "kkt" "<<<"))
 
   (with-eval-after-load 'consult
-    (defun denote-ripgrep-notes (&optional initial)
+    (defun howm-consult--multiline-regexp-compiler (input type ignore-case)
+      "Compile the INPUT string to a list of regular expressions.
+The function should return a pair, the list of regular expressions and a
+highlight function.  The highlight function should take a single
+argument, the string to highlight given the INPUT.  TYPE is the desired
+type of regular expression, which can be `basic', `extended', `emacs' or
+`pcre'.  If IGNORE-CASE is non-nil return a highlight function which
+matches case insensitively."
+      (setq input (list (consult--join-regexps-permutations (consult--split-escaped input) "\\")))
+      (cons (mapcar (lambda (x) (consult--convert-regexp x type)) input)
+            (when-let (regexps (seq-filter #'consult--valid-regexp-p input))
+              (apply-partially #'consult--highlight-regexps regexps ignore-case))))
+
+    (defun howm-consult--ripgrep-make-builder (paths)
+      "Create ripgrep command line builder given PATHS."
+      (let* ((cmd (consult--build-args consult-ripgrep-args))
+             (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
+        (lambda (input)
+          (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                       (flags (append cmd opts))
+                       (ignore-case
+                        (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                             (or (member "-i" flags) (member "--ignore-case" flags)
+                                 (and (or (member "-S" flags) (member "--smart-case" flags))
+                                      (let (case-fold-search)
+                                        ;; Case insensitive if there are no uppercase letters
+                                        (not (string-match-p "[[:upper:]]" arg))))))))
+            (if (or (member "-F" flags) (member "--fixed-strings" flags))
+                (cons (append cmd (list "-e" arg) opts paths)
+                      (apply-partially #'consult--highlight-regexps
+                                       (list (regexp-quote arg)) ignore-case))
+              (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
+                (when re
+                  (cons (append cmd (and (eq type 'pcre) '("-P"))
+                                (list "-e" (consult--join-regexps re type))
+                                opts paths)
+                        hl))))))))
+
+    (defun howm-consult-grep (&optional initial)
       (interactive)
-      (require 'denote)
-      (let* ((consult-ripgrep-args (concat consult-ripgrep-args " -torg"))
-             (default-directory (denote-directory))
-             (builder (consult--ripgrep-make-builder '("."))))
+      (let* ((consult-ripgrep-args
+              (concat consult-ripgrep-args " -m 1 --multiline --multiline-dotall -torg"))
+             (consult--regexp-compiler #'howm-consult--multiline-regexp-compiler)
+             (default-directory howm-directory)
+             (builder (howm-consult--ripgrep-make-builder '("."))))
         (consult--read
          (consult--async-command builder
            (consult--grep-format builder))
@@ -2075,55 +2203,22 @@ the given regular expression."
          :history '(:input consult--grep-history)
          :sort nil)))
 
-    (keymap-set denote-map "g" 'denote-ripgrep-notes))
+    (keymap-set search-map "m" #'howm-consult-grep)
 
-  (with-eval-after-load 'embark
-    (cl-defun embark-denote-ripgrep
-        (&key target candidates &allow-other-keys)
-      (denote-ripgrep-notes (or target (string-join candidates " "))))
+    (with-eval-after-load 'embark
+      (cl-defun embark-howm-consult (&key target candidates &allow-other-keys)
+        (howm-consult-grep (or (string-replace " " "\ " target)
+                               (string-join candidates "\ "))))
 
-    (cl-pushnew 'denote-ripgrep-notes embark-multitarget-actions)
-    (cl-pushnew #'embark-denote-ripgrep
-                (alist-get 'denote-ripgrep-notes embark-around-action-hooks))
+      (cl-pushnew 'howm-consult-grep embark-multitarget-actions)
+      (cl-pushnew #'embark-howm-consult
+                  (alist-get 'howm-consult-grep embark-around-action-hooks))
 
-    (setf (alist-get 'denote-ripgrep-notes embark-target-injection-hooks)
-          (list #'embark--allow-edit))
+      (setf (alist-get 'howm-consult-grep embark-target-injection-hooks)
+            (list #'embark--allow-edit))
 
-    (keymap-set embark-general-map "u n" 'denote-ripgrep-notes)
-    (keymap-set embark-region-map "u n" 'denote-ripgrep-notes)))
-
-;;;; howm
-
-;; (elpaca howm
-;;   (setq howm-prefix "n")
-
-;;   (require 'howm)
-;;   (setq howm-home-directory "~/Documents/howm")
-
-;;   (setq howm-directory "~/Documents/howm")
-;;   (setq howm-keyword-file (expand-file-name ".howm-keys" howm-home-directory))
-;;   (setq howm-history-file (expand-file-name ".howm-history" howm-home-directory))
-;;   (setq howm-file-name-format "%Y/%m/%Y-%m-%d-%H%M%S.org")
-
-;;   (setq howm-view-use-grep t)
-;;   (setq howm-view-grep-command "rg")
-;;   (setq howm-view-grep-option "-nH --no-heading --color never")
-;;   (setq howm-view-grep-extended-option nil)
-;;   (setq howm-view-grep-fixed-option "-F")
-;;   (setq howm-view-grep-expr-option nil)
-;;   (setq howm-view-grep-file-stdin-option nil)
-
-;;   ;; Default recent to sorting by mtime
-;;   (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
-;;   ;; Default all to sorting by creation, newest first
-;;   (advice-add 'howm-list-all :after #'(lambda () (howm-view-sort-by-date t)))
-
-;;   (define-key howm-menu-mode-map "\C-h" nil)
-;;   (define-key riffle-summary-mode-map "\C-h" nil)
-;;   (define-key howm-view-contents-mode-map "\C-h" nil)
-
-;;   (add-hook 'howm-mode-hook 'howm-mode-set-buffer-name)
-;;   (add-hook 'after-save-hook 'howm-mode-set-buffer-name))
+      (keymap-set embark-general-map "u m" 'howm-consult-grep)
+      (keymap-set embark-region-map "u m" 'howm-consult-grep))))
 
 ;;;; sage-shell-mode
 
