@@ -82,7 +82,6 @@
         dired-listing-switches "-alFh --group-directories-first"
         isearch-lazy-count t
         isearch-yank-on-move t
-        ;; isearch-repeat-on-direction-change t
         enable-recursive-minibuffers t
         ediff-split-window-function #'ediff-split-fn
         uniquify-buffer-name-style 'post-forward
@@ -1535,9 +1534,21 @@
 
 (elpaca embark-consult
   (require 'embark-consult)
+
   (define-keymap
    :keymap embark-region-map
    "j" 'consult-line
+   "u f" 'consult-find
+   "u g" 'consult-git-grep
+   "u /" 'consult-locate
+   "u h" 'consult-imenu
+   "u H" 'consult-imenu-multi
+   "u J" 'consult-line-multi
+   "u r" 'consult-ripgrep)
+
+  (define-keymap
+   :keymap embark-general-map
+   "u j" 'consult-line
    "u f" 'consult-find
    "u g" 'consult-git-grep
    "u /" 'consult-locate
@@ -1850,7 +1861,7 @@
           (tempel-complete
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
-          (consult-notes buffer)))
+          (denote-ripgrep-notes buffer)))
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
@@ -2041,16 +2052,78 @@ the given regular expression."
            :require-match t
            :category 'file
            :state (consult--file-preview)
-           :history 'denote--file-history)))
+           :history 'denote--file-history)))))
 
-      (defun denote-ripgrep-notes ()
-        (interactive)
-        (consult--grep "Ripgrep Notes: "
-                       #'consult--ripgrep-make-builder
-                       (denote-all-files)
-                       nil))
+  (with-eval-after-load 'consult
+    (defun denote-ripgrep-notes (&optional initial)
+      (interactive)
+      (require 'denote)
+      (let* ((consult-ripgrep-args (concat consult-ripgrep-args " -torg"))
+             (default-directory (denote-directory))
+             (builder (consult--ripgrep-make-builder '("."))))
+        (consult--read
+         (consult--async-command builder
+           (consult--grep-format builder))
+         :prompt "Notes: "
+         :lookup #'consult--lookup-member
+         :state (consult--grep-state)
+         :initial (consult--async-split-initial initial)
+         :add-history (consult--async-split-thingatpt 'symbol)
+         :require-match t
+         :category 'consult-grep
+         :group #'consult--prefix-group
+         :history '(:input consult--grep-history)
+         :sort nil)))
 
-      (keymap-set denote-map "g" 'denote-ripgrep-notes))))
+    (keymap-set denote-map "g" 'denote-ripgrep-notes))
+
+  (with-eval-after-load 'embark
+    (cl-defun embark-denote-ripgrep
+        (&key target candidates &allow-other-keys)
+      (denote-ripgrep-notes (or target (string-join candidates " "))))
+
+    (cl-pushnew 'denote-ripgrep-notes embark-multitarget-actions)
+    (cl-pushnew #'embark-denote-ripgrep
+                (alist-get 'denote-ripgrep-notes embark-around-action-hooks))
+
+    (setf (alist-get 'denote-ripgrep-notes embark-target-injection-hooks)
+          (list #'embark--allow-edit))
+
+    (keymap-set embark-general-map "u n" 'denote-ripgrep-notes)
+    (keymap-set embark-region-map "u n" 'denote-ripgrep-notes)))
+
+;;;; howm
+
+;; (elpaca howm
+;;   (setq howm-prefix "n")
+
+;;   (require 'howm)
+;;   (setq howm-home-directory "~/Documents/howm")
+
+;;   (setq howm-directory "~/Documents/howm")
+;;   (setq howm-keyword-file (expand-file-name ".howm-keys" howm-home-directory))
+;;   (setq howm-history-file (expand-file-name ".howm-history" howm-home-directory))
+;;   (setq howm-file-name-format "%Y/%m/%Y-%m-%d-%H%M%S.org")
+
+;;   (setq howm-view-use-grep t)
+;;   (setq howm-view-grep-command "rg")
+;;   (setq howm-view-grep-option "-nH --no-heading --color never")
+;;   (setq howm-view-grep-extended-option nil)
+;;   (setq howm-view-grep-fixed-option "-F")
+;;   (setq howm-view-grep-expr-option nil)
+;;   (setq howm-view-grep-file-stdin-option nil)
+
+;;   ;; Default recent to sorting by mtime
+;;   (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
+;;   ;; Default all to sorting by creation, newest first
+;;   (advice-add 'howm-list-all :after #'(lambda () (howm-view-sort-by-date t)))
+
+;;   (define-key howm-menu-mode-map "\C-h" nil)
+;;   (define-key riffle-summary-mode-map "\C-h" nil)
+;;   (define-key howm-view-contents-mode-map "\C-h" nil)
+
+;;   (add-hook 'howm-mode-hook 'howm-mode-set-buffer-name)
+;;   (add-hook 'after-save-hook 'howm-mode-set-buffer-name))
 
 ;;;; sage-shell-mode
 
