@@ -1714,6 +1714,7 @@
   (setopt consult-async-min-input 3
           consult-yank-rotate nil
           consult-narrow-key "M-N"
+          consult-ripgrep-args (concat consult-ripgrep-args " --multiline")
           xref-show-xrefs-function #'consult-xref
           xref-show-definitions-function #'consult-xref
           register-preview-delay 0.3
@@ -1770,6 +1771,25 @@
           (if (eq consult-async-min-input most-positive-fixnum)
               (or (and arg (prefix-numeric-value arg)) 3)
             most-positive-fixnum)))
+
+  (with-eval-after-load 'consult
+    (defun consult--multiline-join-regexps-permutations (regexps)
+      (pcase regexps
+        ('nil "")
+        (`(,r) r)
+        (_ (mapconcat
+            (lambda (r)
+              (concat r "(?s:.*)"
+                      (consult--multiline-join-regexps-permutations (remove r regexps))))
+            regexps "|"))))
+
+    (defun consult--multiline-regexp-compiler (input type ignore-case)
+      (setq input (consult--split-escaped input))
+      (cons (ensure-list
+             (consult--multiline-join-regexps-permutations
+              (mapcar (lambda (x) (consult--convert-regexp x 'extended)) input)))
+            (when-let (regexps (seq-filter #'consult--valid-regexp-p input))
+              (apply-partially #'consult--highlight-regexps regexps ignore-case)))))
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
@@ -2102,7 +2122,7 @@
 ;;;; howm
 
 (elpaca howm
-  (setq howm-prefix "n")
+  (setq howm-prefix "m")
 
   (require 'howm)
 
@@ -2125,7 +2145,7 @@
         howm-content-from-region 1
         howm-menu-refresh-after-save nil)
 
-  (keymap-global-set "C-c n m" 'howm-menu)
+  (keymap-global-set "C-c m m" 'howm-menu)
 
   ;; Default recent to sorting by mtime
   (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
@@ -2141,54 +2161,16 @@
 
   (with-eval-after-load 'org
     (define-abbrev org-mode-abbrev-table "kkf" "<<<")
-    (define-abbrev org-mode-abbrev-table "kkt" "<<<"))
+    (define-abbrev org-mode-abbrev-table "kkt" ">>>"))
 
   (with-eval-after-load 'consult
-    (defun howm-consult--multiline-regexp-compiler (input type ignore-case)
-      "Compile the INPUT string to a list of regular expressions.
-The function should return a pair, the list of regular expressions and a
-highlight function.  The highlight function should take a single
-argument, the string to highlight given the INPUT.  TYPE is the desired
-type of regular expression, which can be `basic', `extended', `emacs' or
-`pcre'.  If IGNORE-CASE is non-nil return a highlight function which
-matches case insensitively."
-      (setq input (list (consult--join-regexps-permutations (consult--split-escaped input) "\\")))
-      (cons (mapcar (lambda (x) (consult--convert-regexp x type)) input)
-            (when-let (regexps (seq-filter #'consult--valid-regexp-p input))
-              (apply-partially #'consult--highlight-regexps regexps ignore-case))))
-
-    (defun howm-consult--ripgrep-make-builder (paths)
-      "Create ripgrep command line builder given PATHS."
-      (let* ((cmd (consult--build-args consult-ripgrep-args))
-             (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
-        (lambda (input)
-          (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-                       (flags (append cmd opts))
-                       (ignore-case
-                        (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
-                             (or (member "-i" flags) (member "--ignore-case" flags)
-                                 (and (or (member "-S" flags) (member "--smart-case" flags))
-                                      (let (case-fold-search)
-                                        ;; Case insensitive if there are no uppercase letters
-                                        (not (string-match-p "[[:upper:]]" arg))))))))
-            (if (or (member "-F" flags) (member "--fixed-strings" flags))
-                (cons (append cmd (list "-e" arg) opts paths)
-                      (apply-partially #'consult--highlight-regexps
-                                       (list (regexp-quote arg)) ignore-case))
-              (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
-                (when re
-                  (cons (append cmd (and (eq type 'pcre) '("-P"))
-                                (list "-e" (consult--join-regexps re type))
-                                opts paths)
-                        hl))))))))
-
     (defun howm-consult-grep (&optional initial)
       (interactive)
       (let* ((consult-ripgrep-args
-              (concat consult-ripgrep-args " -m 1 --multiline --multiline-dotall -torg"))
-             (consult--regexp-compiler #'howm-consult--multiline-regexp-compiler)
+              (concat consult-ripgrep-args " -m 1 -torg"))
+             (consult--regexp-compiler #'consult--multiline-regexp-compiler)
              (default-directory howm-directory)
-             (builder (howm-consult--ripgrep-make-builder '("."))))
+             (builder (consult--ripgrep-make-builder '("."))))
         (consult--read
          (consult--async-command builder
            (consult--grep-format builder))
