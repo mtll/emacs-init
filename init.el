@@ -1725,21 +1725,17 @@
   (define-key global-map [remap Info-search] 'consult-info)
   (define-key global-map [remap bookmark-jump] 'consult-bookmark)
   (keymap-global-set "C-x k" 'kill-this-buffer)
-  (keymap-global-set "C-c M-x" 'consult-mode-command)
-  (keymap-global-set "C-c c h" 'consult-history)
-  (keymap-global-set "C-c c k" 'consult-kmacro)
-  (keymap-global-set "C-c c m" 'consult-man)
-  (keymap-global-set "C-c c i" 'consult-info)
-  (keymap-global-set "C-c c a" 'consult-mode-command)
+  (keymap-global-set "M-X" 'consult-mode-command)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
   (keymap-global-set "C-x b" 'consult-buffer)
-  (keymap-global-set "C-x 4 b" 'consult-buffer-other-window)
-  (keymap-global-set "C-x 5 b" 'consult-buffer-other-frame)
 
   (keymap-set minibuffer-local-map "M-r" 'consult-history)
 
   (define-keymap
     :keymap search-map
+    "K" 'consult-kmacro
+    "n" 'consult-info
+    "w" 'consult-man
     "e" 'consult-isearch-history
     "t" 'consult-outline
     "o" 'consult-line
@@ -1771,25 +1767,6 @@
           (if (eq consult-async-min-input most-positive-fixnum)
               (or (and arg (prefix-numeric-value arg)) 3)
             most-positive-fixnum)))
-
-  (with-eval-after-load 'consult
-    (defun consult--multiline-join-regexps-permutations (regexps)
-      (pcase regexps
-        ('nil "")
-        (`(,r) r)
-        (_ (mapconcat
-            (lambda (r)
-              (concat r "(?s:.*)"
-                      (consult--multiline-join-regexps-permutations (remove r regexps))))
-            regexps "|"))))
-
-    (defun consult--multiline-regexp-compiler (input type ignore-case)
-      (setq input (consult--split-escaped input))
-      (cons (ensure-list
-             (consult--multiline-join-regexps-permutations
-              (mapcar (lambda (x) (consult--convert-regexp x 'extended)) input)))
-            (when-let (regexps (seq-filter #'consult--valid-regexp-p input))
-              (apply-partially #'consult--highlight-regexps regexps ignore-case)))))
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
@@ -1873,6 +1850,7 @@
           (consult-grep buffer)
           (consult-line buffer)
           (consult-location buffer)
+          (note buffer)
           (imenu buffer)))
 
   (setq vertico-multiform-commands
@@ -2164,43 +2142,54 @@
     (define-abbrev org-mode-abbrev-table "kkt" ">>>"))
 
   (with-eval-after-load 'consult
-    (defun howm-consult-grep (&optional initial)
-      (interactive)
-      (let* ((consult-ripgrep-args
-              (concat consult-ripgrep-args " -m 1 -torg"))
-             (consult--regexp-compiler #'consult--multiline-regexp-compiler)
-             (default-directory howm-directory)
-             (builder (consult--ripgrep-make-builder '("."))))
-        (consult--read
-         (consult--async-command builder
-           (consult--grep-format builder))
-         :prompt "Notes: "
-         :lookup #'consult--lookup-member
-         :state (consult--grep-state)
-         :initial (consult--async-split-initial initial)
-         :add-history (consult--async-split-thingatpt 'symbol)
-         :require-match t
-         :category 'consult-grep
-         :group #'consult--prefix-group
-         :history '(:input consult--grep-history)
-         :sort nil)))
+    (keymap-set search-map "m" #'consult-howm-grep)
 
-    (keymap-set search-map "m" #'howm-consult-grep)
+    (defun consult--ripgrep-note-make-builder (paths)
+      "Create ripgrep command line builder given PATHS."
+      (let* ((cmd (consult--build-args consult-ripgrep-args))
+             (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
+        (lambda (input)
+          (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                       (flags (append (cdr cmd) opts))
+                       (ignore-case
+                        (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                             (or (member "-i" flags) (member "--ignore-case" flags)
+                                 (and (or (member "-S" flags) (member "--smart-case" flags))
+                                      (let (case-fold-search)
+                                        ;; Case insensitive if there are no uppercase letters
+                                        (not (string-match-p "[[:upper:]]" arg))))))))
+            (if (or (member "-F" flags) (member "--fixed-strings" flags))
+                (cons (append (list "rgn" (string-join flags " "))
+                              (consult--split-escaped arg)
+                              '("--") paths)
+                      (apply-partially #'consult--highlight-regexps
+                                       (list (regexp-quote arg)) ignore-case))
+              (pcase-let ((`(,res . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
+                (when res
+                  (cons (append (list "rgn" (thread-first
+                                              (append flags (and (eq type 'pcre) '("-P")))
+                                              (string-join " ")))
+                                res '("--") paths)
+                        hl))))))))
+
+    (defun consult-howm-grep (&optional initial)
+      (interactive)
+      (consult--grep "Notes" #'consult--ripgrep-note-make-builder howm-directory initial))
 
     (with-eval-after-load 'embark
       (cl-defun embark-howm-consult (&key target candidates &allow-other-keys)
-        (howm-consult-grep (or (string-replace " " "\ " target)
+        (consult-howm-grep (or (string-replace " " "\ " target)
                                (string-join candidates "\ "))))
 
-      (cl-pushnew 'howm-consult-grep embark-multitarget-actions)
+      (cl-pushnew 'consult-howm-grep embark-multitarget-actions)
       (cl-pushnew #'embark-howm-consult
-                  (alist-get 'howm-consult-grep embark-around-action-hooks))
+                  (alist-get 'consult-howm-grep embark-around-action-hooks))
 
-      (setf (alist-get 'howm-consult-grep embark-target-injection-hooks)
+      (setf (alist-get 'consult-howm-grep embark-target-injection-hooks)
             (list #'embark--allow-edit))
 
-      (keymap-set embark-general-map "u m" 'howm-consult-grep)
-      (keymap-set embark-region-map "u m" 'howm-consult-grep))))
+      (keymap-set embark-general-map "u m" 'consult-howm-grep)
+      (keymap-set embark-region-map "u m" 'consult-howm-grep))))
 
 ;;;; sage-shell-mode
 
