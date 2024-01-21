@@ -1980,21 +1980,22 @@
   (setq howm-prefix "m"
         howm-view-title-header "*")
 
+  (defvar howm-previous-link nil)
+
   (require 'howm)
 
   (setq howm-home-directory "~/Documents/howm"
         howm-directory "~/Documents/howm"
-        howm-template (list (concat "#+date: %date\n"
-                                    "#+file: %link\n\n"
+        howm-template (list (concat "#+DATE: %date\n\n"
                                     howm-view-title-header
-                                    " %title%cursor\n")
-                            (concat "#+date: %date\n"
+                                    " %title%cursor\n%link\n")
+                            (concat "#+DATE: %date\n\n"
                                     howm-view-title-header
                                     " %title%cursor\n"))
         howm-template-file-format "%s"
         howm-view-use-grep t
         howm-view-grep-command "rg"
-        howm-view-grep-option "-nH --no-heading --color never"
+        howm-view-grep-option "-nH --no-heading --color never --smart-case"
         howm-view-grep-extended-option nil
         howm-view-grep-fixed-option "-F"
         howm-view-grep-expr-option "-e"
@@ -2006,9 +2007,35 @@
         howm-content-from-region 1
         howm-menu-refresh-after-save nil)
 
+  (defun howm-create-capture (fn &optional which-template here)
+    (require 'org)
+    (if here
+        (funcall fn which-template here)
+      (let* ((link (org-store-link nil))
+             (path (plist-get (cadr (with-temp-buffer
+                                      (let ((org-inhibit-startup nil))
+                                        (insert link)
+                                        (org-mode)
+                                        (goto-char (point-min))
+                                        (org-element-link-parser))))
+                              :path))
+             (howm-previous-link
+              (when link
+                (concat
+                 ":PROPERTIES:\n"
+                 ":SOURCE_ALL: "
+                 (s-replace-regexp "]]$" "][" link nil t)
+                 "Link]]"
+                 (when path
+                   (concat " " howm-ref-header " " path))
+                 "\n:END:\n"))))
+        (funcall fn which-template here))))
+
+  (advice-add 'howm-create :around #'howm-create-capture)
+
   (defun howm-template-org-link (arg)
-    (insert (format (concat howm-ref-header " [[file:%s]]")
-                    (alist-get 'file arg))))
+    (when howm-previous-link
+      (insert (format howm-previous-link))))
 
   (cl-pushnew '("%link" . howm-template-org-link)
               howm-template-rules
