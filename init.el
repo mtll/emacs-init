@@ -2159,17 +2159,17 @@
                                         ;; Case insensitive if there are no uppercase letters
                                         (not (string-match-p "[[:upper:]]" arg))))))))
             (if (or (member "-F" flags) (member "--fixed-strings" flags))
-                (cons (append (list "rgn" (string-join flags " "))
+                (cons (append `("rgn" ,(string-join flags " "))
                               (consult--split-escaped arg)
-                              '("--") paths)
+                              '("--") (list howm-view-title-regexp-grep) paths)
                       (apply-partially #'consult--highlight-regexps
                                        (list (regexp-quote arg)) ignore-case))
               (pcase-let ((`(,res . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
                 (when res
-                  (cons (append (list "rgn" (thread-first
-                                              (append flags (and (eq type 'pcre) '("-P")))
-                                              (string-join " ")))
-                                res '("--") paths)
+                  (cons (append `("rgn"
+                                  ,(string-join (append flags (and (eq type 'pcre) '("-P"))) " "))
+                                res
+                                '("--") (list howm-view-title-regexp-grep) paths)
                         hl))))))))
 
     (defun consult-howm-grep (&optional initial)
