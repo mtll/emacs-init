@@ -2033,8 +2033,6 @@
         howm-mode-keyword-face 'modus-themes-search-lazy
         howm-view-name-face 'modus-themes-search-lazy)
 
-  (add-hook 'howm-create-hook #'org-fold-hide-drawer-all)
-
   (defun howm-create-capture (fn &optional which-template here)
     (if-let ((_ (not here))
              (link (org-store-link nil))
@@ -2049,7 +2047,8 @@
                      (plist-get :path)))
              (howm-previous-link
               (format "%s<(%s)>]]\n"
-                      (s-replace-regexp "]]$" "][" link nil t) path)))
+                      (store-substring link (1- (length link)) "[")
+                      path)))
         (funcall fn which-template here)
       (funcall fn which-template here)))
 
