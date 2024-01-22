@@ -309,6 +309,7 @@
     (diminish 'outline-minor-mode)))
 
 ;;;; dired
+
 (with-eval-after-load 'dired
   (setopt dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
                                    (seq string-start (1+ "#")))))
@@ -710,7 +711,8 @@
           org-startup-truncated nil
           org-insert-mode-line-in-empty-file t
           org-confirm-babel-evaluate nil
-          org-fold-core-style 'overlays)
+          org-fold-core-style 'overlays
+          org-startup-indented nil)
 
   (keymap-global-set "C-c o" 'org-store-link)
   (keymap-global-set "C-c l" 'org-insert-link-global)
@@ -719,7 +721,6 @@
   (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
-    (setopt org-startup-indented t)
     (keymap-unset org-mode-map "C-'")
 
     (setf (alist-get "\\*Org Src.*" display-buffer-alist nil nil #'equal)
@@ -1991,8 +1992,7 @@
 
   (require 'howm)
 
-  (setq howm-home-directory "~/Documents/howm"
-        howm-directory "~/Documents/howm"
+  (setq howm-directory "~/Documents/howm"
         howm-template (list (concat "#+DATE: %date\n"
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
