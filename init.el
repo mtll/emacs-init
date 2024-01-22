@@ -2023,7 +2023,7 @@
         howm-keyword-regexp-pos 1
         howm-keyword-regexp-format "%s"
         howm-wiki-format "<([%s])>"
-        howm-wiki-regexp "<\\(\\[\\([^]\n]+?\\)\\)\\]>"
+        howm-wiki-regexp "<\\(\\[\\([^\t\r\n]+?\\)\\)\\]>"
         howm-mode-keyword-face 'modus-themes-search-lazy
         howm-view-name-face 'modus-themes-search-lazy)
 
