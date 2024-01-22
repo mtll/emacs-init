@@ -1822,7 +1822,7 @@
   (with-eval-after-load 'consult
     (require 'consult-extras)
     (keymap-global-set "C-h a" 'consult-apropos)
-    (keymap-global-set "C-h f" 'consult-apropos)
+    ;; (keymap-global-set "C-h f" 'consult-apropos)
     (keymap-set goto-map "y" 'consult-all-marks)))
 
 ;;;;; consult-projectile
@@ -1840,7 +1840,7 @@
           (concat #(" %s " 0 4 (face vertico-group-title))
                   #(" " 0 1 (face vertico-group-separator
                              display (space :align-to right))))
-          vertico-count 15)
+          vertico-count 10)
 
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
@@ -1856,15 +1856,21 @@
         '((lsp-capf
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
-          (file buffer)
+          (file
+           buffer
+           (vertico-buffer-display-action . (display-buffer-same-window)))
           (consult-grep buffer)
           (consult-line buffer)
           (consult-location buffer)
           (note buffer)
-          (imenu buffer)))
+          (imenu buffer)
+          (t flat)))
 
   (setq vertico-multiform-commands
         '((completion-at-point
+           buffer
+           (vertico-buffer-display-action . (display-buffer-same-window)))
+          (consult-buffer
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
           (corfu-move-to-minibuffer
@@ -2010,8 +2016,8 @@
         howm-view-grep-expr-option "-e"
         howm-view-grep-file-stdin-option "-f -"
         howm-iigrep-preview-items 50
-        howm-keyword-file (expand-file-name ".howm-keys" howm-home-directory)
-        howm-history-file (expand-file-name ".howm-history" howm-home-directory)
+        howm-keyword-file (expand-file-name ".howm-keys" howm-directory)
+        howm-history-file (expand-file-name ".howm-history" howm-directory)
         howm-file-name-format "%Y/%m/%Y-%m-%d-%H%M%S.org"
         howm-content-from-region 1
         howm-menu-refresh-after-save nil
