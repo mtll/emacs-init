@@ -1949,19 +1949,35 @@
 ;;;; howm
 
 (elpaca howm
-  (defvar howm-previous-link nil)
+  (defvar howm-previous-link nil
+    "Org link to location where note was created.")
+
   (setq howm-view-title-header "*")
+  (setq howm-ref-regexp "<(\\([^\r\n]+?\\))>")
+  (setq howm-ref-regexp-pos 1)
+  (setq howm-keyword-format "<\\[%s\\]>")
+  (setq howm-keyword-regexp "<\\[\\([^\r\n]+?\\)\\]>")
+  (setq howm-keyword-regexp-hilit-pos 1)
+  (setq howm-keyword-regexp-pos 1)
+  (setq howm-keyword-regexp-format "%s")
+  (setq howm-wiki-format "<[[%s]]>")
+  (setq howm-wiki-regexp "<\\[\\[\\([^]\n]+?\\)\\]\\]>")
 
   (require 'howm)
 
+  (setq howm-mode-keyword-face 'modus-themes-search-lazy)
+  (setq howm-view-name-face 'modus-themes-search-lazy)
+
   (setq howm-home-directory "~/Documents/howm"
         howm-directory "~/Documents/howm"
-        howm-template (list (concat "#+DATE: %date\n\n"
+        howm-template (list (concat "#+DATE: %date\n"
+                                    "#+STARTUP: showall\n\n"
                                     howm-view-title-header
                                     " %title%cursor\n%link\n")
-                            (concat "#+DATE: %date\n\n"
+                            (concat "#+DATE: %date\n"
+                                    "#+STARTUP: showall\n\n"
                                     howm-view-title-header
-                                    " %title%cursor\n"))
+                                    " %title%cursor\n:HOWM:\n:END:\n\n"))
         howm-template-file-format "%s"
         howm-view-use-grep t
         howm-view-grep-command "rg"
@@ -1977,6 +1993,8 @@
         howm-content-from-region 1
         howm-menu-refresh-after-save nil)
 
+  (add-hook 'howm-create-hook #'org-fold-hide-drawer-all)
+
   (defun howm-create-capture (fn &optional which-template here)
     (require 'org)
     (if-let ((_ (not here))
@@ -1988,17 +2006,12 @@
                          (org-mode)
                          (goto-char (point-min))
                          (org-element-link-parser)))
-                     (cadr)
+                     cadr
                      (plist-get :path)))
              (howm-previous-link
-              (when link
-                (concat
-                 ":PROPERTIES:\n"
-                 ":SOURCE_ALL: "
-                 (s-replace-regexp "]]$" "][" link nil t)
-                 "Link]]"
-                 (when path (concat " " howm-ref-header " " path))
-                 "\n:END:\n"))))
+              (format ":HOWM:\n%s<(%s)>]]\n:END:\n"
+                      (s-replace-regexp "]]$" "][" link nil t)
+                      path)))
         (funcall fn which-template here)
       (funcall fn which-template here)))
 
@@ -2103,6 +2116,9 @@
     (keymap-set howm-mode-map "C-c C-l" 'consult-howm-link)
 
     (with-eval-after-load 'embark
+      (defvar-keymap embark-action-lock-map
+        "RET" 'action-lock-magic-return)
+
       (cl-defun embark-howm-consult (&key target candidates &allow-other-keys)
         (consult-howm-grep (or (string-replace " " "\ " target)
                                (string-join candidates "\ "))))
