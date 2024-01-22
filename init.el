@@ -1708,7 +1708,8 @@
   (define-keymap
     :keymap search-map
     "K" 'consult-kmacro
-    "n" 'consult-info
+    "n" 'consult-ripgrep-n
+    "c" 'consult-info
     "w" 'consult-man
     "e" 'consult-isearch-history
     "t" 'consult-outline
@@ -1741,6 +1742,40 @@
           (if (eq consult-async-min-input most-positive-fixnum)
               (or (and arg (prefix-numeric-value arg)) 3)
             most-positive-fixnum)))
+
+  (defun consult--ripgrep-n-make-builder (paths)
+    (let* ((cmd (consult--build-args consult-ripgrep-args))
+           (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
+      (lambda (input)
+        (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                     (flags (append cmd opts))
+                     (ignore-case
+                      (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                           (or (member "-i" flags) (member "--ignore-case" flags)
+                               (and (or (member "-S" flags) (member "--smart-case" flags))
+                                    (let (case-fold-search)
+                                      ;; Case insensitive if there are no uppercase letters
+                                      (not (string-match-p "[[:upper:]]" arg))))))))
+          (if (or (member "-F" flags) (member "--fixed-strings" flags))
+              (let ((res (consult--split-escaped arg)))
+                (cons (append `("rgn" ,(car flags)
+                                ,(string-join (append (cdr flags) '("-m" "1")) " "))
+                              (cdr res) '("--") (list (car res)) paths)
+                      (apply-partially #'consult--highlight-regexps
+                                       (list (regexp-quote arg)) ignore-case)))
+            (pcase-let ((`(,res . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
+              (when res
+                (cons (append `("rgn" ,(car flags)
+                                ,(string-join (append (cdr flags)
+                                                      (and (eq type 'pcre) '("-P"))
+                                                      '("-m" "1"))
+                                              " "))
+                              (cdr res) '("--") (list (car res)) paths)
+                      hl))))))))
+
+  (defun consult-ripgrep-n (&optional dir initial)
+    (interactive "P")
+    (consult--grep "Ripgrep N" #'consult--ripgrep-n-make-builder dir initial))
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
@@ -1949,31 +1984,19 @@
 ;;;; howm
 
 (elpaca howm
+  (setq howm-view-title-header "*")
+
   (defvar howm-previous-link nil
     "Org link to location where note was created.")
 
-  (setq howm-view-title-header "*")
-  (setq howm-ref-regexp "<(\\([^\r\n]+?\\))>")
-  (setq howm-ref-regexp-pos 1)
-  (setq howm-keyword-format "<\\[%s\\]>")
-  (setq howm-keyword-regexp "<\\[\\([^\r\n]+?\\)\\]>")
-  (setq howm-keyword-regexp-hilit-pos 1)
-  (setq howm-keyword-regexp-pos 1)
-  (setq howm-keyword-regexp-format "%s")
-  (setq howm-wiki-format "<[[%s]]>")
-  (setq howm-wiki-regexp "<\\[\\[\\([^]\n]+?\\)\\]\\]>")
-
   (require 'howm)
-
-  (setq howm-mode-keyword-face 'modus-themes-search-lazy)
-  (setq howm-view-name-face 'modus-themes-search-lazy)
 
   (setq howm-home-directory "~/Documents/howm"
         howm-directory "~/Documents/howm"
         howm-template (list (concat "#+DATE: %date\n"
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
-                                    " %title%cursor\n%link\n")
+                                    " %title%cursor\n:HOWM:\n%link:END:\n\n")
                             (concat "#+DATE: %date\n"
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
@@ -1991,12 +2014,22 @@
         howm-history-file (expand-file-name ".howm-history" howm-home-directory)
         howm-file-name-format "%Y/%m/%Y-%m-%d-%H%M%S.org"
         howm-content-from-region 1
-        howm-menu-refresh-after-save nil)
+        howm-menu-refresh-after-save nil
+        howm-ref-regexp "<(\\([^\t\r\n]+?\\))>"
+        howm-ref-regexp-pos 1
+        howm-keyword-format "<\\[%s\\]>"
+        howm-keyword-regexp "<\\[\\([^\t\r\n]+?\\)\\]>"
+        howm-keyword-regexp-hilit-pos 1
+        howm-keyword-regexp-pos 1
+        howm-keyword-regexp-format "%s"
+        howm-wiki-format "<([%s])>"
+        howm-wiki-regexp "<\\(\\[\\([^]\n]+?\\)\\)\\]>"
+        howm-mode-keyword-face 'modus-themes-search-lazy
+        howm-view-name-face 'modus-themes-search-lazy)
 
   (add-hook 'howm-create-hook #'org-fold-hide-drawer-all)
 
   (defun howm-create-capture (fn &optional which-template here)
-    (require 'org)
     (if-let ((_ (not here))
              (link (org-store-link nil))
              (path (thread-first
@@ -2009,9 +2042,8 @@
                      cadr
                      (plist-get :path)))
              (howm-previous-link
-              (format ":HOWM:\n%s<(%s)>]]\n:END:\n"
-                      (s-replace-regexp "]]$" "][" link nil t)
-                      path)))
+              (format "%s<(%s)>]]\n"
+                      (s-replace-regexp "]]$" "][" link nil t) path)))
         (funcall fn which-template here)
       (funcall fn which-template here)))
 
@@ -2039,10 +2071,8 @@
   (add-hook 'howm-mode-hook 'howm-mode-set-buffer-name)
   (add-hook 'after-save-hook 'howm-mode-set-buffer-name)
 
-  (with-eval-after-load 'org
-    ;; since I would like to use electric-pair-mode
-    (define-abbrev org-mode-abbrev-table "kkf" howm-keyword-header)
-    (define-abbrev org-mode-abbrev-table "kkt" howm-ref-header))
+  (with-eval-after-load 'conn-mode
+    (add-hook 'howm-create-hook 'emacs-state))
 
   (with-eval-after-load 'consult
     (defun consult--ripgrep-note-make-builder (paths)
@@ -2050,7 +2080,7 @@
              (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
         (lambda (input)
           (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-                       (flags (append (cdr cmd) opts))
+                       (flags (append cmd opts))
                        (ignore-case
                         (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
                              (or (member "-i" flags) (member "--ignore-case" flags)
@@ -2059,21 +2089,22 @@
                                         ;; Case insensitive if there are no uppercase letters
                                         (not (string-match-p "[[:upper:]]" arg))))))))
             (if (or (member "-F" flags) (member "--fixed-strings" flags))
-                (cons (append `("rgn" ,(string-join flags " "))
+                (cons (append `("rgn" ,(car flags) ,(string-join (cdr flags) " "))
                               (consult--split-escaped arg)
                               '("--") (list howm-view-title-regexp-grep) paths)
                       (apply-partially #'consult--highlight-regexps
                                        (list (regexp-quote arg)) ignore-case))
               (pcase-let ((`(,res . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
                 (when res
-                  (cons (append `("rgn"
-                                  ,(string-join (append flags (and (eq type 'pcre) '("-P"))) " "))
+                  (cons (append `("rgn" ,(car flags)
+                                  ,(string-join (append (cdr flags) (and (eq type 'pcre) '("-P"))) " "))
                                 res '("--") (list howm-view-title-regexp-grep) paths)
                         hl))))))))
 
     (defun consult-howm-grep (&optional initial)
       (interactive)
-      (consult--grep "Notes" #'consult--ripgrep-note-make-builder howm-directory initial))
+      (consult--grep "Notes" #'consult--ripgrep-note-make-builder howm-directory initial)
+      (howm-mode))
 
     (keymap-set search-map "m" #'consult-howm-grep)
 
@@ -2111,7 +2142,7 @@
         (insert
          (org-link-make-string
           (concat "file:" (expand-file-name file default-directory) "::" line)
-          (read-string "Description: " (substring line 2))))))
+          (read-string "Description: " line)))))
 
     (keymap-set howm-mode-map "C-c C-l" 'consult-howm-link)
 
