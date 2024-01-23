@@ -1258,11 +1258,10 @@
   (keymap-global-set "C-h k" 'helpful-key)
   (keymap-global-set "C-h ," 'display-local-help)
   (keymap-global-set "C-h ." 'helpful-at-point)
+  (define-key global-map [remap describe-function] 'helpful-callable)
+  (define-key global-map [remap describe-variable] 'helpful-variable)
 
-  (push '(help-mode . helpful-mode) major-mode-remap-alist)
-
-  (fset 'describe-function 'helpful-function)
-  (fset 'describe-variable 'helpful-variable))
+  (push '(help-mode . helpful-mode) major-mode-remap-alist))
 
 ;;;; all-the-icons
 
@@ -1864,6 +1863,7 @@
           (consult-location buffer)
           (note buffer)
           (imenu buffer)
+          (embark-keybinding grid)
           (t flat)))
 
   (setq vertico-multiform-commands
@@ -1988,6 +1988,11 @@
 
 (elpaca htmlize)
 
+;;;; page-break-lines
+
+(elpaca page-break-lines
+  (global-page-break-lines-mode))
+
 ;;;; howm
 
 (elpaca howm
@@ -2032,7 +2037,15 @@
         howm-wiki-regexp "<\\(\\[\\([^\t\r\n]+?\\)\\)\\]>"
         howm-mode-keyword-face 'modus-themes-search-lazy
         howm-view-name-face 'modus-themes-search-lazy
-        howm-template-file-format "<(%s)>")
+        howm-template-file-format "<(%s)>"
+        howm-view-header-format "\n\n#+file: %s\n\n"
+        howm-view-header-regexp "^#+file:.*$")
+
+  (defun riffle-summary-to-contents-org ()
+    (org-mode)
+    (org-fold-hide-drawer-all))
+
+  (advice-add 'riffle-summary-to-contents :after 'riffle-summary-to-contents-org)
 
   (defun howm-template-org-link (arg)
     (when howm-previous-link
