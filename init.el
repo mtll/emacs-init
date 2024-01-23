@@ -1519,6 +1519,7 @@
   (define-keymap
     :keymap embark-region-map
     "o" 'consult-line
+    "u o" 'consult-line
     "u f" 'consult-find
     "u g" 'consult-git-grep
     "u l" 'consult-locate
@@ -1529,6 +1530,7 @@
 
   (define-keymap
     :keymap embark-general-map
+    "u o" 'consult-line
     "u f" 'consult-find
     "u g" 'consult-git-grep
     "u l" 'consult-locate
@@ -2007,11 +2009,13 @@
         howm-template (list (concat "#+DATE: %date\n"
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
-                                    " %title%cursor\n:HOWM:\n%link%filen:END:\n\n")
+                                    " %title%cursor\n"
+                                    ":HOWM:\n%link%filen:END:\n\n")
                             (concat "#+DATE: %date\n"
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
-                                    " %title%cursor\n:HOWM:\n:END:\n\n"))
+                                    " %title%cursor\n"
+                                    ":HOWM:\n:END:\n\n"))
         howm-template-file-format "%s"
         howm-view-use-grep t
         howm-view-grep-command "rg"
