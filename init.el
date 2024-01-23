@@ -578,7 +578,7 @@
   (with-eval-after-load 'pdf-tools
     (require 'org)
     (require 'org-pdftools)
-    (add-hook 'org-mode-hook #'org-pdftools-setup-link)))
+    (org-pdftools-setup-link)))
 
 ;;;;; hide-mode-line-mode
 
@@ -2050,20 +2050,7 @@
 
   (defun howm-create-capture (fn &optional which-template here)
     (if-let ((_ (not here))
-             (link (org-store-link nil))
-             (type (thread-first
-                     (with-temp-buffer
-                       (let ((org-inhibit-startup nil))
-                         (insert link)
-                         (org-mode)
-                         (goto-char (point-min))
-                         (org-element-link-parser)))
-                     cadr
-                     (plist-get :type)))
-             (howm-previous-link
-              (format "%s%s link]]"
-                      (s-replace-regexp "]]$" "][" link)
-                      type)))
+             (howm-previous-link (org-store-link nil)))
         (funcall fn which-template here)
       (funcall fn which-template here)))
 
