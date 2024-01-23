@@ -945,6 +945,7 @@
           conn-mode-line-indicator-mode t
           conn-modes '(prog-mode
                        diary-mode
+                       fundamental-mode
                        (not pdf-outline-buffer-mode)
                        text-mode
                        outline-mode
@@ -1008,6 +1009,7 @@
                             grep-mode
                             occur-mode
                             diary-mode
+                            fundamental-mode
                             "COMMIT_EDITMSG")
                           'emacs-state))
 
@@ -1993,7 +1995,8 @@
 ;;;; page-break-lines
 
 (elpaca page-break-lines
-  (global-page-break-lines-mode))
+  (global-page-break-lines-mode)
+  (diminish 'page-break-lines-mode))
 
 ;;;; howm
 
