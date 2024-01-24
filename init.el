@@ -205,12 +205,7 @@
   (setq diary-entry-marker 'highlight)
   (setq calendar-holiday-marker 'match)
   (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
-  (add-hook 'list-diary-entries-hook 'sort-diary-entries t)
-  (add-hook 'elpaca-after-init-hook
-            (lambda ()
-              (let* ((display-buffer-overriding-action
-                      '(display-buffer-same-window)))
-                (diary-list-entries (calendar-current-date) 30)))))
+  (add-hook 'list-diary-entries-hook 'sort-diary-entries t))
 
 ;;;; cc-mode
 
@@ -312,7 +307,8 @@
 
 (with-eval-after-load 'dired
   (setopt dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
-                                   (seq string-start (1+ "#")))))
+                                   (seq string-start (1+ "#"))))
+          dired-dwim-target 'dired-dwim-target-recent)
 
   (define-keymap
     :keymap dired-mode-map
@@ -1698,7 +1694,15 @@
           register-preview-delay 0.3
           register-preview-function #'consult-register-format
           consult-project-function (lambda (_) (projectile-project-root))
-          completion-in-region-function #'consult-completion-in-region)
+          completion-in-region-function #'consult-completion-in-region
+          consult-buffer-sources '(consult--source-hidden-buffer
+                                   consult--source-modified-buffer
+                                   consult--source-buffer
+                                   consult--source-bookmark
+                                   consult--source-recent-file
+                                   consult--source-file-register
+                                   consult--source-project-buffer-hidden
+                                   consult--source-project-recent-file-hidden))
 
   (define-key global-map [remap Info-search] 'consult-info)
   (define-key global-map [remap bookmark-jump] 'consult-bookmark)
@@ -2046,7 +2050,68 @@
         howm-view-name-face 'modus-themes-search-lazy
         howm-template-file-format "<(%s)>"
         howm-view-header-format "\n\n#+file: %s\n\n"
-        howm-view-header-regexp "^#+file:.*$")
+        howm-view-header-regexp "^#+file:.*$"
+        howm-menu-display-rules (cons
+                                 (cons "%hdiary[\n]?" 'howm-menu-diary)
+                                 howm-menu-display-rules)
+        initial-buffer-choice (lambda ()
+                                (howm-menu)
+                                (current-buffer))
+        howm-menu-schedule-days 14)
+
+  (pcase-let ((`(,pat . ,rest)
+               (action-lock-general 'howm-open-diary "^\\(>>d\\) " 1 1)))
+    (setf (alist-get pat action-lock-default-rules nil nil 'equal)
+          rest))
+
+  (defun howm-menu-diary ()
+    (require 'diary-lib)
+    (delete-region
+     (match-beginning 0) (match-end 0))
+    (let* ((now (decode-time (current-time)))
+           (diary-date
+            (list (nth 4 now) (nth 3 now) (nth 5 now)))
+           (diary-display-hook 'ignore)
+           (howm-diary-entry (diary-list-entries
+                              diary-date howm-menu-schedule-days t))
+           (howm-diary-entry-day nil))
+      (while howm-diary-entry
+        (setq howm-diary-entry-day (car howm-diary-entry))
+        (insert
+         (format
+          ">>d [%04d-%02d-%02d] %s\n"
+          (nth 2 (car howm-diary-entry-day))
+          (nth 0 (car howm-diary-entry-day))
+          (nth 1 (car howm-diary-entry-day))
+          (nth 1 howm-diary-entry-day)))
+        (setq howm-diary-entry (cdr howm-diary-entry)))))
+
+  (defun howm-open-diary (&optional dummy)
+    (interactive)
+    (let ((date-str nil) (str nil))
+      (save-excursion
+        (beginning-of-line)
+        (when (re-search-forward
+               ">>d \\(\\[[-0-9]+\\]\\) " nil t)
+          (setq str
+                (concat
+                 "^.+"
+                 (buffer-substring-no-properties
+                  (point) (line-end-position))))
+          (setq date-str
+                (concat
+                 "^.+"
+                 (buffer-substring-no-properties
+                  (match-beginning 1)
+                  (match-end 1))
+                 " " str))
+          (find-file
+           (substitute-in-file-name diary-file))
+          (howm-mode t)
+          (goto-char (point-min))
+          (if (re-search-forward date-str nil t)
+              ()
+            (re-search-forward str nil t))))))
 
   (defun riffle-summary-to-contents-org ()
     (org-mode)
@@ -2193,3 +2258,11 @@
 ;;;; tuareg
 
 (elpaca tuareg)
+
+;;;; rfc-mode
+
+(elpaca rfc-mode)
+
+;;;;
+
+(elpaca heex-tx-mode)
