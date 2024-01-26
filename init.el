@@ -1734,6 +1734,7 @@
     "I" 'consult-imenu-multi)
 
   (keymap-set goto-map "g" 'consult-goto-line)
+  (keymap-global-set "C-x B" 'consult-project-buffer)
 
   (define-keymap
     :keymap isearch-mode-map
@@ -1743,6 +1744,7 @@
   (consult-customize consult-completion-in-region :preview-key nil)
   (consult-customize consult--source-bookmark :preview-key nil)
   (consult-customize consult-buffer :preview-key "C-j")
+  (consult-customize consult-project-buffer :preview-key "C-j")
 
   (defun consult-async-pause (&optional arg)
     (interactive "P")
@@ -1879,6 +1881,9 @@
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
           (consult-buffer
+           buffer
+           (vertico-buffer-display-action . (display-buffer-same-window)))
+          (consult-project-buffer
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
           (corfu-move-to-minibuffer
@@ -2263,6 +2268,6 @@
 
 (elpaca rfc-mode)
 
-;;;;
+;;;; heex-ts-mode
 
-(elpaca heex-tx-mode)
+(elpaca heex-ts-mode)
