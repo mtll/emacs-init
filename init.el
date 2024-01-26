@@ -121,7 +121,8 @@
         context-menu-mode t
         tab-bar-mode t
         winner-mode t
-        undelete-frame-mode t)
+        undelete-frame-mode t
+        yank-from-kill-ring-rotate nil)
 
 (setq exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path))
 
@@ -2071,52 +2072,22 @@
 
   (defun howm-menu-diary ()
     (require 'diary-lib)
-    (delete-region
-     (match-beginning 0) (match-end 0))
-    (let* ((now (decode-time (current-time)))
-           (diary-date
-            (list (nth 4 now) (nth 3 now) (nth 5 now)))
-           (diary-display-hook 'ignore)
-           (howm-diary-entry (diary-list-entries
-                              diary-date howm-menu-schedule-days t))
-           (howm-diary-entry-day nil))
-      (while howm-diary-entry
-        (setq howm-diary-entry-day (car howm-diary-entry))
-        (insert
-         (format
-          ">>d [%04d-%02d-%02d] %s\n"
-          (nth 2 (car howm-diary-entry-day))
-          (nth 0 (car howm-diary-entry-day))
-          (nth 1 (car howm-diary-entry-day))
-          (nth 1 howm-diary-entry-day)))
-        (setq howm-diary-entry (cdr howm-diary-entry)))))
+    (require 'calendar)
+    (delete-region (match-beginning 0) (match-end 0))
+    (pcase-dolist (`((,m ,d ,y) ,label)
+                   (diary-list-entries (calendar-current-date) howm-menu-schedule-days t))
+      (insert (format ">>d [%04d-%02d-%02d] %s\n" y m d label))))
 
   (defun howm-open-diary (&optional dummy)
     (interactive)
-    (let ((date-str nil) (str nil))
-      (save-excursion
-        (beginning-of-line)
-        (when (re-search-forward
-               ">>d \\(\\[[-0-9]+\\]\\) " nil t)
-          (setq str
-                (concat
-                 "^.+"
-                 (buffer-substring-no-properties
-                  (point) (line-end-position))))
-          (setq date-str
-                (concat
-                 "^.+"
-                 (buffer-substring-no-properties
-                  (match-beginning 1)
-                  (match-end 1))
-                 " " str))
-          (find-file
-           (substitute-in-file-name diary-file))
-          (howm-mode t)
-          (goto-char (point-min))
-          (if (re-search-forward date-str nil t)
-              ()
-            (re-search-forward str nil t))))))
+    (when-let (str (save-excursion
+                     (and (re-search-forward
+                           "\\[[-0-9]+\\] \\(.*\\)" (line-end-position) t)
+                          (regexp-quote (match-string-no-properties 1)))))
+      (find-file diary-file)
+      (goto-char (point-min))
+      (re-search-forward str nil t)
+      (beginning-of-line)))
 
   (defun riffle-summary-to-contents-org ()
     (org-mode)
