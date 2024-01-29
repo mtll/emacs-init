@@ -1280,10 +1280,6 @@
   (with-eval-after-load 'conn-mode
     (conn-hide-mark-cursor 'magit-status-mode)))
 
-;; ;;;;; Transient
-
-;; (elpaca transient)
-
 ;;;; flycheck
 
 (elpaca flycheck
