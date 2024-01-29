@@ -1261,7 +1261,21 @@
   (define-key global-map [remap describe-function] 'helpful-callable)
   (define-key global-map [remap describe-variable] 'helpful-variable)
 
-  (push '(help-mode . helpful-mode) major-mode-remap-alist))
+  (push '(help-mode . helpful-mode) major-mode-remap-alist)
+
+  (with-eval-after-load 'helpful
+    (defun helpful--read-symbol (prompt default-val predicate)
+      "Read a symbol from the minibuffer, with completion.
+Returns the symbol."
+      (when (and default-val
+                 (not (funcall predicate default-val)))
+        (setq default-val nil))
+      (when default-val
+        ;; `completing-read' expects a string.
+        (setq default-val (symbol-name default-val)))
+      (intern (completing-read prompt obarray
+                               predicate t nil nil
+                               default-val)))))
 
 ;;;; all-the-icons
 
@@ -1847,11 +1861,46 @@
   (setopt vertico-preselect 'first
           vertico-buffer-hide-prompt t
           vertico-buffer-display-action '(display-buffer-reuse-window)
-          vertico-group-format
-          (concat #(" %s " 0 4 (face vertico-group-title))
-                  #(" " 0 1 (face vertico-group-separator
-                             display (space :align-to right))))
-          vertico-count 10)
+          vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
+                                       #(" " 0 1 (face vertico-group-separator
+                                                       display (space :align-to right))))
+          vertico-count 10
+          vertico-cycle t
+          vertico-multiform-categories
+          '((lsp-capf
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (file
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (consult-grep buffer)
+            (consult-line buffer)
+            (consult-location buffer)
+            (note buffer)
+            (imenu buffer)
+            (embark-keybinding grid)
+            (t flat))
+          vertico-multiform-commands
+          '((completion-at-point
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (consult-symbol buffer)
+            (consult-buffer
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (consult-project-buffer
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (corfu-move-to-minibuffer
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (tempel-insert
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (tempel-complete
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
+            (denote-ripgrep-notes buffer)))
 
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
@@ -1862,43 +1911,6 @@
   (vertico-mode 1)
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
-
-  (setq vertico-multiform-categories
-        '((lsp-capf
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (file
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (consult-grep buffer)
-          (consult-line buffer)
-          (consult-location buffer)
-          (note buffer)
-          (imenu buffer)
-          (embark-keybinding grid)
-          (t flat)))
-
-  (setq vertico-multiform-commands
-        '((completion-at-point
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (consult-symbol buffer)
-          (consult-buffer
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (consult-project-buffer
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (corfu-move-to-minibuffer
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (tempel-insert
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (tempel-complete
-           buffer
-           (vertico-buffer-display-action . (display-buffer-same-window)))
-          (denote-ripgrep-notes buffer)))
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
