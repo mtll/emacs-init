@@ -59,7 +59,8 @@
 ;;; Built-in
 ;;;; emacs
 
-(setopt use-short-answers t
+(setopt minibuffer-default-prompt-format ""
+        use-short-answers t
         y-or-n-p-use-read-key t
         xref-search-program 'ripgrep
         read-process-output-max (* 1024 1024)
@@ -1261,21 +1262,7 @@
   (define-key global-map [remap describe-function] 'helpful-callable)
   (define-key global-map [remap describe-variable] 'helpful-variable)
 
-  (push '(help-mode . helpful-mode) major-mode-remap-alist)
-
-  (with-eval-after-load 'helpful
-    (defun helpful--read-symbol (prompt default-val predicate)
-      "Read a symbol from the minibuffer, with completion.
-Returns the symbol."
-      (when (and default-val
-                 (not (funcall predicate default-val)))
-        (setq default-val nil))
-      (when default-val
-        ;; `completing-read' expects a string.
-        (setq default-val (symbol-name default-val)))
-      (intern (completing-read prompt obarray
-                               predicate t nil nil
-                               default-val)))))
+  (push '(help-mode . helpful-mode) major-mode-remap-alist))
 
 ;;;; all-the-icons
 
@@ -1858,7 +1845,8 @@ Returns the symbol."
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
-  (setopt vertico-preselect 'first
+  (setopt vertico-count-format nil
+          vertico-preselect 'first
           vertico-buffer-hide-prompt t
           vertico-buffer-display-action '(display-buffer-reuse-window)
           vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
@@ -1881,10 +1869,10 @@ Returns the symbol."
             (embark-keybinding grid)
             (t flat))
           vertico-multiform-commands
-          '((completion-at-point
+          '((consult-symbol buffer)
+            (completion-at-point
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
-            (consult-symbol buffer)
             (consult-buffer
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
@@ -1902,6 +1890,18 @@ Returns the symbol."
              (vertico-buffer-display-action . (display-buffer-same-window)))
             (denote-ripgrep-notes buffer)))
 
+  ;; (defun david-show-vertico-count ()
+  ;;   (setq-local vertico-count-format
+  ;;               (unless (or vertico-unobtrusive-mode
+  ;;                           vertico-flat-mode)
+  ;;                 '("%-6s " . "%s/%s"))))
+
+  ;; (remove-hook 'vertico-buffer-mode-hook #'david-show-vertico-count)
+  ;; (remove-hook 'vertico-unobtrusive-mode-hook #'david-show-vertico-count)
+  ;; (remove-hook 'vertico-flat-mode-hook #'david-show-vertico-count)
+  ;; (remove-hook 'vertico-grid-mode-hook #'david-show-vertico-count)
+  ;; (remove-hook 'vertico-reverse-mode #'david-show-vertico-count)
+  
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
                  '((t :inherit default :background "#b7c9e6")))
