@@ -79,7 +79,7 @@
         sentence-end-double-space nil
         tab-always-indent 'complete
         read-minibuffer-restore-windows nil
-        dired-listing-switches "-alFh --group-directories-first"
+        dired-listing-switches "-alFh --dired --group-directories-first"
         isearch-lazy-count t
         isearch-yank-on-move t
         enable-recursive-minibuffers t
@@ -223,20 +223,21 @@
       (when (= tick (buffer-modified-tick))
         (completion-at-point))))
 
-  (setopt c-hanging-semi&comma-criteria nil)
+  (setopt c-hanging-semi&comma-criteria 'set-from-style)
 
-  (c-add-style
-   "david"
-   '("linux"
-     (indent-tabs-mode . nil)
-     (c-basic-offset  . 4)))
+  ;; (c-add-style
+  ;;  "david"
+  ;;  '("linux"
+  ;;    (indent-tabs-mode . nil)
+  ;;    (c-basic-offset  . 4)))
 
-  (setq-default c-default-style "david")
+  ;; (setq-default c-default-style "david")
 
-  (defun my-c-setup ()
-    (c-set-offset 'innamespace [0])
-    (setq c-default-style "david"))
-  (add-hook 'c++-mode-hook 'my-c-setup))
+  ;; (defun my-c-setup ()
+  ;;   (c-set-offset 'innamespace [0])
+  ;;   (setq c-default-style "david"))
+  ;; (add-hook 'c++-mode-hook 'my-c-setup)
+  )
 
 ;;;; doc-view
 
@@ -316,6 +317,13 @@
     "/" 'other-window-prefix
     "?" 'other-frame-prefix))
 
+;;;; eldoc
+
+(progn
+  (diminish 'eldoc-mode)
+
+  (setopt eldoc-echo-area-prefer-doc-buffer t))
+
 ;;; Packages
 
 ;;;; benchmark-init
@@ -323,13 +331,6 @@
 ;; (elpaca benchmark-init
 ;;   (require 'benchmark-init)
 ;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
-
-;;;; eldoc
-
-(progn
-  (diminish 'eldoc-mode)
-
-  (setopt eldoc-echo-area-prefer-doc-buffer t))
 
 ;;;; narrow-indirect
 
@@ -890,7 +891,6 @@
   (keymap-global-set "C-;" 'ace-window)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-common-map ";" 'ace-window)
     (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
 
 ;;;; expand-region
@@ -901,7 +901,7 @@
 ;;;; zones
 
 (elpaca zones
-  (require 'zones)
+  (run-with-idle-timer 2 nil (lambda () (require 'zones)))
 
   (with-eval-after-load 'zones
     (defun david-zz-widen ()
@@ -920,7 +920,8 @@
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
-  (require 'isearch+)
+  (run-with-idle-timer 1.5 nil (lambda () (require 'isearch+)))
+  
   (with-eval-after-load 'isearch+
     (setopt isearchp-lazy-dim-filter-failures-flag nil
             isearchp-restrict-to-region-flag nil
@@ -1097,7 +1098,7 @@
 (elpaca (bookmark+ :host github
                    :repo "emacsmirror/bookmark-plus"
                    :main "bookmark+.el")
-  (run-with-idle-timer 0.5 nil (lambda () (require 'bookmark+)))
+  (run-with-idle-timer 1 nil (lambda () (require 'bookmark+)))
 
   (setopt bmkp-bookmark-map-prefix-keys '("x")
           bookmark-default-file (expand-file-name "~/.emacs.d/var/bmkp/current-bookmark.el")
@@ -1831,8 +1832,8 @@
 (elpaca (consult-extras :host codeberg :repo "crcs/consult-extras")
   (with-eval-after-load 'consult
     (require 'consult-extras)
-    (keymap-global-set "C-h a" 'consult-apropos)
-    ;; (keymap-global-set "C-h f" 'consult-apropos)
+    (keymap-global-set "C-h o" 'consult-symbol)
+    ;; (keymap-global-set "C-h f" 'consult-symbol)
     (keymap-set goto-map "y" 'consult-all-marks)))
 
 ;;;;; consult-projectile
@@ -1881,6 +1882,7 @@
         '((completion-at-point
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
+          (consult-symbol buffer)
           (consult-buffer
            buffer
            (vertico-buffer-display-action . (display-buffer-same-window)))
@@ -2029,6 +2031,11 @@
                                     howm-view-title-header
                                     " %title%cursor\n"
                                     ":HOWM:\n:END:\n\n"))
+        howm-view-title-regexp (rx bol
+                                   (or (seq (+ (any "*" "#")) " =") (+ "="))
+                                   (+ " ") (group (* nonl)) eol)
+        howm-view-title-regexp-pos 1
+        howm-view-title-regexp-grep "^(?:[*#]+ =|=+) +"
         howm-template-file-format "%s"
         howm-view-use-grep t
         howm-view-grep-command "rg"
@@ -2067,12 +2074,9 @@
 
   (pcase-let ((`(,pat . ,rest)
                (action-lock-general 'howm-open-diary "^\\(>>d\\) " 1 1)))
-    (setf (alist-get pat action-lock-default-rules nil nil 'equal)
-          rest))
+    (setf (alist-get pat action-lock-default-rules nil nil 'equal) rest))
 
   (defun howm-menu-diary ()
-    (require 'diary-lib)
-    (require 'calendar)
     (delete-region (match-beginning 0) (match-end 0))
     (pcase-dolist (`((,m ,d ,y) ,label)
                    (diary-list-entries (calendar-current-date) howm-menu-schedule-days t))
@@ -2103,16 +2107,16 @@
         'howm-template-org-link)
 
   (defun howm-template-previous-file-n (arg)
-    (when-let ((f (alist-get 'file arg)))
+    (when-let ((f (alist-get 'file arg))
+               (_ (not (equal f ""))))
       (insert f "\n")))
 
   (setf (alist-get "%filen" howm-template-rules nil nil #'equal)
         'howm-template-previous-file-n)
 
   (defun howm-create-capture (fn &optional which-template here)
-    (if-let ((_ (not here))
-             (howm-previous-link (org-store-link nil)))
-        (funcall fn which-template here)
+    (let ((howm-previous-link (and (not here)
+                                   (org-store-link nil))))
       (funcall fn which-template here)))
 
   (advice-add 'howm-create :around #'howm-create-capture)
