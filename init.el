@@ -138,7 +138,7 @@
 (keymap-global-set "C-x C-b"       'ibuffer)
 (keymap-global-set "C-o"           goto-map)
 (keymap-global-set "M-;"           'comment-line)
-(keymap-global-set "C-c k"         'compile)
+(keymap-global-set "C-c c"         'compile)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-z")
@@ -926,7 +926,13 @@
   (with-eval-after-load 'isearch+
     (setopt isearchp-lazy-dim-filter-failures-flag nil
             isearchp-restrict-to-region-flag nil
-            isearchp-deactivate-region-flag nil)))
+            isearchp-deactivate-region-flag nil
+            isearchp-movement-unit-alist ((119 . forward-word)
+                                          (120 . forward-sexp)
+                                          (108 . forward-list)
+                                          (115 . forward-sentence)
+                                          (99 . forward-char)
+                                          (?\l . forward-line)))))
 
 ;;;; isearch-prop
 
@@ -1841,8 +1847,7 @@
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
-  (setopt vertico-count-format nil
-          vertico-preselect 'first
+  (setopt vertico-preselect 'first
           vertico-buffer-hide-prompt t
           vertico-buffer-display-action '(display-buffer-reuse-window)
           vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
@@ -1862,8 +1867,7 @@
             (consult-location buffer)
             (note buffer)
             (imenu buffer)
-            (embark-keybinding grid)
-            (t flat))
+            (embark-keybinding grid))
           vertico-multiform-commands
           '((consult-symbol buffer)
             (completion-at-point
@@ -1885,18 +1889,6 @@
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
             (denote-ripgrep-notes buffer)))
-
-  ;; (defun david-show-vertico-count ()
-  ;;   (setq-local vertico-count-format
-  ;;               (unless (or vertico-unobtrusive-mode
-  ;;                           vertico-flat-mode)
-  ;;                 '("%-6s " . "%s/%s"))))
-
-  ;; (remove-hook 'vertico-buffer-mode-hook #'david-show-vertico-count)
-  ;; (remove-hook 'vertico-unobtrusive-mode-hook #'david-show-vertico-count)
-  ;; (remove-hook 'vertico-flat-mode-hook #'david-show-vertico-count)
-  ;; (remove-hook 'vertico-grid-mode-hook #'david-show-vertico-count)
-  ;; (remove-hook 'vertico-reverse-mode #'david-show-vertico-count)
   
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
@@ -2129,7 +2121,7 @@
 
   (advice-add 'howm-create :around #'howm-create-capture)
 
-  (keymap-global-set "C-c c" 'howm-create)
+  (keymap-global-set "C-c n" 'howm-create)
 
   ;; Default recent to sorting by mtime
   (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
