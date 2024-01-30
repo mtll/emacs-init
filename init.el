@@ -224,21 +224,7 @@
       (when (= tick (buffer-modified-tick))
         (completion-at-point))))
 
-  (setopt c-hanging-semi&comma-criteria 'set-from-style)
-
-  ;; (c-add-style
-  ;;  "david"
-  ;;  '("linux"
-  ;;    (indent-tabs-mode . nil)
-  ;;    (c-basic-offset  . 4)))
-
-  ;; (setq-default c-default-style "david")
-
-  ;; (defun my-c-setup ()
-  ;;   (c-set-offset 'innamespace [0])
-  ;;   (setq c-default-style "david"))
-  ;; (add-hook 'c++-mode-hook 'my-c-setup)
-  )
+  (setopt c-hanging-semi&comma-criteria 'set-from-style))
 
 ;;;; doc-view
 
@@ -922,17 +908,17 @@
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
   (run-with-idle-timer 1.5 nil (lambda () (require 'isearch+)))
-  
+
   (with-eval-after-load 'isearch+
     (setopt isearchp-lazy-dim-filter-failures-flag nil
             isearchp-restrict-to-region-flag nil
             isearchp-deactivate-region-flag nil
-            isearchp-movement-unit-alist ((119 . forward-word)
-                                          (120 . forward-sexp)
-                                          (108 . forward-list)
-                                          (115 . forward-sentence)
-                                          (99 . forward-char)
-                                          (?\l . forward-line)))))
+            isearchp-movement-unit-alist '((?w . forward-word)
+                                           (?s . forward-sexp)
+                                           (?i . forward-list)
+                                           (?s . forward-sentence)
+                                           (?c . forward-char)
+                                           (?l . forward-line)))))
 
 ;;;; isearch-prop
 
@@ -1558,30 +1544,6 @@
   (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
   (keymap-set corfu-map "C-j" #'corfu-quick-complete)
 
-  (defun corfu-sep-at-start ()
-    (when completion-in-region-mode
-      (corfu-insert-separator)))
-
-  (define-minor-mode corfu-sep-at-start-local-mode
-    "local mode for corfu-sep-at-start-mode."
-    :init-value nil
-    :keymap nil
-    :lighter nil
-    (if corfu-sep-at-start-local-mode
-        (add-hook 'completion-in-region-mode-hook #'corfu-sep-at-start nil t)
-      (remove-hook 'completion-in-region-mode-hook #'corfu-sep-at-start t)))
-
-  (defun corfu-init-sep-at-start-mode ()
-    (corfu-sep-at-start-local-mode 1))
-
-  (define-global-minor-mode corfu-sep-at-start-mode
-    corfu-sep-at-start-local-mode
-    corfu-init-sep-at-start-mode
-    :lighter ""
-    :global (not lisp-mode))
-
-  (corfu-sep-at-start-mode 1)
-
   (defun corfu-move-to-minibuffer ()
     (interactive)
     (when completion-in-region--data
@@ -1889,7 +1851,7 @@
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
             (denote-ripgrep-notes buffer)))
-  
+
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
                  '((t :inherit default :background "#b7c9e6")))
@@ -2246,3 +2208,7 @@
 ;;;; heex-ts-mode
 
 (elpaca heex-ts-mode)
+
+;;;; polymode
+
+(elpaca polymode)
