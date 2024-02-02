@@ -1327,6 +1327,7 @@
 
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
+    (keymap-set embark-region-map "RET" 'conn-copy-region)
 
     (defun embark-act-persist ()
       (interactive)
