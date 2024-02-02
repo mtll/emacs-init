@@ -2238,3 +2238,14 @@
 ;;;; polymode
 
 (elpaca polymode)
+
+;;;; adaptive-wrap
+
+(elpaca adaptive-wrap
+  (setq adaptive-wrap-extra-indent 2)
+  (add-hook 'text-mode-hook 'adaptive-wrap-prefix-mode))
+
+;;;; visual-fill-column
+
+(elpaca visual-fill-column
+  (add-hook 'text-mode-hook 'visual-fill-column-mode))
