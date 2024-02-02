@@ -59,7 +59,8 @@
 ;;; Built-in
 ;;;; emacs
 
-(setopt minibuffer-default-prompt-format ""
+(setopt fill-column 72
+        minibuffer-default-prompt-format ""
         use-short-answers t
         y-or-n-p-use-read-key t
         xref-search-program 'ripgrep
