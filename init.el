@@ -1408,14 +1408,9 @@
                          (embark--quit-p action)))
         (user-error "No target found")))
 
-    ;; (defun embark-keybind-target-finder ()
-    ;;   (when-let ((bounds (org-in-regexp "{.*}"))
-    ;;              (keys (buffer-substring-no-properties (car bounds) (cdr bounds))))
-    ;;     (when (key-valid-p keys)
-    ;;       (cons 'keys (cons keys bounds)))))
-
     (defun embark-alt-line-target-finder ()
       (when (and (not (minibufferp))
+                 (not (region-active-p))
                  (eolp))
         (let ((bounds (bounds-of-thing-at-point 'line)))
           (cons 'line (cons
