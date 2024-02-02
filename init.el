@@ -1975,7 +1975,8 @@
 ;;;; howm
 
 (elpaca howm
-  (setq howm-view-title-header "*")
+  (setq howm-view-title-header "* =")
+  (setq action-lock-magic-return-key [])
 
   (defvar howm-previous-link nil
     "Org link to location where note was created.")
@@ -2173,8 +2174,31 @@
     (keymap-set howm-mode-map "C-c C-l" 'consult-howm-link)
 
     (with-eval-after-load 'embark
+      (defun action-lock-target-finder ()
+        (pcase (action-lock-get-action/range)
+          (`(,action . (,beg ,end))
+           (cons 'action-lock
+                 (cons (buffer-substring-no-properties beg end)
+                       (cons beg end))))))
+
+      (defun action-lock-embark-setup ()
+        (if action-lock-mode
+            (setq-local embark-target-finders
+                        (seq-union '(action-lock-target-finder)
+                                   embark-target-finders))
+          (setq-local embark-target-finders
+                      (remove #'action-lock-target-finder
+                              embark-target-finders))))
+
+      (add-hook 'action-lock-mode-hook #'action-lock-embark-setup)
+
       (defvar-keymap embark-action-lock-map
         "RET" 'action-lock-magic-return)
+
+      (setf (alist-get 'action-lock embark-keymap-alist)
+            '(embark-action-lock-map))
+
+      (setf action-lock-mode-map nil)
 
       (cl-defun embark-howm-consult (&key target candidates &allow-other-keys)
         (consult-howm-grep (or (string-replace " " "\ " target)
