@@ -879,7 +879,8 @@
   (keymap-global-set "C-;" 'ace-window)
 
   (with-eval-after-load 'conn-mode
-    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
+    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)
+    (keymap-set conn-common-map ";" 'ace-window)))
 
 ;;;; expand-region
 
