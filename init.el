@@ -682,13 +682,8 @@
 ;;;; math-delimiters
 
 (elpaca (math-delimiters :host github :repo "oantolin/math-delimiters")
-  (with-eval-after-load 'embark
-    (keymap-set embark-region-map "\\" 'math-delimiters-insert))
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "]" 'math-delimiters-insert)))
-  ;; (with-eval-after-load 'conn-mode
-  ;;   (conn-set-repeat-command 'math-delimiters-insert))
-
+    (keymap-set org-mode-map "S-SPC" 'math-delimiters-insert)))
 
 ;;;; org
 
@@ -1311,7 +1306,6 @@
             embark-help-key "?"
             embark-confirm-act-all nil)
 
-    (keymap-global-set "M-<return>" 'embark-act)
     (keymap-global-set "M-." 'embark-dwim)
     (keymap-global-set "M-," 'embark-alt-dwim)
 
@@ -1880,6 +1874,7 @@
     "M-<backspace>" 'vertico-directory-up
     "M-DEL" 'vertico-directory-up
     "C-M-j" 'vertico-exit-input
+    "C-M-<return>" 'vertico-exit-input
     "M-j" 'vertico-quick-jump
     "M-J" 'vertico-quick-exit
     "C-w" 'david-vertico-copy-or-kill)
