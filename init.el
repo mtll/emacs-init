@@ -140,6 +140,8 @@
 (keymap-global-set "C-o"           goto-map)
 (keymap-global-set "M-;"           'comment-line)
 (keymap-global-set "C-c c"         'compile)
+(keymap-global-set "M-W"           'other-window-prefix)
+(keymap-global-set "M-F"           'other-frame-prefix)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-z")
