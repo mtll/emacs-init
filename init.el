@@ -816,13 +816,13 @@
 (elpaca transpose-frame
   (with-eval-after-load 'conn-mode
     (define-keymap
-     :keymap conn-window-map
-     "t" 'transpose-frame
-     ">" 'rotate-frame-clockwise
-     "<" 'rotate-frame-anticlockwise
-     "r" 'rotate-frame
-     "f" 'flip-frame
-     "p" 'flop-frame)
+      :keymap ctl-x-4-map
+      "t" 'transpose-frame
+      ">" 'rotate-frame-clockwise
+      "<" 'rotate-frame-anticlockwise
+      "/" 'rotate-frame
+      "_" 'flip-frame
+      "|" 'flop-frame)
 
     (with-eval-after-load 'transpose-frame
       (defvar-keymap rotate-frame-map
@@ -830,10 +830,11 @@
         ">" 'rotate-frame-clockwise
         "<" 'rotate-frame-anticlockwise)
 
-      (put 'rotate-frame 'repeat-cmd t)
-      (put 'flop-frame 'repeat-cmd t)
-      (put 'flip-frame 'repeat-cmd t)
-      (put 'transpose-frame 'repeat-cmd t))))
+      (mapc #'conn-set-repeat-command
+            '(rotate-frame
+              flop-frame
+              flip-frame
+              transpose-frame)))))
 
 ;;;; popper
 
