@@ -980,7 +980,9 @@
                             diary-mode
                             fundamental-mode
                             "COMMIT_EDITMSG")
-                          'emacs-state))
+                          'emacs-state)
+
+  (add-hook 'read-only-mode-hook 'emacs-state))
 
 ;;;;; conn-expand-region
 
