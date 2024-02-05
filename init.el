@@ -955,37 +955,8 @@
           conn-state-cursor-type 'box
           emacs-state-cursor-type 'box)
 
-  (defun conn-open-line-emacs-state (&optional arg)
-    (interactive "P")
-    (crux-smart-open-line arg)
-    (emacs-state))
-
-  (defun conn-open-line-above-emacs-state ()
-    (interactive)
-    (crux-smart-open-line-above)
-    (emacs-state))
-
-  (defun emacs-state-eol (&optional N)
-    (interactive "P")
-    (end-of-line N)
-    (emacs-state))
-
-  (defun emacs-state-bol (&optional N)
-    (interactive "P")
-    (beginning-of-line N)
-    (back-to-indentation)
-    (emacs-state))
-
-  (set-conn-transition 'conn-state "R" #'conn-open-line-emacs-state)
-  (set-conn-transition 'conn-state "E" #'conn-open-line-above-emacs-state)
-  (set-conn-transition 'conn-state "F" #'emacs-state-eol)
-  (set-conn-transition 'conn-state "D" #'emacs-state-bol)
-
   (conn-mode 1)
 
-  (keymap-global-set "C-c v" 'conn-buffer-map)
-  (keymap-global-set "C-c w" 'conn-window-map)
-  (keymap-global-set "C-c W" 'conn-frame-map)
   (keymap-global-set "C-S-j" 'backward-page)
   (keymap-global-set "C-S-l" 'forward-page)
 
