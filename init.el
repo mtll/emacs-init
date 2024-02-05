@@ -130,6 +130,10 @@
 
 (define-key global-map [remap yank] 'yank-in-context)
 
+(keymap-global-unset "C-x C-c")
+(keymap-global-unset "C-z")
+(keymap-global-unset "C-x C-z")
+
 (keymap-global-set "S-<backspace>" 'cycle-spacing)
 (keymap-global-set "C-|"           'indent-relative)
 (keymap-global-set "M-N"           'tab-bar-switch-to-next-tab)
@@ -143,17 +147,20 @@
 (keymap-global-set "M-W"           'other-window-prefix)
 (keymap-global-set "M-F"           'other-frame-prefix)
 
-(keymap-global-unset "C-x C-c")
-(keymap-global-unset "C-z")
-(keymap-global-unset "C-x C-z")
-
 (keymap-set text-mode-map "M-TAB" #'completion-at-point)
 (keymap-set help-map "M-k" #'describe-keymap)
 
 (define-keymap
   :keymap ctl-x-map
   "s"   'save-buffer
-  "C-s" 'save-some-buffers)
+  "C-s" 'save-some-buffers
+  "f" 'find-file
+  "C-f" 'set-fill-column)
+
+(define-keymap
+  :keymap window-prefix-map
+  "t" 'tab-detach
+  "f" 'tear-off-window)
 
 (define-keymap
   :keymap emacs-lisp-mode-map
