@@ -1514,8 +1514,12 @@
 
   (global-corfu-mode 1)
 
-  ;; (keymap-set corfu-mode-map "S-SPC" #'corfu-start-and-insert-sep)
-  ;; (keymap-set corfu-map "S-SPC" #'corfu-insert-sep)
+  (defun corfu-start-and-insert-sep ()
+    (interactive)
+    (completion-at-point)
+    (corfu-insert-separator))
+
+  (keymap-set corfu-mode-map "M-SPC" #'corfu-start-and-insert-sep)
   (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
   (keymap-set corfu-map "C-j" #'corfu-quick-complete)
 
