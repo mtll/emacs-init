@@ -2162,8 +2162,7 @@
          :category 'consult-howm
          :group #'consult--prefix-group
          :history '(:input consult--howm-history)
-         :sort nil))
-      (howm-mode))
+         :sort nil)))
 
     (keymap-set search-map "h" #'consult-howm-grep)
 
