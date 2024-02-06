@@ -1784,15 +1784,6 @@
 
       (advice-add #'register-preview :override #'consult-register-window))))
 
-;;;;; consult-notes
-
-;; (elpaca consult-notes
-;;   (face-spec-set 'consult-notes-sep
-;;                  '((t :inherit vertico-group-title)))
-;;   (with-eval-after-load 'denote
-;;     (consult-notes-denote-mode 1)
-;;     (keymap-set 'denote-map "s" 'consult-notes)))
-
 ;;;;; consult-extras
 
 (elpaca (consult-extras :host codeberg :repo "crcs/consult-extras")
