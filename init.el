@@ -2165,7 +2165,7 @@
          :sort nil))
       (howm-mode))
 
-    (keymap-set search-map "m" #'consult-howm-grep)
+    (keymap-set search-map "h" #'consult-howm-grep)
 
     (with-eval-after-load 'embark
       (defun embark-consult-howm-link (cand)
