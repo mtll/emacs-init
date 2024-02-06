@@ -2102,6 +2102,14 @@
   (add-hook 'howm-mode-hook 'howm-mode-set-buffer-name)
   (add-hook 'after-save-hook 'howm-mode-set-buffer-name)
 
+  (defun howm-file-backlinks ()
+    (interactive)
+    (when-let (file (ignore-errors (file-name-nondirectory buffer-file-name)))
+      (howm-keyword-search file)
+      (howm-list-toggle-title)))
+
+  (keymap-global-set "C-c , f" 'howm-file-backlinks)
+
   (with-eval-after-load 'conn-mode
     (add-hook 'howm-create-hook 'emacs-state))
 
