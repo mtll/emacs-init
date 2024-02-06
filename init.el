@@ -1825,6 +1825,9 @@
             (file
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
+            (bookmark
+             buffer
+             (vertico-buffer-display-action . (display-buffer-same-window)))
             (consult-howm buffer)
             (consult-grep buffer)
             (consult-line buffer)
