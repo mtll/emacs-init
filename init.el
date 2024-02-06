@@ -118,7 +118,6 @@
         delete-selection-mode t
         column-number-mode t
         line-number-mode t
-        global-subword-mode t
         electric-pair-mode t
         context-menu-mode t
         tab-bar-mode t
