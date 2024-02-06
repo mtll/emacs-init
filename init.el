@@ -1826,6 +1826,7 @@
             (file
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
+            (consult-howm buffer)
             (consult-grep buffer)
             (consult-line buffer)
             (consult-location buffer)
@@ -2131,52 +2132,54 @@
                                 res '("--") (list howm-view-title-regexp-grep) paths)
                         hl))))))))
 
+    (defvar consult--howm-history nil)
+
     (defun consult-howm-grep (&optional initial)
       (interactive)
-      (consult--grep "Notes" #'consult--ripgrep-note-make-builder howm-directory initial)
+      (pcase-let* ((dir howm-directory)
+                   (`(,prompt ,paths ,dir) (consult--directory-prompt "Notes" dir))
+                   (default-directory dir)
+                   (builder (funcall #'consult--ripgrep-note-make-builder paths)))
+        (consult--read
+         (consult--async-command builder
+           (consult--grep-format builder)
+           :file-handler t) ;; allow tramp
+         :prompt prompt
+         :lookup #'consult--lookup-member
+         :state (consult--grep-state)
+         :initial (consult--async-split-initial initial)
+         :add-history (consult--async-split-thingatpt 'symbol)
+         :require-match t
+         :category 'consult-howm
+         :group #'consult--prefix-group
+         :history '(:input consult--howm-history)
+         :sort nil))
       (howm-mode))
 
     (keymap-set search-map "m" #'consult-howm-grep)
 
-    (defun consult--howm-link-state ()
-      (let ((open (consult--temporary-files))
-            (jump (consult--jump-state)))
-        (lambda (action cand)
-          (pcase action
-            ('return cand)
-            (_
-             (unless cand (funcall open))
-             (funcall jump action (consult--grep-position cand open)))))))
-
-    (defun consult-howm-link (&optional initial)
-      (interactive)
-      (let* ((default-directory howm-directory)
-             (builder (funcall #'consult--ripgrep-note-make-builder '(".")))
-             (note (consult--read
-                    (consult--async-command builder
-                      (consult--grep-format builder))
-                    :prompt "Note: "
-                    :lookup #'consult--lookup-member
-                    :state (consult--howm-link-state)
-                    :initial (consult--async-split-initial initial)
-                    :add-history (consult--async-split-thingatpt 'symbol)
-                    :require-match t
-                    :category 'consult-grep
-                    :group #'consult--prefix-group
-                    :history '(:input consult--grep-history)
-                    :sort nil))
-             (file-end (next-single-property-change 0 'face note))
-             (file (substring-no-properties note 0 file-end))
-             (line (substring-no-properties note (1+ file-end)))
-             (line (substring line (1+ (seq-position line ?:)))))
-        (insert
-         (org-link-make-string
-          (concat "file:" (expand-file-name file default-directory) "::" line)
-          (read-string "Description: " line)))))
-
-    (keymap-set howm-mode-map "C-c C-l" 'consult-howm-link)
-
     (with-eval-after-load 'embark
+      (defun embark-consult-howm-link (cand)
+        (when cand
+          (let* ((file-end (next-single-property-change 0 'face cand))
+                 (line-end (next-single-property-change (1+ file-end) 'face cand))
+                 (str (substring-no-properties cand (1+ line-end)))
+                 (desc (save-match-data
+                         (string-match howm-view-title-regexp str)
+                         (match-string howm-view-title-regexp-pos str))))
+            (insert
+             (format "[[file:%s::%s][%s]]"
+                     (expand-file-name (substring-no-properties cand 0 file-end))
+                     (substring-no-properties cand (1+ line-end))
+                     desc)))))
+
+      (defvar-keymap embark-consult-howm-map
+        :parent embark-consult-grep-map
+        "M-RET" 'embark-consult-howm-link)
+
+      (setf (alist-get 'consult-howm embark-keymap-alist)
+            (list 'embark-consult-howm-map))
+
       (defun action-lock-target-finder ()
         (pcase (action-lock-get-action/range)
           (`(,action . (,beg ,end))
