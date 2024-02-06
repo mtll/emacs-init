@@ -1733,6 +1733,30 @@
     (interactive "P")
     (consult--grep "Ripgrep N" #'consult--ripgrep-n-make-builder dir initial))
 
+  (with-eval-after-load 'org
+    (defun embark-consult-grep-link (cand)
+      (when cand
+        (let* ((file-end (next-single-property-change 0 'face cand))
+               (line-end (next-single-property-change (1+ file-end) 'face cand))
+               (str (substring-no-properties cand (1+ line-end)))
+               (desc (read-string "Description: "
+                                  ;; (save-match-data
+                                  ;;   (string-match howm-view-title-regexp str)
+                                  ;;   (match-string howm-view-title-regexp-pos str))
+                                  str))
+               (fmt (if (string= desc "")
+                        "[[file:%s::%s]]"
+                      "[[file:%s::%s][%s]]")))
+          (insert
+           (format fmt
+                   (expand-file-name (substring-no-properties cand 0 file-end))
+                   (substring-no-properties cand (1+ line-end))
+                   desc)))))
+
+    (define-keymap
+      :keymap embark-consult-grep-map
+      "M-RET" 'embark-consult-grep-link))
+
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
 
