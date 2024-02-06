@@ -1298,7 +1298,6 @@
 
     (define-keymap
       :keymap minibuffer-mode-map
-      "M-." 'embark-act
       "C-M-." 'embark-export)
 
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
@@ -1903,6 +1902,7 @@
 
     (define-keymap
       :keymap vertico-map
+      "M-RET" 'embark-alt-dwim
       "TAB" 'embark-act-marked
       "<tab>" 'embark-act-marked
       "C-t" 'embark-act-persist
