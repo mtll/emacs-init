@@ -36,3 +36,4 @@ latex-mode org-mode
 (text "\\text{" q "}")
 (overline "\\overline{" q "}")
 (tidle "\\tilde{" q "}")
+(limits "\\limits_{" p "}{" q "}")
