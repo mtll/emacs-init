@@ -2104,6 +2104,13 @@
 
   (keymap-global-set "C-c , f" 'howm-file-backlinks)
 
+  (defun org-howm-hook ()
+    (when (and buffer-file-name
+               (file-in-directory-p buffer-file-name howm-directory))
+      (howm-mode)))
+
+  (add-hook 'org-mode-hook 'org-howm-hook)
+
   (with-eval-after-load 'conn-mode
     (add-hook 'howm-create-hook 'emacs-state))
 
