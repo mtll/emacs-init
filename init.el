@@ -478,7 +478,7 @@
           lsp-ui-doc-border "black")
 
   (setopt lsp-ui-doc-background '((t (:background "#dfd9cf")))
-          lsp-flycheck-warning-unnecessary-face '((t (:inherit modus-themes-lang-warning)))
+          ;; lsp-flycheck-warning-unnecessary-face '((t (:inherit modus-themes-lang-warning)))
           lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
 
   (setq lsp-clients-clangd-args '("-j=4"
@@ -1253,8 +1253,8 @@
 
 ;;;; flycheck
 
-(elpaca flycheck
-  (setq lsp-diagnostics-flycheck-default-level 'warning))
+;; (elpaca flycheck
+;;   (setq lsp-diagnostics-flycheck-default-level 'warning))
 
 ;;;; cape
 
