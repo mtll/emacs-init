@@ -463,10 +463,12 @@
 ;;;; lsp-mode
 
 (elpaca lsp-mode
-  (add-hook 'c-mode-hook 'lsp)
-  (add-hook 'c++-mode-hook 'lsp)
-  (add-hook 'erlang-mode-hook 'lsp)
-  (add-hook 'elixir-mode-hook 'lsp)
+  ;; (add-hook 'c-mode-hook 'lsp)
+  ;; (add-hook 'c++-mode-hook 'lsp)
+  ;; (add-hook 'erlang-mode-hook 'lsp)
+  ;; (add-hook 'elixir-mode-hook 'lsp)
+
+  (keymap-global-set "C-c s" 'lsp)
 
   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
 
@@ -475,9 +477,8 @@
           lsp-enable-on-type-formatting nil
           lsp-ui-doc-alignment 'window
           lsp-ui-doc-header t
-          lsp-ui-doc-border "black")
-
-  (setopt lsp-ui-doc-background '((t (:background "#dfd9cf")))
+          lsp-ui-doc-border "black"
+          lsp-ui-doc-background '((t (:background "#dfd9cf")))
           ;; lsp-flycheck-warning-unnecessary-face '((t (:inherit modus-themes-lang-warning)))
           lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
 
@@ -491,7 +492,7 @@
 
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))) ;; Configure orderless)
+          '(orderless))) ;; Configure orderless
   (add-hook 'lsp-completion-mode-hook #'my/lsp-mode-setup-completion)
 
   (with-eval-after-load 'lsp-mode
