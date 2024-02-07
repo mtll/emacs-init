@@ -2180,19 +2180,20 @@
       (interactive)
       (let* ((default-directory howm-directory)
              (builder (funcall #'consult--ripgrep-note-make-builder '(".")))
-             (note (consult--read
-                    (consult--async-command builder
-                      (consult--grep-format builder))
-                    :prompt "Note: "
-                    :lookup #'consult--lookup-member
-                    :state (consult--howm-link-state)
-                    :initial (consult--async-split-initial initial)
-                    :add-history (consult--async-split-thingatpt 'symbol)
-                    :require-match t
-                    :category 'consult-grep
-                    :group #'consult--prefix-group
-                    :history '(:input consult--grep-history)
-                    :sort nil))
+             (note (save-window-excursion
+                     (consult--read
+                      (consult--async-command builder
+                        (consult--grep-format builder))
+                      :prompt "Note: "
+                      :lookup #'consult--lookup-member
+                      :state (consult--howm-link-state)
+                      :initial (consult--async-split-initial initial)
+                      :add-history (consult--async-split-thingatpt 'symbol)
+                      :require-match t
+                      :category 'consult-grep
+                      :group #'consult--prefix-group
+                      :history '(:input consult--grep-history)
+                      :sort nil)))
              (file-end (next-single-property-change 0 'face note))
              (file (substring-no-properties note 0 file-end))
              (line (substring-no-properties note (1+ file-end)))
