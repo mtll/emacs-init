@@ -2085,6 +2085,15 @@
 
   (keymap-global-set "C-c n" 'howm-create)
 
+  (defun howm-create-pop-up-frame (&optional arg)
+    (interactive "p")
+    (let ((display-buffer-overriding-action
+           '(display-buffer-pop-up-frame
+             (inhibit-same-window . t))))
+      (howm-create arg)))
+
+  (keymap-global-set "C-c N" 'howm-create-pop-up-frame)
+
   ;; Default recent to sorting by mtime
   (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
   ;; Default all to sorting by creation, newest first
