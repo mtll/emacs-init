@@ -16,7 +16,6 @@ latex-mode org-mode
 (frac "\\frac{" p "}{" q "}")
 (sum "\\sum_{" p "}^{" q "}")
 (product "\\prod_{" p "}^{" q "}")
-(limit "\\lim_{" p "}^{" q "}")
 (fussypar "\\begin{fussypar}" r> n> "\\end{fussypar}")
 (gather "\\begin{gather}\n" r> n> "\\end{gather}")
 (gatherr "\\begin{gather*}\n" r> n> "\\end{gather*}")
@@ -36,4 +35,4 @@ latex-mode org-mode
 (text "\\text{" q "}")
 (overline "\\overline{" q "}")
 (tidle "\\tilde{" q "}")
-(limits "\\limits_{" p "}{" q "}")
+(limits "\\limits_{" p "}^{" q "}")
