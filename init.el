@@ -611,7 +611,7 @@
           ( ?H  (""))
           ( ?i  ("\\in"             "\\imath"))
           ( ?I  (""                 "\\Im"))
-          ( ?j  (""                 "\\jmath"))
+          ( ?j  ("\\left"          "\\right"        "\\jmath"))
           ( ?J  (""))
           ( ?k  ("\\kappa"))
           ( ?K  (""))
@@ -628,11 +628,11 @@
           ( ?q  ("\\theta"          "\\vartheta"))
           ( ?Q  ("\\Theta"))
           ( ?r  ("\\rho"            "\\varrho"))
-          ( ?R  (""                 "\\Re"))
+          ( ?R  ("\\Rho"                 "\\Re"))
           ( ?s  ("\\sigma"          "\\varsigma"      "\\sin"))
           ( ?S  ("\\Sigma"          ""                "\\arcsin"))
           ( ?t  ("\\tau"            ""                "\\tan"))
-          ( ?T  (""                 ""                "\\arctan"))
+          ( ?T  ("\\Tau"            ""                "\\arctan"))
           ( ?u  ("\\upsilon"))
           ( ?U  ("\\Upsilon"))
           ( ?v  ("\\vee"))
@@ -640,24 +640,23 @@
           ( ?w  ("\\xi"))
           ( ?W  ("\\Xi"))
           ( ?x  ("\\chi"))
-          ( ?X  (""))
+          ( ?X  ("\\Chi"))
           ( ?y  ("\\psi"))
           ( ?Y  ("\\Psi"))
           ( ?z  ("\\zeta"))
-          ( ?Z  (""))
-          ( ?   ("\\quad" "\\qquad"))
+          ( ?Z  ("\\Zeta"))
           ( ?0  ("\\emptyset"))
           ( ?1  ("\\sum" "\\prod"))
-          ( ?2  (""))
-          ( ?3  (""))
-          ( ?4  (""))
+          ( ?2  ("\\dots"))
+          ( ?3  ("\\ldots" "\\cdots"))
+          ( ?4  ("\\quad" "\\qquad"))
           ( ?5  (""))
           ( ?6  (""))
           ( ?7  (""))
           ( ?8  ("\\infty"))
           ( ?9  (""))
           ( ?!  ("\\neg"))
-          ( ?@  (""))
+          ( ?@  ("\\circ"))
           ( ?#  (""))
           ( ?$  (""))
           ( ?%  (""))
@@ -674,8 +673,8 @@
           ( ?\\ ("\\setminus"))
           ( ?\" (""))
           ( ?=  ("\\Leftrightarrow" "\\Longleftrightarrow"))
-          ( ?\( ("\\langle"))
-          ( ?\) ("\\rangle"))
+          ( ?\( ("\\langle" "\\left"))
+          ( ?\) ("\\rangle" "\\right"))
           ( ?\[ ("\\Leftarrow"      "\\Longleftarrow"))
           ( ?\] ("\\Rightarrow"     "\\Longrightarrow"))
           ( ?\{  ("\\subset"))
@@ -683,8 +682,7 @@
           ( ?<  ("\\leftarrow"      "\\longleftarrow"     "\\min"))
           ( ?>  ("\\rightarrow"     "\\longrightarrow"    "\\max"))
           ( ?'  ("\\prime"))
-          ( ?.  ("\\cdot"))
-          ( ?@  ("\\circ")))))
+          ( ?.  ("\\cdot")))))
 
 ;;;; math-delimiters
 
@@ -1275,6 +1273,9 @@
 ;;;; embark
 
 (elpaca embark
+  (with-eval-after-load 'org
+    (add-to-list 'embark-target-finders 'embark-org-target-link))
+
   (with-eval-after-load 'conn-mode
     (require 'embark)
     (setopt embark-mixed-indicator-delay .66
@@ -1687,7 +1688,7 @@
     "M-s J" 'consult-line-multi)
 
   (consult-customize consult-completion-in-region :preview-key nil)
-  (consult-customize consult--source-bookmark :preview-key nil)
+  (consult-customize consult--source-bookmark :preview-key "C-j")
   (consult-customize consult-buffer :preview-key "C-j")
   (consult-customize consult-project-buffer :preview-key "C-j")
 
@@ -1738,11 +1739,7 @@
         (let* ((file-end (next-single-property-change 0 'face cand))
                (line-end (next-single-property-change (1+ file-end) 'face cand))
                (str (substring-no-properties cand (1+ line-end)))
-               (desc (read-string "Description: "
-                                  ;; (save-match-data
-                                  ;;   (string-match howm-view-title-regexp str)
-                                  ;;   (match-string howm-view-title-regexp-pos str))
-                                  str))
+               (desc (read-string "Description: " str))
                (fmt (if (string= desc "")
                         "[[file:%s::%s]]"
                       "[[file:%s::%s][%s]]")))
@@ -1754,7 +1751,18 @@
 
     (define-keymap
       :keymap embark-consult-grep-map
-      "M-RET" 'embark-consult-grep-link))
+      "M-RET" 'embark-consult-grep-link)
+
+    (defun consult-org-link-location (cand)
+      (let ((cand (substring-no-properties cand))
+            (link (format "file:%s" cand)))
+        (insert (org-link-make-string
+                 link
+                 (read-string "Description: " link)))))
+
+    (define-keymap
+      :keymap embark-consult-location-map
+      "M-RET" 'consult-org-link-location))
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
@@ -1987,12 +1995,12 @@
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
                                     " %title%cursor\n"
-                                    ":HOWM:\n%link%filen:END:\n\n")
+                                    ":HOWM:\n:END:\n\n")
                             (concat "#+DATE: %date\n"
                                     "#+STARTUP: showall\n\n"
                                     howm-view-title-header
                                     " %title%cursor\n"
-                                    ":HOWM:\n:END:\n\n"))
+                                    ":HOWM:\n%link%filen:END:\n\n"))
         howm-view-title-regexp (rx bol
                                    (or (seq (+ (any "*" "#")) " =") (+ "="))
                                    (+ " ") (group (* nonl)) eol)
@@ -2148,7 +2156,7 @@
                 (when res
                   (cons (append `("rgn" ,(car flags)
                                   ,(string-join (append (cdr flags) (and (eq type 'pcre) '("-P"))) " "))
-                                res '("--") (list howm-view-title-regexp-grep) paths)
+                                res '("--") (list "^[*#]+ .*$") paths)
                         hl))))))))
 
     (defvar consult--howm-history nil)
@@ -2209,14 +2217,20 @@
              (line (substring-no-properties note (1+ file-end)))
              (line (substring line (1+ (seq-position line ?:))))
              (desc (progn
-                     (string-match howm-view-title-regexp line)
+                     (string-match (rx bol
+                                       (+ (in "*" "#"))
+                                       (* (in " " "="))
+                                       " " (group (+ nonl))
+                                       eol)
+                                   line)
                      (match-string howm-view-title-regexp-pos line))))
         (insert
          (org-link-make-string
-          (concat "file:" (expand-file-name file default-directory) "::" line)
+          (concat "file:" (expand-file-name file default-directory) "::*" desc)
           desc))))
 
     (keymap-global-set "C-c , k" 'consult-howm-link)
+    (keymap-set howm-mode-map "C-c , k" 'consult-howm-link)
 
     (with-eval-after-load 'embark
       (setf (alist-get 'consult-howm embark-keymap-alist)
