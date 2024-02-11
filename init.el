@@ -399,7 +399,9 @@
      '(conn-state dot-state) 'paredit-mode
      (define-keymap
        "m" 'paredit-forward
-       "n" 'paredit-backward))
+       "n" 'paredit-backward
+       "O" 'paredit-forward-up
+       "U" 'paredit-backward-up))
 
     (conn-add-thing-movement-command 'sexp 'paredit-forward)
     (conn-add-thing-movement-command 'sexp 'paredit-backward)))
