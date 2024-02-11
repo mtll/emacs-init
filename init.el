@@ -1273,23 +1273,189 @@
 ;;;; embark
 
 (elpaca embark
+  (require 'embark)
+
+  (setopt embark-mixed-indicator-delay .66
+          embark-quit-after-action t
+          embark-indicators '(embark-minimal-indicator
+                              embark-highlight-indicator
+                              embark-isearch-highlight-indicator)
+          embark-prompter 'embark-keymap-prompter
+          embark-cycle-key "."
+          embark-help-key "?"
+          embark-confirm-act-all nil)
+
   (with-eval-after-load 'org
     (add-to-list 'embark-target-finders 'embark-org-target-link))
 
-  (with-eval-after-load 'conn-mode
-    (require 'embark)
-    (setopt embark-mixed-indicator-delay .66
-            embark-quit-after-action t
-            embark-indicators '(embark-minimal-indicator
-                                embark-highlight-indicator
-                                embark-isearch-highlight-indicator)
-            embark-prompter 'embark-keymap-prompter
-            embark-cycle-key "."
-            embark-help-key "?"
-            embark-confirm-act-all nil)
+  (keymap-global-set "M-." 'embark-dwim)
+  (keymap-global-set "M-," 'embark-alt-dwim)
 
-    (keymap-global-set "M-." 'embark-dwim)
-    (keymap-global-set "M-," 'embark-alt-dwim)
+  (define-keymap
+    :keymap minibuffer-mode-map
+    "C-M-." 'embark-export)
+
+  (keymap-set embark-symbol-map "h" 'helpful-symbol)
+  (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
+
+  (defun embark-act-persist ()
+    (interactive)
+    (let (embark-quit-after-action)
+      (embark-act)))
+
+  (defun embark-act-marked ()
+    (interactive)
+    (if (embark-selected-candidates)
+        (embark-act-all)
+      (embark-act)))
+
+  (defun embark-tab-delete (name)
+    (tab-bar-close-tab
+     (1+ (tab-bar--tab-index-by-name name))))
+
+  (defun embark-tab-rename (tab-name)
+    (tab-bar-rename-tab
+     (read-from-minibuffer
+      "New name for tab (leave blank for automatic naming): "
+      nil nil nil nil tab-name)))
+
+  (defun embark-tab-detach (tab-name)
+    (let* ((tabs (funcall tab-bar-tabs-function))
+           (tab-index (tab-bar--tab-index-by-name tab-name))
+           (from-frame (selected-frame))
+           (new-frame (make-frame `((name . ,tab-name)))))
+      (tab-bar-move-tab-to-frame
+       nil from-frame from-number new-frame nil)
+      (with-selected-frame new-frame
+        (tab-bar-close-tab))))
+
+  (defvar-keymap embark-tab-bar-map
+    "d" 'embark-tab-delete
+    "r" 'embark-tab-rename
+    "t" 'embark-tab-detach)
+
+  (add-to-list 'embark-keymap-alist '(tab-bar embark-tab-bar-map))
+
+  (defcustom embark-alt-default-action-overrides nil
+    "`embark-default-action-overrides' for alternate actions."
+    :type '(alist :key-type (choice (symbol :tag "Type")
+                                    (cons (symbol :tag "Type")
+                                          (symbol :tag "Command")))
+                  :value-type (function :tag "Default action")))
+
+  (defun embark-alt--default-action (type)
+    "`embark--default-action' for alt actions"
+    (or (alist-get (cons type embark--command) embark-alt-default-action-overrides
+                   nil nil #'equal)
+        (alist-get type embark-alt-default-action-overrides)
+        (alist-get t embark-alt-default-action-overrides)
+        ;; embark--command
+        (keymap-lookup (embark--raw-action-keymap type) "M-RET")))
+
+  (defun embark-alt-dwim (&optional arg)
+    "alternate `embark-dwim'."
+    (interactive "P")
+    (if-let ((targets (embark--targets)))
+        (let* ((target
+                (or (nth
+                     (if (or (null arg) (minibufferp))
+                         0
+                       (mod (prefix-numeric-value arg) (length targets)))
+                     targets)))
+               (type (plist-get target :type))
+               (default-action (embark-alt--default-action type))
+               (action (or (command-remapping default-action) default-action)))
+          (unless action
+            (user-error "No default action for %s targets" type))
+          (when (and arg (minibufferp)) (setq embark--toggle-quit t))
+          (embark--act action
+                       (if (and (eq default-action embark--command)
+                                (not (memq default-action
+                                           embark-multitarget-actions)))
+                           (embark--orig-target target)
+                         target)
+                       (embark--quit-p action)))
+      (user-error "No target found")))
+
+  (defun embark-alt-line-target-finder ()
+    (when (and (not (minibufferp))
+               (not (region-active-p))
+               (eolp))
+      (let ((bounds (bounds-of-thing-at-point 'line)))
+        (cons 'line (cons
+                     (buffer-substring (car bounds) (cdr bounds))
+                     bounds)))))
+
+  (defun embark-alt-page-target-finder ()
+    (when-let ((bounds (bounds-of-thing-at-point 'page)))
+      (cons 'page (cons
+                   (buffer-substring (car bounds) (cdr bounds))
+                   bounds))))
+
+  (defun embark-alt-heading-target-finder ()
+    (when (and (derived-mode-p 'outline-mode)
+               (outline-on-heading-p))
+      (let ((bounds (save-excursion
+                      (let ((beg))
+                        (beginning-of-line)
+                        (setq beg (point))
+                        (outline-end-of-subtree)
+                        (cons beg (point))))))
+        (cons 'outline-heading
+              (cons
+               (buffer-substring (car bounds) (cdr bounds))
+               bounds)))))
+
+  (defun embark-alt-scroll-down (&rest _)
+    (scroll-down-command)
+    (move-end-of-line nil))
+
+  (defun embark-alt-scroll-up (&rest _)
+    (scroll-up-command)
+    (move-end-of-line nil))
+
+  (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
+
+  (defvar-keymap embark-alt-line-map
+    "RET" 'embark-alt-scroll-up
+    "M-RET" 'embark-alt-scroll-down)
+
+  (setf (alist-get 'line embark-keymap-alist)
+        (list 'embark-alt-line-map))
+
+  (defvar-keymap embark-alt-page-map
+    "RET" 'narrow-to-page
+    "M-RET" 'ni-narrow-to-page-indirect-other-window
+    "m" 'mark-page)
+
+  (setf (alist-get 'page embark-keymap-alist)
+        (list 'embark-alt-page-map))
+
+  (define-keymap
+    :keymap embark-symbol-map
+    "M-RET" 'helpful-symbol)
+
+  (defvar-keymap xref-go-back-repeat-map
+    :repeat t
+    "," 'xref-go-back
+    "." 'xref-go-forward)
+
+  (keymap-global-set "C-M-." 'embark-alt-dwim)
+
+  (define-keymap
+    :keymap goto-map
+    "," 'xref-go-back
+    "." 'xref-go-forward)
+
+  (define-keymap
+    :keymap embark-heading-map
+    "RET" #'outline-cycle)
+
+  (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
+  (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
+
+  (with-eval-after-load 'conn-mode
+    (keymap-set embark-region-map "RET" 'conn-copy-region)
 
     (define-keymap
       :keymap embark-region-map
@@ -1299,181 +1465,15 @@
       "RET" 'eval-region)
 
     (define-keymap
-      :keymap minibuffer-mode-map
-      "C-M-." 'embark-export)
+      :keymap conn-state-map
+      "h" 'embark-dwim
+      "H" 'embark-alt-dwim)
 
-    (keymap-set embark-symbol-map "h" 'helpful-symbol)
-    (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    (keymap-set embark-region-map "RET" 'conn-copy-region)
-
-    (defun embark-act-persist ()
-      (interactive)
-      (let (embark-quit-after-action)
-        (embark-act)))
-
-    (defun embark-act-marked ()
-      (interactive)
-      (if (embark-selected-candidates)
-          (embark-act-all)
-        (embark-act)))
-
-    (defun embark-tab-delete (name)
-      (tab-bar-close-tab
-       (1+ (tab-bar--tab-index-by-name name))))
-
-    (defun embark-tab-rename (tab-name)
-      (tab-bar-rename-tab
-       (read-from-minibuffer
-        "New name for tab (leave blank for automatic naming): "
-        nil nil nil nil tab-name)))
-
-    (defun embark-tab-detach (tab-name)
-      (let* ((tabs (funcall tab-bar-tabs-function))
-             (tab-index (tab-bar--tab-index-by-name tab-name))
-             (from-frame (selected-frame))
-             (new-frame (make-frame `((name . ,tab-name)))))
-        (tab-bar-move-tab-to-frame
-         nil from-frame from-number new-frame nil)
-        (with-selected-frame new-frame
-          (tab-bar-close-tab))))
-
-    (defvar-keymap embark-tab-bar-map
-      "d" 'embark-tab-delete
-      "r" 'embark-tab-rename
-      "t" 'embark-tab-detach)
-
-    (add-to-list 'embark-keymap-alist '(tab-bar embark-tab-bar-map)))
-
-  (with-eval-after-load 'embark
-    (defcustom embark-alt-default-action-overrides nil
-      "`embark-default-action-overrides' for alternate actions."
-      :type '(alist :key-type (choice (symbol :tag "Type")
-                                      (cons (symbol :tag "Type")
-                                            (symbol :tag "Command")))
-                    :value-type (function :tag "Default action")))
-
-    (defun embark-alt--default-action (type)
-      "`embark--default-action' for alt actions"
-      (or (alist-get (cons type embark--command) embark-alt-default-action-overrides
-                     nil nil #'equal)
-          (alist-get type embark-alt-default-action-overrides)
-          (alist-get t embark-alt-default-action-overrides)
-          ;; embark--command
-          (keymap-lookup (embark--raw-action-keymap type) "M-RET")))
-
-    (defun embark-alt-dwim (&optional arg)
-      "alternate `embark-dwim'."
-      (interactive "P")
-      (if-let ((targets (embark--targets)))
-          (let* ((target
-                  (or (nth
-                       (if (or (null arg) (minibufferp))
-                           0
-                         (mod (prefix-numeric-value arg) (length targets)))
-                       targets)))
-                 (type (plist-get target :type))
-                 (default-action (embark-alt--default-action type))
-                 (action (or (command-remapping default-action) default-action)))
-            (unless action
-              (user-error "No default action for %s targets" type))
-            (when (and arg (minibufferp)) (setq embark--toggle-quit t))
-            (embark--act action
-                         (if (and (eq default-action embark--command)
-                                  (not (memq default-action
-                                             embark-multitarget-actions)))
-                             (embark--orig-target target)
-                           target)
-                         (embark--quit-p action)))
-        (user-error "No target found")))
-
-    (defun embark-alt-line-target-finder ()
-      (when (and (not (minibufferp))
-                 (not (region-active-p))
-                 (eolp))
-        (let ((bounds (bounds-of-thing-at-point 'line)))
-          (cons 'line (cons
-                       (buffer-substring (car bounds) (cdr bounds))
-                       bounds)))))
-
-    (defun embark-alt-page-target-finder ()
-      (when-let ((bounds (bounds-of-thing-at-point 'page)))
-        (cons 'page (cons
-                     (buffer-substring (car bounds) (cdr bounds))
-                     bounds))))
-
-    (defun embark-alt-heading-target-finder ()
-      (when (and (derived-mode-p 'outline-mode)
-                 (outline-on-heading-p))
-        (let ((bounds (save-excursion
-                        (let ((beg))
-                          (beginning-of-line)
-                          (setq beg (point))
-                          (outline-end-of-subtree)
-                          (cons beg (point))))))
-          (cons 'outline-heading
-                (cons
-                 (buffer-substring (car bounds) (cdr bounds))
-                 bounds)))))
-
-    (defun embark-alt-scroll-down (&rest _)
-      (scroll-down-command)
-      (move-end-of-line nil))
-
-    (defun embark-alt-scroll-up (&rest _)
-      (scroll-up-command)
-      (move-end-of-line nil))
-
-    (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
-
-    (defvar-keymap embark-alt-line-map
-      "RET" 'embark-alt-scroll-up
-      "M-RET" 'embark-alt-scroll-down)
-
-    (setf (alist-get 'line embark-keymap-alist)
-          (list 'embark-alt-line-map))
-
-    (defvar-keymap embark-alt-page-map
-      "RET" 'narrow-to-page
-      "M-RET" 'ni-narrow-to-page-indirect-other-window
-      "m" 'mark-page)
-
-    (setf (alist-get 'page embark-keymap-alist)
-          (list 'embark-alt-page-map))
-
-    (define-keymap
-      :keymap embark-symbol-map
-      "M-RET" 'helpful-symbol)
-
-    (defvar-keymap xref-go-back-repeat-map
-      :repeat t
-      "," 'xref-go-back
-      "." 'xref-go-forward)
-
-    (keymap-global-set "C-M-." 'embark-alt-dwim)
-
-    (define-keymap
-      :keymap goto-map
-      "," 'xref-go-back
-      "." 'xref-go-forward)
-
-    (define-keymap
-      :keymap embark-heading-map
-      "RET" #'outline-cycle)
-
-    (with-eval-after-load 'conn-mode
-      (define-keymap
-        :keymap conn-state-map
-        "h" 'embark-dwim
-        "H" 'embark-alt-dwim)
-
-      (define-conn-mode-map
-       'emacs-state 'view-mode
-       (define-keymap
-         "h" 'embark-dwim
-         "H" 'embark-alt-dwim)))
-
-    (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
-    (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)))
+    (define-conn-mode-map
+     'emacs-state 'view-mode
+     (define-keymap
+       "h" 'embark-dwim
+       "H" 'embark-alt-dwim))))
 
 ;;;;; embark-consult
 
@@ -1754,11 +1754,11 @@
       "M-RET" 'embark-consult-grep-link)
 
     (defun consult-org-link-location (cand)
-      (let ((cand (substring-no-properties cand))
-            (link (format "file:%s" cand)))
-        (insert (org-link-make-string
-                 link
-                 (read-string "Description: " link)))))
+      (let* ((loc (car-safe (consult--get-location cand)))
+            (link (save-excursion
+                    (goto-char loc)
+                    (org-store-link nil))))
+        (insert link)))
 
     (define-keymap
       :keymap embark-consult-location-map
