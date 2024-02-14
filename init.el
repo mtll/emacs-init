@@ -4,7 +4,6 @@
 
 (setq elpaca-core-date
       (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
-
 (defvar elpaca-installer-version 0.6)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -1456,6 +1455,19 @@
   (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
   (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
 
+  (with-eval-after-load 'org
+    (defun embark-bookmark-link (cand)
+      (when cand
+        (let* ((desc (read-string "Description: "))
+               (fmt (if (string= desc "")
+                        "[[bmk:%s]]"
+                      "[[bmk:%s][%s]]")))
+          (insert (format fmt cand desc)))))
+
+    (define-keymap
+      :keymap embark-bookmark-map
+      "M-RET" 'embark-bookmark-link))
+
   (with-eval-after-load 'conn-mode
     (keymap-set embark-region-map "RET" 'conn-copy-region)
 
@@ -1691,6 +1703,7 @@
 
   (consult-customize consult-completion-in-region :preview-key nil)
   (consult-customize consult--source-bookmark :preview-key "C-j")
+  (consult-customize consult-bookmark :preview-key "C-j")
   (consult-customize consult-buffer :preview-key "C-j")
   (consult-customize consult-project-buffer :preview-key "C-j")
 
@@ -1735,36 +1748,38 @@
     (interactive "P")
     (consult--grep "Ripgrep N" #'consult--ripgrep-n-make-builder dir initial))
 
-  (with-eval-after-load 'org
-    (defun embark-consult-grep-link (cand)
-      (when cand
-        (let* ((file-end (next-single-property-change 0 'face cand))
-               (line-end (next-single-property-change (1+ file-end) 'face cand))
-               (str (substring-no-properties cand (1+ line-end)))
-               (desc (read-string "Description: " str))
-               (fmt (if (string= desc "")
-                        "[[file:%s::%s]]"
-                      "[[file:%s::%s][%s]]")))
-          (insert
-           (format fmt
-                   (expand-file-name (substring-no-properties cand 0 file-end))
-                   (substring-no-properties cand (1+ line-end))
-                   desc)))))
+  (with-eval-after-load 'embark
+    (with-eval-after-load 'org
+      (defun embark-consult-grep-link (cand)
+        (when cand
+          (let* ((file-end (next-single-property-change 0 'face cand))
+                 (line-end (next-single-property-change (1+ file-end) 'face cand))
+                 (file (expand-file-name (substring-no-properties cand 0 file-end)))
+                 (line (substring-no-properties cand (1+ line-end)))
+                 (line (if (and (string-match-p ".*\\.org" file)
+                                (equal ?\* (aref line 0)))
+                           (substring line (1- (seq-position line ?\ )))
+                         line))
+                 (desc (read-string "Description: " line))
+                 (fmt (if (string= desc "")
+                          "[[file:%s::%s]]"
+                        "[[file:%s::%s][%s]]")))
+            (insert (format fmt file line desc)))))
 
-    (define-keymap
-      :keymap embark-consult-grep-map
-      "M-RET" 'embark-consult-grep-link)
+      (define-keymap
+        :keymap embark-consult-grep-map
+        "M-RET" 'embark-consult-grep-link)
 
-    (defun consult-org-link-location (cand)
-      (let* ((loc (car-safe (consult--get-location cand)))
-            (link (save-excursion
-                    (goto-char loc)
-                    (org-store-link nil))))
-        (insert link)))
+      (defun consult-org-link-location (cand)
+        (let* ((loc (car-safe (consult--get-location cand)))
+               (link (save-excursion
+                       (goto-char loc)
+                       (org-store-link nil))))
+          (insert link)))
 
-    (define-keymap
-      :keymap embark-consult-location-map
-      "M-RET" 'consult-org-link-location))
+      (define-keymap
+        :keymap embark-consult-location-map
+        "M-RET" 'consult-org-link-location)))
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
@@ -1801,7 +1816,6 @@
   (with-eval-after-load 'consult
     (require 'consult-extras)
     (keymap-global-set "C-h o" 'consult-symbol)
-    ;; (keymap-global-set "C-h f" 'consult-symbol)
     (keymap-set goto-map "y" 'consult-all-marks)))
 
 ;;;;; consult-projectile
@@ -1839,16 +1853,12 @@
             (embark-keybinding grid))
           vertico-multiform-commands
           '((consult-symbol buffer)
+            (consult-all-marks buffer)
+            (helpful-callable buffer)
+            (helpful-variable buffer)
+            (consult-buffer buffer)
+            (consult-project-buffer buffer)
             (completion-at-point
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (consult-buffer
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (consult-project-buffer
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (corfu-move-to-minibuffer
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
             (tempel-insert
@@ -1858,6 +1868,11 @@
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
             (denote-ripgrep-notes buffer)))
+
+  (defun vertico--display-count-ad ()
+    (when vertico-flat-mode
+      (overlay-put vertico--count-ov 'before-string "")))
+  (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
 
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
@@ -1981,303 +1996,6 @@
   (global-page-break-lines-mode)
   (diminish 'page-break-lines-mode))
 
-;;;; howm
-
-(elpaca howm
-  (setq howm-view-title-header "* =")
-  (setq action-lock-magic-return-key [])
-
-  (defvar howm-previous-link nil
-    "Org link to location where note was created.")
-
-  (require 'howm)
-
-  (setq howm-directory "~/Documents/howm"
-        howm-template (list (concat "#+DATE: %date\n"
-                                    "#+STARTUP: showall\n\n"
-                                    howm-view-title-header
-                                    " %title%cursor\n"
-                                    ":HOWM:\n:END:\n\n")
-                            (concat "#+DATE: %date\n"
-                                    "#+STARTUP: showall\n\n"
-                                    howm-view-title-header
-                                    " %title%cursor\n"
-                                    ":HOWM:\n%link%filen:END:\n\n"))
-        howm-view-title-regexp (rx bol
-                                   (or (seq (+ (any "*" "#")) " =") (+ "="))
-                                   (+ " ") (group (* nonl)) eol)
-        howm-view-title-regexp-pos 1
-        howm-view-title-regexp-grep "^(?:[*#]+ =|=+) +"
-        howm-template-file-format "%s"
-        howm-view-use-grep t
-        howm-view-grep-command "rg"
-        howm-view-grep-option "-nH --no-heading --color never --smart-case"
-        howm-view-grep-extended-option nil
-        howm-view-grep-fixed-option "-F"
-        howm-view-grep-expr-option "-e"
-        howm-view-grep-file-stdin-option "-f -"
-        howm-iigrep-preview-items 50
-        howm-keyword-file (expand-file-name ".howm-keys" howm-directory)
-        howm-history-file (expand-file-name ".howm-history" howm-directory)
-        howm-file-name-format "%Y/%m/%Y-%m-%d-%H%M%S.org"
-        howm-content-from-region 1
-        howm-menu-refresh-after-save nil
-        howm-ref-regexp "<(\\([^\t\r\n]+?\\))>"
-        howm-ref-regexp-pos 1
-        howm-keyword-format "<\\[%s\\]>"
-        howm-keyword-regexp "<\\[\\([^\t\r\n]+?\\)\\]>"
-        howm-keyword-regexp-hilit-pos 1
-        howm-keyword-regexp-pos 1
-        howm-keyword-regexp-format "%s"
-        howm-wiki-format "<([%s])>"
-        howm-wiki-regexp "<\\(\\[\\([^\t\r\n]+?\\)\\)\\]>"
-        howm-mode-keyword-face 'modus-themes-search-lazy
-        howm-view-name-face 'modus-themes-search-lazy
-        howm-template-file-format "<(%s)>"
-        howm-view-header-format "\n\n#+file: %s\n\n"
-        howm-view-header-regexp "^#+file:.*$"
-        howm-menu-display-rules (cons
-                                 (cons "%hdiary[\n]?" 'howm-menu-diary)
-                                 howm-menu-display-rules)
-        initial-buffer-choice (lambda ()
-                                (howm-menu)
-                                (current-buffer))
-        howm-menu-schedule-days 14)
-
-  (pcase-let ((`(,pat . ,rest)
-               (action-lock-general 'howm-open-diary "^\\(>>d\\) " 1 1)))
-    (setf (alist-get pat action-lock-default-rules nil nil 'equal) rest))
-
-  (defun howm-menu-diary ()
-    (delete-region (match-beginning 0) (match-end 0))
-    (pcase-dolist (`((,m ,d ,y) ,label)
-                   (diary-list-entries (calendar-current-date) howm-menu-schedule-days t))
-      (insert (format ">>d [%04d-%02d-%02d] %s\n" y m d label))))
-
-  (defun howm-open-diary (&optional dummy)
-    (interactive)
-    (when-let (str (save-excursion
-                     (and (re-search-forward
-                           "\\[[-0-9]+\\] \\(.*\\)" (line-end-position) t)
-                          (regexp-quote (match-string-no-properties 1)))))
-      (find-file diary-file)
-      (goto-char (point-min))
-      (re-search-forward str nil t)
-      (beginning-of-line)))
-
-  (defun riffle-summary-to-contents-org ()
-    (org-mode)
-    (org-fold-hide-drawer-all))
-
-  (advice-add 'riffle-summary-to-contents :after 'riffle-summary-to-contents-org)
-
-  (defun howm-template-org-link (arg)
-    (when howm-previous-link
-      (insert howm-previous-link "\n")))
-
-  (setf (alist-get "%link" howm-template-rules nil nil #'equal)
-        'howm-template-org-link)
-
-  (defun howm-template-previous-file-n (arg)
-    (when-let ((f (alist-get 'file arg))
-               (_ (not (equal f ""))))
-      (insert f "\n")))
-
-  (setf (alist-get "%filen" howm-template-rules nil nil #'equal)
-        'howm-template-previous-file-n)
-
-  (defun howm-create-capture (fn &optional which-template here)
-    (let ((howm-previous-link (and (not here)
-                                   (org-store-link nil))))
-      (funcall fn which-template here)))
-
-  (advice-add 'howm-create :around #'howm-create-capture)
-
-  (keymap-global-set "C-c n" 'howm-create)
-
-  (defun howm-create-pop-up-frame (&optional arg)
-    (interactive "p")
-    (let ((display-buffer-overriding-action
-           '(display-buffer-pop-up-frame
-             (inhibit-same-window . t))))
-      (howm-create arg)))
-
-  (keymap-global-set "C-c N" 'howm-create-pop-up-frame)
-
-  ;; Default recent to sorting by mtime
-  (advice-add 'howm-list-recent :after #'howm-view-sort-by-mtime)
-  ;; Default all to sorting by creation, newest first
-  (advice-add 'howm-list-all :after #'(lambda () (howm-view-sort-by-date t)))
-
-  (define-key howm-menu-mode-map "\C-h" nil)
-  (define-key riffle-summary-mode-map "\C-h" nil)
-  (define-key howm-view-contents-mode-map "\C-h" nil)
-
-  (add-hook 'howm-mode-hook 'howm-mode-set-buffer-name)
-  (add-hook 'after-save-hook 'howm-mode-set-buffer-name)
-
-  (defun howm-file-backlinks ()
-    (interactive)
-    (when-let (file (ignore-errors (file-name-nondirectory buffer-file-name)))
-      (howm-keyword-search file)
-      (howm-list-toggle-title)))
-
-  (keymap-global-set "C-c , f" 'howm-file-backlinks)
-
-  (defun org-howm-hook ()
-    (when (and buffer-file-name
-               (file-in-directory-p buffer-file-name howm-directory))
-      (howm-mode)))
-
-  (add-hook 'org-mode-hook 'org-howm-hook)
-
-  (with-eval-after-load 'conn-mode
-    (add-hook 'howm-create-hook 'emacs-state))
-
-  (with-eval-after-load 'consult
-    (defun consult--ripgrep-note-make-builder (paths)
-      (let* ((cmd (consult--build-args consult-ripgrep-args))
-             (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
-        (lambda (input)
-          (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-                       (flags (append cmd opts))
-                       (ignore-case
-                        (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
-                             (or (member "-i" flags) (member "--ignore-case" flags)
-                                 (and (or (member "-S" flags) (member "--smart-case" flags))
-                                      (let (case-fold-search)
-                                        ;; Case insensitive if there are no uppercase letters
-                                        (not (string-match-p "[[:upper:]]" arg))))))))
-            (if (or (member "-F" flags) (member "--fixed-strings" flags))
-                (cons (append `("rgn" ,(car flags) ,(string-join (cdr flags) " "))
-                              (consult--split-escaped arg)
-                              '("--") (list howm-view-title-regexp-grep) paths)
-                      (apply-partially #'consult--highlight-regexps
-                                       (list (regexp-quote arg)) ignore-case))
-              (pcase-let ((`(,res . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
-                (when res
-                  (cons (append `("rgn" ,(car flags)
-                                  ,(string-join (append (cdr flags) (and (eq type 'pcre) '("-P"))) " "))
-                                res '("--") (list "^[*#]+ .*$") paths)
-                        hl))))))))
-
-    (defvar consult--howm-history nil)
-
-    (defun consult-howm-grep (&optional initial)
-      (interactive)
-      (pcase-let* ((dir howm-directory)
-                   (`(,prompt ,paths ,dir) (consult--directory-prompt "Notes" dir))
-                   (default-directory dir)
-                   (builder (funcall #'consult--ripgrep-note-make-builder paths)))
-        (consult--read
-         (consult--async-command builder
-           (consult--grep-format builder)
-           :file-handler t) ;; allow tramp
-         :prompt prompt
-         :lookup #'consult--lookup-member
-         :state (consult--grep-state)
-         :initial (consult--async-split-initial initial)
-         :add-history (consult--async-split-thingatpt 'symbol)
-         :require-match t
-         :category 'consult-howm
-         :group #'consult--prefix-group
-         :history '(:input consult--howm-history)
-         :sort nil)))
-
-    (keymap-set search-map "h" #'consult-howm-grep)
-
-    (defun consult--howm-link-state ()
-      (let ((open (consult--temporary-files))
-            (jump (consult--jump-state)))
-        (lambda (action cand)
-          (pcase action
-            ('return cand)
-            (_
-             (unless cand (funcall open))
-             (funcall jump action (consult--grep-position cand open)))))))
-
-    (defun consult-howm-link (&optional initial)
-      (interactive)
-      (let* ((default-directory howm-directory)
-             (builder (funcall #'consult--ripgrep-note-make-builder '(".")))
-             (note (save-window-excursion
-                     (consult--read
-                      (consult--async-command builder
-                        (consult--grep-format builder))
-                      :prompt "Note: "
-                      :lookup #'consult--lookup-member
-                      :state (consult--howm-link-state)
-                      :initial (consult--async-split-initial initial)
-                      :add-history (consult--async-split-thingatpt 'symbol)
-                      :require-match t
-                      :category 'consult-grep
-                      :group #'consult--prefix-group
-                      :history '(:input consult--grep-history)
-                      :sort nil)))
-             (file-end (next-single-property-change 0 'face note))
-             (file (substring-no-properties note 0 file-end))
-             (line (substring-no-properties note (1+ file-end)))
-             (line (substring line (1+ (seq-position line ?:))))
-             (desc (progn
-                     (string-match (rx bol
-                                       (+ (in "*" "#"))
-                                       (* (in " " "="))
-                                       " " (group (+ nonl))
-                                       eol)
-                                   line)
-                     (match-string howm-view-title-regexp-pos line))))
-        (insert
-         (org-link-make-string
-          (concat "file:" (expand-file-name file default-directory) "::*" desc)
-          desc))))
-
-    (keymap-global-set "C-c , k" 'consult-howm-link)
-    (keymap-set howm-mode-map "C-c , k" 'consult-howm-link)
-
-    (with-eval-after-load 'embark
-      (setf (alist-get 'consult-howm embark-keymap-alist)
-            (list 'embark-consult-howm-map))
-
-      (defun action-lock-target-finder ()
-        (pcase (action-lock-get-action/range)
-          (`(,action . (,beg ,end))
-           (cons 'action-lock
-                 (cons (buffer-substring-no-properties beg end)
-                       (cons beg end))))))
-
-      (defun action-lock-embark-setup ()
-        (if action-lock-mode
-            (setq-local embark-target-finders
-                        (seq-union '(action-lock-target-finder)
-                                   embark-target-finders))
-          (setq-local embark-target-finders
-                      (remove #'action-lock-target-finder
-                              embark-target-finders))))
-
-      (add-hook 'action-lock-mode-hook #'action-lock-embark-setup)
-
-      (defvar-keymap embark-action-lock-map
-        "RET" 'action-lock-magic-return)
-
-      (setf (alist-get 'action-lock embark-keymap-alist)
-            '(embark-action-lock-map))
-
-      (setf action-lock-mode-map nil)
-
-      (cl-defun embark-howm-consult (&key target candidates &allow-other-keys)
-        (consult-howm-grep (or (string-replace " " "\ " target)
-                               (string-join candidates "\ "))))
-
-      (cl-pushnew 'consult-howm-grep embark-multitarget-actions)
-      (cl-pushnew #'embark-howm-consult
-                  (alist-get 'consult-howm-grep embark-around-action-hooks))
-
-      (setf (alist-get 'consult-howm-grep embark-target-injection-hooks)
-            (list #'embark--allow-edit))
-
-      (keymap-set embark-general-map "u m" 'consult-howm-grep)
-      (keymap-set embark-region-map "u m" 'consult-howm-grep))))
-
 ;;;; sage-shell-mode
 
 (elpaca sage-shell-mode
@@ -2311,3 +2029,127 @@
 
 (elpaca visual-fill-column
   (add-hook 'text-mode-hook 'visual-fill-column-mode))
+
+;;;; denote
+
+(elpaca denote
+  (setopt denote-rename-buffer-mode t)
+
+  (with-eval-after-load 'consult
+    (defun consult--note-make-builder (paths)
+      (let ((rg-cmd (consult--build-args consult-ripgrep-args))
+            (find-cmd (seq-mapcat (lambda (x)
+                                    (pcase x
+                                      ('"." paths)
+                                      ('"(" '("\\("))
+                                      ('")" '("\\)"))
+                                      (_ (list x))))
+                                  (consult--build-args consult-find-args))))
+        (lambda (input)
+          (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                       (type (if (eq 0 (process-file-shell-command
+                                        (concat (car find-cmd) " -regextype emacs -version")))
+                                 'emacs 'basic))
+                       (`(,re) (funcall consult--regexp-compiler arg type t)))
+          (cons (list "sh" "-c"
+                        (string-join
+                         (append
+                          find-cmd
+                          (cdr (mapcan
+                                (lambda (x)
+                                  `("-and" "-iregex"
+                                    ,(format ".*%s.*"
+                                             (replace-regexp-in-string
+                                              "\\\\(\\?:" "\\(" x 'fixedcase 'literal))))
+                                re))
+                          opts '("|" "xargs" "-r") rg-cmd (list "-e" "^[*]+"))
+                         " "))
+                  #'ignore)))))
+
+    (defun consult-denote-headings (&optional initial)
+      (interactive)
+      (pcase-let* ((dir denote-directory)
+                   (`(,prompt ,paths ,dir) (consult--directory-prompt "Notes" dir))
+                   (default-directory dir)
+                   (builder (funcall #'consult--note-make-builder paths)))
+        (consult--read
+         (consult--async-command builder
+           (consult--grep-format builder))
+         :preview-key 'any
+         :prompt prompt
+         :lookup #'consult--lookup-member
+         :state (consult--grep-state)
+         :initial (consult--async-split-initial initial)
+         :add-history (consult--async-split-thingatpt 'symbol)
+         :require-match t
+         :category 'consult-grep
+         :group #'consult--prefix-group
+         :history '(:input consult--note-history)
+         :sort nil)))
+
+    (defun denote-backlinks-file (file)
+      (when (denote-file-is-writable-and-supported-p file)
+        (let* ((id (denote-retrieve-filename-identifier-with-error file))
+               (xref-show-xrefs-function #'denote-link--prepare-backlinks)
+               (project-find-functions #'denote-project-find))
+          (xref--show-xrefs
+           (apply-partially #'xref-matches-in-files id
+                            (denote-directory-files nil :omit-current :text-only))
+           nil))))
+
+    (define-keymap
+      :keymap search-map
+      "m" 'consult-denote-headings)))
+
+;; ;;;;; denote-menu
+
+;; (elpaca denote-menu
+;;   (global-set-key (kbd "C-c N") #'list-denotes)
+
+;;   (with-eval-after-load 'denote-menu
+;;     (define-keymap
+;;       :keymap denote-menu-mode-map
+;;       "c" #'denote-menu-clear-filters
+;;       "f" #'denote-menu-filter
+;;       "k" #'denote-menu-filter-by-keyword
+;;       "o" #'denote-menu-filter-out-keyword
+;;       "e" #'denote-menu-export-to-dired)))
+
+;;;;; consult notes
+
+(elpaca consult-notes
+  (with-eval-after-load 'denote
+    (consult-notes-denote-mode 1))
+  (keymap-global-set "C-c n" 'consult-denote)
+  (consult-customize consult-notes :preview-key "C-j")
+  (add-to-list 'vertico-multiform-commands '(consult-notes buffer))
+
+  (defun consult-denote ()
+    (interactive)
+    (consult--read
+     (funcall (plist-get consult-notes-denote--source :items))
+     :category 'consult-denote
+     :lookup #'consult--lookup-member
+     :annotate (plist-get consult-notes-denote--source :annotate)
+     :prompt "Denotes: "
+     :state (consult-notes-denote--state)
+     :preview-key 'any
+     :history 'consult-denote-history
+     :add-history (seq-some #'thing-at-point '(region symbol))
+     :require-match (confirm-nonexistent-file-or-buffer)))
+
+  (with-eval-after-load 'embark
+    (setf (alist-get 'consult-denote embark-keymap-alist)
+          '(embark-consult-denote-map))
+
+    (defun embark-export-notes (notes)
+      "Create a Dired buffer listing NOTES."
+      (embark-export-dired (mapcar #'consult-notes-denote--file notes))
+      (denote-dired-mode 1))
+
+    (setf (alist-get 'consult-denote embark-exporters-alist)
+          #'embark-export-notes)
+
+    (defvar-keymap embark-consult-denote-map
+      "M-RET" 'denote-link
+      "E" 'embark-export)))
