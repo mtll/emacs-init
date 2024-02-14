@@ -555,8 +555,6 @@
 ;;;; pdf-tools
 
 (elpaca pdf-tools
-  (add-hook 'pdf-view-mode-hook #'hide-mode-line-mode)
-
   (with-eval-after-load 'pdf-tools
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode))
 
@@ -578,7 +576,9 @@
 
 ;;;;; hide-mode-line-mode
 
-(elpaca hide-mode-line)
+(elpaca hide-mode-line
+  ;; (add-hook 'pdf-view-mode-hook #'hide-mode-line-mode)
+  )
 
 ;;;; tex
 
