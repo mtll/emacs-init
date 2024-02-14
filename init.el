@@ -1850,7 +1850,8 @@
             (consult-location buffer)
             (note buffer)
             (imenu buffer)
-            (embark-keybinding grid))
+            (embark-keybinding grid)
+            (consult-denote buffer))
           vertico-multiform-commands
           '((consult-symbol buffer)
             (consult-all-marks buffer)
@@ -2051,7 +2052,7 @@
                                         (concat (car find-cmd) " -regextype emacs -version")))
                                  'emacs 'basic))
                        (`(,re) (funcall consult--regexp-compiler arg type t)))
-          (cons (list "sh" "-c"
+            (cons (list "sh" "-c"
                         (string-join
                          (append
                           find-cmd
@@ -2097,32 +2098,15 @@
                             (denote-directory-files nil :omit-current :text-only))
            nil))))
 
-    (define-keymap
-      :keymap search-map
-      "m" 'consult-denote-headings)))
-
-;; ;;;;; denote-menu
-
-;; (elpaca denote-menu
-;;   (global-set-key (kbd "C-c N") #'list-denotes)
-
-;;   (with-eval-after-load 'denote-menu
-;;     (define-keymap
-;;       :keymap denote-menu-mode-map
-;;       "c" #'denote-menu-clear-filters
-;;       "f" #'denote-menu-filter
-;;       "k" #'denote-menu-filter-by-keyword
-;;       "o" #'denote-menu-filter-out-keyword
-;;       "e" #'denote-menu-export-to-dired)))
+    (keymap-global-set "C-c n h" 'consult-denote-headings)))
 
 ;;;;; consult notes
 
 (elpaca consult-notes
   (with-eval-after-load 'denote
     (consult-notes-denote-mode 1))
-  (keymap-global-set "C-c n" 'consult-denote)
+  (keymap-global-set "C-c n f" 'consult-denote)
   (consult-customize consult-notes :preview-key "C-j")
-  (add-to-list 'vertico-multiform-commands '(consult-notes buffer))
 
   (defun consult-denote ()
     (interactive)
