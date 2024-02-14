@@ -215,7 +215,9 @@
   (setq diary-entry-marker 'highlight)
   (setq calendar-holiday-marker 'match)
   (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
-  (add-hook 'list-diary-entries-hook 'sort-diary-entries t))
+  (add-hook 'list-diary-entries-hook 'sort-diary-entries t)
+
+  (appt-activate 1))
 
 ;;;; cc-mode
 
@@ -703,6 +705,7 @@
           org-fold-core-style 'overlays
           org-startup-indented nil)
 
+  (keymap-global-set "C-c c" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
   (keymap-global-set "C-c l" 'org-insert-link-global)
 
@@ -2035,26 +2038,26 @@
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
-  (with-eval-after-load 'denote
-    (require 'denote-org-extras))
+  (with-eval-after-load 'denote (require 'denote-org-extras))
+
   (setopt denote-rename-buffer-mode t)
 
   (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
+  (keymap-global-set "C-c n d" 'denote-dired-directory)
 
-  (defun denote-link-ol-get-id-ad ()
-    "Get the CUSTOM_ID of the current entry.
-If the entry already has a CUSTOM_ID, return it as-is, else
-create a new one."
-    (let* ((pos (point))
-           (id (org-entry-get pos "CUSTOM_ID")))
-      (if (and id (stringp id) (string-match-p "\\S-" id))
-          id
-        (setq id (org-id-new "h"))
-        (org-entry-put pos "CUSTOM_ID" id)
-        (when (y-or-n-p "Heading ID inserted, save file?")
-          (save-buffer))
-        id)))
-  (advice-add 'denote-link-ol-get-id :override 'denote-link-ol-get-id-ad)
+  (defun denote-dired-directory ()
+    (interactive)
+    (dired denote-directory))
+
+  (with-eval-after-load 'org-capture
+    (add-to-list 'org-capture-templates
+                 '("n" "New note (with Denote)" plain
+                   (file denote-last-path)
+                   #'denote-org-capture
+                   :no-save t
+                   :immediate-finish nil
+                   :kill-buffer t
+                   :jump-to-captured t)))
 
   (with-eval-after-load 'consult
     (defun consult--note-make-builder (paths)
@@ -2096,7 +2099,7 @@ create a new one."
         (consult--read
          (consult--async-command builder
            (consult--grep-format builder))
-         :preview-key 'any
+         :preview-key "C-j"
          :prompt prompt
          :lookup #'consult--lookup-member
          :state (consult--grep-state)
@@ -2146,11 +2149,14 @@ create a new one."
 (elpaca consult-notes
   (with-eval-after-load 'denote
     (consult-notes-denote-mode 1))
+
   (keymap-global-set "C-c n f" 'consult-denote)
   (consult-customize consult-notes :preview-key "C-j")
 
   (defun consult-denote ()
     (interactive)
+    (require 'denote)
+    (require 'consult-notes)
     (consult--read
      (funcall (plist-get consult-notes-denote--source :items))
      :category 'consult-denote
