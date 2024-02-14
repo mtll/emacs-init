@@ -1384,7 +1384,7 @@
   (defun embark-alt-line-target-finder ()
     (when (and (not (minibufferp))
                (not (region-active-p))
-               (eolp))
+               (bolp))
       (let ((bounds (bounds-of-thing-at-point 'line)))
         (cons 'line (cons
                      (buffer-substring (car bounds) (cdr bounds))
@@ -1412,11 +1412,11 @@
 
   (defun embark-alt-scroll-down (&rest _)
     (scroll-down-command)
-    (move-end-of-line nil))
+    (move-beginning-of-line nil))
 
   (defun embark-alt-scroll-up (&rest _)
     (scroll-up-command)
-    (move-end-of-line nil))
+    (move-beginning-of-line nil))
 
   (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
 
