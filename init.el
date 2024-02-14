@@ -969,8 +969,8 @@
   (define-keymap
     :keymap conn-misc-edit-map
     "d" 'duplicate-dwim
-    "b" 'subword-mode
-    "B" 'global-subword-mode)
+    "," 'subword-mode
+    "<" 'global-subword-mode)
 
   (set-default-conn-state '(minibuffer-mode
                             eshell-mode
