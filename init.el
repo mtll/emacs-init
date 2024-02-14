@@ -1835,7 +1835,8 @@
           vertico-count 10
           vertico-cycle t
           vertico-multiform-categories
-          '((lsp-capf
+          '((consult-denote-heading buffer)
+            (lsp-capf
              buffer
              (vertico-buffer-display-action . (display-buffer-same-window)))
             (file
@@ -2033,8 +2034,27 @@
 
 ;;;; denote
 
-(elpaca denote
+(elpaca (denote :files (:defaults "denote-org-extras.el"))
+  (with-eval-after-load 'denote
+    (require 'denote-org-extras))
   (setopt denote-rename-buffer-mode t)
+
+  (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
+
+  (defun denote-link-ol-get-id-ad ()
+    "Get the CUSTOM_ID of the current entry.
+If the entry already has a CUSTOM_ID, return it as-is, else
+create a new one."
+    (let* ((pos (point))
+           (id (org-entry-get pos "CUSTOM_ID")))
+      (if (and id (stringp id) (string-match-p "\\S-" id))
+          id
+        (setq id (org-id-new "h"))
+        (org-entry-put pos "CUSTOM_ID" id)
+        (when (y-or-n-p "Heading ID inserted, save file?")
+          (save-buffer))
+        id)))
+  (advice-add 'denote-link-ol-get-id :override 'denote-link-ol-get-id-ad)
 
   (with-eval-after-load 'consult
     (defun consult--note-make-builder (paths)
@@ -2083,7 +2103,7 @@
          :initial (consult--async-split-initial initial)
          :add-history (consult--async-split-thingatpt 'symbol)
          :require-match t
-         :category 'consult-grep
+         :category 'consult-denote-heading
          :group #'consult--prefix-group
          :history '(:input consult--note-history)
          :sort nil)))
@@ -2098,7 +2118,28 @@
                             (denote-directory-files nil :omit-current :text-only))
            nil))))
 
-    (keymap-global-set "C-c n h" 'consult-denote-headings)))
+    (keymap-global-set "C-c n h" 'consult-denote-headings))
+
+  (with-eval-after-load 'embark
+    (defun embark-consult-denote-heading-link (cand)
+      (when-let (cand
+                 (file-end (next-single-property-change 0 'face cand))
+                 (line-end (next-single-property-change (1+ file-end) 'face cand))
+                 (file (expand-file-name (substring-no-properties cand 0 file-end)))
+                 (file-text (denote--link-get-description file))
+                 (line (string-to-number (substring-no-properties cand (1+ file-end) line-end)))
+                 (heading-data (denote-org-extras--get-heading-and-id-from-line line file))
+                 (heading-text (car heading-data))
+                 (heading-id (cdr heading-data))
+                 (description (denote-link-format-heading-description file-text heading-text)))
+        (insert (denote-org-extras-format-link-with-heading file heading-id description))))
+
+    (defvar-keymap embark-consult-denote-heading-map
+      :parent embark-consult-grep-map
+      "M-RET" 'embark-consult-denote-heading-link)
+
+    (setf (alist-get 'consult-denote-heading embark-keymap-alist)
+          (list 'embark-consult-denote-heading-map))))
 
 ;;;;; consult notes
 
