@@ -301,10 +301,13 @@
 ;;;; recentf
 
 (progn
+  (require 'recentf)
+
   (setq recentf-save-file "~/.emacs.d/var/recentf"
         recentf-max-saved-items 100
-        recentf-max-menu-items 15
-        recentf-mode t)
+        recentf-max-menu-items 15)
+
+  (recentf-mode 1)
 
   (with-eval-after-load 'no-littering
     (setq recentf-save-file "~/.emacs.d/var/recentf")
