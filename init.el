@@ -56,6 +56,7 @@
 (elpaca-wait)
 
 ;;; Built-in
+
 ;;;; emacs
 
 (setopt fill-column 72
@@ -119,8 +120,6 @@
         line-number-mode t
         electric-pair-mode t
         context-menu-mode t
-        tab-bar-mode t
-        winner-mode t
         undelete-frame-mode t
         yank-from-kill-ring-rotate nil)
 
@@ -206,6 +205,23 @@
                      gcs-done)))
 
 (find-function-setup-keys)
+
+;;; tab-bar-mode
+
+(progn
+  (tab-bar-mode 1)
+  (tab-bar-history-mode 1)
+
+  (with-eval-after-load 'conn-mode
+    (defvar-keymap tab-bar-history-mode-repeat-map
+      :repeat t
+      "/" 'tab-bar-history-forward
+      "?" 'tab-bar-history-back)
+    
+    (define-keymap
+     :keymap tab-bar-history-mode-map
+     "C-x 4 /" 'tab-bar-history-forward
+     "C-x 4 ?" 'tab-bar-history-back)))
 
 ;;;; diary / calendar
 
@@ -698,7 +714,8 @@
 (elpaca org
   (run-with-idle-timer 4 nil (lambda () (require 'org)))
 
-  (setopt org-src-window-setup 'plain
+  (setopt org-agenda-include-diary t
+          org-src-window-setup 'plain
           org-startup-truncated nil
           org-insert-mode-line-in-empty-file t
           org-confirm-babel-evaluate nil
@@ -822,7 +839,7 @@
       "t" 'transpose-frame
       ">" 'rotate-frame-clockwise
       "<" 'rotate-frame-anticlockwise
-      "/" 'rotate-frame
+      "@" 'rotate-frame
       "_" 'flip-frame
       "|" 'flop-frame)
 
@@ -944,6 +961,7 @@
           conn-state-buffer-colors t
           conn-mode-line-indicator-mode t
           conn-modes '(prog-mode
+                       conf-mode
                        diary-mode
                        fundamental-mode
                        (not pdf-outline-buffer-mode)
