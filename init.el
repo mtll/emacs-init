@@ -1299,9 +1299,12 @@
 (elpaca embark
   (require 'embark)
 
-  (setq embark-mixed-indicator-delay .66
+  (setq embark-mixed-indicator-delay .4
         embark-quit-after-action t
-        embark-indicators '(embark-minimal-indicator
+        embark-verbose-indicator-display-action
+        '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
+        embark-indicators '(embark-mixed-indicator
+                            embark-minimal-indicator
                             embark-highlight-indicator
                             embark-isearch-highlight-indicator)
         embark-prompter 'embark-keymap-prompter
@@ -1851,6 +1854,8 @@
 (elpaca (vertico :files (:defaults "extensions/*"))
   (setq vertico-preselect 'first
         vertico-buffer-hide-prompt nil
+        vertico-count 10
+        vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
         vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
                                      #(" " 0 1 (face vertico-group-separator
@@ -1878,6 +1883,11 @@
   (vertico-mode 1)
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
+
+  (defun vertico--display-count-ad ()
+    (when vertico-flat-mode
+      (overlay-put vertico--count-ov 'before-string "")))
+  (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
 
   (defun vertico-buffer--setup-ad ()
     "Setup buffer display."
