@@ -217,7 +217,7 @@
       :repeat t
       "/" 'tab-bar-history-forward
       "?" 'tab-bar-history-back)
-    
+
     (define-keymap
      :keymap tab-bar-history-mode-map
      "C-x 4 /" 'tab-bar-history-forward
@@ -1854,43 +1854,14 @@
                                        #(" " 0 1 (face vertico-group-separator
                                                        display (space :align-to right))))
           vertico-count 10
-          vertico-cycle t
-          vertico-multiform-categories
-          '((consult-denote-heading buffer)
-            (lsp-capf
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (file
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (bookmark
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (consult-howm buffer)
-            (consult-grep buffer)
-            (consult-line buffer)
-            (consult-location buffer)
-            (note buffer)
-            (imenu buffer)
-            (embark-keybinding grid)
-            (consult-denote buffer))
-          vertico-multiform-commands
-          '((consult-symbol buffer)
-            (consult-all-marks buffer)
-            (helpful-callable buffer)
-            (helpful-variable buffer)
-            (consult-buffer buffer)
-            (consult-project-buffer buffer)
-            (completion-at-point
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (tempel-insert
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (tempel-complete
-             buffer
-             (vertico-buffer-display-action . (display-buffer-same-window)))
-            (denote-ripgrep-notes buffer)))
+          vertico-cycle t)
+
+  (vertico-mode 1)
+  (vertico-buffer-mode 1)
+  (vertico-mouse-mode 1)
+
+  (setq vertico-buffer-display-action
+        '(display-buffer-reuse-mode-window (mode . minibuffer-mode)))
 
   (defun vertico--display-count-ad ()
     (when vertico-flat-mode
@@ -1902,10 +1873,6 @@
                  '((t :inherit default :background "#b7c9e6")))
   (face-spec-set 'vertico-group-title
                  '((t :inherit default :background "#b7c9e6" :bold t)))
-
-  (vertico-mode 1)
-  (vertico-multiform-mode 1)
-  (vertico-mouse-mode 1)
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
