@@ -2112,7 +2112,7 @@
                             (denote-directory-files nil :omit-current :text-only))
            nil))))
 
-    (keymap-global-set "C-c n h" 'consult-denote-headings))
+    (keymap-global-set "C-c n t" 'consult-denote-headings))
 
   (with-eval-after-load 'embark
     (defun embark-consult-denote-heading-link (cand)
