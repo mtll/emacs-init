@@ -102,7 +102,6 @@
                                        ((control) . text-scale))
       mouse-wheel-progressive-speed nil
       register-separator ?+
-      indent-tabs-mode nil
       history-delete-duplicates t
       disabled-command-function nil
       switch-to-buffer-obey-display-actions t
@@ -112,17 +111,19 @@
       minibuffer-prompt-properties '(read-only t
                                                cursor-intangible t
                                                face minibuffer-prompt)
-      minibuffer-depth-indicate-mode t
-      global-goto-address-mode t
-      show-paren-mode t
-      delete-selection-mode t
-      column-number-mode t
-      line-number-mode t
-      electric-pair-mode t
-      context-menu-mode t
-      undelete-frame-mode t
       yank-from-kill-ring-rotate nil
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path))
+
+(minibuffer-depth-indicate-mode 1)
+(global-goto-address-mode 1)
+(show-paren-mode 1)
+(delete-selection-mode 1)
+(column-number-mode 1)
+(line-number-mode 1)
+(electric-pair-mode 1)
+(undelete-frame-mode 1)
+(context-menu-mode 1)
+(indent-tabs-mode 0)
 
 (define-key global-map [remap yank] 'yank-in-context)
 
