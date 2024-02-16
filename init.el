@@ -59,71 +59,70 @@
 
 ;;;; emacs
 
-(setopt fill-column 72
-        minibuffer-default-prompt-format ""
-        use-short-answers t
-        y-or-n-p-use-read-key t
-        xref-search-program 'ripgrep
-        read-process-output-max (* 1024 1024)
-        scroll-error-top-bottom t
-        browse-url-browser-function 'browse-url-generic
-        browse-url-generic-program "firefox"
-        delete-by-moving-to-trash t
-        pulse-iterations 16
-        xref-history-storage 'xref-window-local-history
-        xref-prompt-for-identifier nil
-        view-read-only t
-        set-mark-command-repeat-pop t
-        read-file-name-completion-ignore-case t
-        read-buffer-completion-ignore-case t
-        translate-upper-case-key-bindings nil
-        show-paren-context-when-offscreen 'child-frame
-        sentence-end-double-space nil
-        tab-always-indent 'complete
-        read-minibuffer-restore-windows nil
-        dired-listing-switches "-alFh --dired --group-directories-first"
-        isearch-lazy-count t
-        isearch-yank-on-move t
-        enable-recursive-minibuffers t
-        ediff-split-window-function #'ediff-split-fn
-        uniquify-buffer-name-style 'post-forward
-        uniquify-separator " | "
-        uniquify-after-kill-buffer-p t
-        uniquify-ignore-buffers-re "^\\*"
-        global-mark-ring-max 32
-        mark-ring-max 32
-        undo-limit 8000000
-        undo-strong-limit 16000000
-        undo-outer-limit 32000000
-        read-process-output-max (ash 1 18)
-        mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
-                                         ((meta))
-                                         ((control meta) . global-text-scale)
-                                         ((control) . text-scale))
-        mouse-wheel-progressive-speed nil
-        register-separator ?+
-        indent-tabs-mode nil
-        history-delete-duplicates t
-        disabled-command-function nil
-        switch-to-buffer-obey-display-actions t
-        resize-mini-windows 'grow-only
-        tab-bar-show nil
-        tab-bar-tab-name-function 'tab-bar-tab-name-all
-        minibuffer-prompt-properties '(read-only t
-                                                 cursor-intangible t
-                                                 face minibuffer-prompt)
-        minibuffer-depth-indicate-mode t
-        global-goto-address-mode t
-        show-paren-mode t
-        delete-selection-mode t
-        column-number-mode t
-        line-number-mode t
-        electric-pair-mode t
-        context-menu-mode t
-        undelete-frame-mode t
-        yank-from-kill-ring-rotate nil)
-
-(setq exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path))
+(setq fill-column 72
+      minibuffer-default-prompt-format ""
+      use-short-answers t
+      y-or-n-p-use-read-key t
+      xref-search-program 'ripgrep
+      read-process-output-max (* 1024 1024)
+      scroll-error-top-bottom t
+      browse-url-browser-function 'browse-url-generic
+      browse-url-generic-program "firefox"
+      delete-by-moving-to-trash t
+      pulse-iterations 16
+      xref-history-storage 'xref-window-local-history
+      xref-prompt-for-identifier nil
+      view-read-only t
+      set-mark-command-repeat-pop t
+      read-file-name-completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      translate-upper-case-key-bindings nil
+      show-paren-context-when-offscreen 'child-frame
+      sentence-end-double-space nil
+      tab-always-indent 'complete
+      read-minibuffer-restore-windows nil
+      dired-listing-switches "-alFh --dired --group-directories-first"
+      isearch-lazy-count t
+      isearch-yank-on-move t
+      enable-recursive-minibuffers t
+      ediff-split-window-function #'ediff-split-fn
+      uniquify-buffer-name-style 'post-forward
+      uniquify-separator " | "
+      uniquify-after-kill-buffer-p t
+      uniquify-ignore-buffers-re "^\\*"
+      global-mark-ring-max 32
+      mark-ring-max 32
+      undo-limit 8000000
+      undo-strong-limit 16000000
+      undo-outer-limit 32000000
+      read-process-output-max (ash 1 18)
+      mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
+                                       ((meta))
+                                       ((control meta) . global-text-scale)
+                                       ((control) . text-scale))
+      mouse-wheel-progressive-speed nil
+      register-separator ?+
+      indent-tabs-mode nil
+      history-delete-duplicates t
+      disabled-command-function nil
+      switch-to-buffer-obey-display-actions t
+      resize-mini-windows 'grow-only
+      tab-bar-show nil
+      tab-bar-tab-name-function 'tab-bar-tab-name-all
+      minibuffer-prompt-properties '(read-only t
+                                               cursor-intangible t
+                                               face minibuffer-prompt)
+      minibuffer-depth-indicate-mode t
+      global-goto-address-mode t
+      show-paren-mode t
+      delete-selection-mode t
+      column-number-mode t
+      line-number-mode t
+      electric-pair-mode t
+      context-menu-mode t
+      undelete-frame-mode t
+      yank-from-kill-ring-rotate nil
+      exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path))
 
 (define-key global-map [remap yank] 'yank-in-context)
 
@@ -219,17 +218,17 @@
       "?" 'tab-bar-history-back)
 
     (define-keymap
-     :keymap tab-bar-history-mode-map
-     "C-x 4 /" 'tab-bar-history-forward
-     "C-x 4 ?" 'tab-bar-history-back)))
+      :keymap tab-bar-history-mode-map
+      "C-x 4 /" 'tab-bar-history-forward
+      "C-x 4 ?" 'tab-bar-history-back)))
 
 ;;;; diary / calendar
 
 (progn
   (require 'calendar)
   (keymap-global-set "<f5>" #'calendar)
-  (setq diary-entry-marker 'highlight)
-  (setq calendar-holiday-marker 'match)
+  (setq diary-entry-marker 'highlight
+        calendar-holiday-marker 'match)
   (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
   (add-hook 'list-diary-entries-hook 'sort-diary-entries t)
 
@@ -250,37 +249,37 @@
       (when (= tick (buffer-modified-tick))
         (completion-at-point))))
 
-  (setopt c-hanging-semi&comma-criteria 'set-from-style))
+  (setq c-hanging-semi&comma-criteria 'set-from-style))
 
 ;;;; doc-view
 
-(setopt doc-view-resolution 196)
+(setq doc-view-resolution 196)
 
 ;;;; ispell
 
-(setopt ispell-program-name "aspell"
-        ispell-dictionary "american")
+(setq ispell-program-name "aspell"
+      ispell-dictionary "american")
 
 ;;;; savehist
 
 (progn
-  (setopt savehist-additional-variables
-          '(projectile-project-command-history
-            file-name-history
-            search-ring
-            regexp-search-ring
-            register-alist)
-          savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory)
-          savehist-mode t))
+  (setq savehist-additional-variables
+        '(projectile-project-command-history
+          file-name-history
+          search-ring
+          regexp-search-ring
+          register-alist)
+        savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory)
+        savehist-mode t))
 
 ;;;; repeat
 
 (progn
-  (setopt repeat-check-key t
-          repeat-exit-timeout nil
-          repeat-echo-function 'repeat-echo-message
-          repeat-keep-prefix nil
-          repeat-on-final-keystroke t)
+  (setq repeat-check-key t
+        repeat-exit-timeout nil
+        repeat-echo-function 'repeat-echo-message
+        repeat-keep-prefix nil
+        repeat-on-final-keystroke t)
 
   (repeat-mode 1)
 
@@ -289,7 +288,7 @@
 ;;;; autorevert
 
 (progn
-  (setopt auto-revert-interval .01)
+  (setq auto-revert-interval .01)
   (global-auto-revert-mode 1)
   (diminish 'auto-revert-mode))
 
@@ -301,13 +300,13 @@
 ;;;; recentf
 
 (progn
-  (setopt recentf-save-file "~/.emacs.d/var/recentf"
-          recentf-max-saved-items 100
-          recentf-max-menu-items 15
-          recentf-mode t)
+  (setq recentf-save-file "~/.emacs.d/var/recentf"
+        recentf-max-saved-items 100
+        recentf-max-menu-items 15
+        recentf-mode t)
 
   (with-eval-after-load 'no-littering
-    (setopt recentf-save-file "~/.emacs.d/var/recentf")
+    (setq recentf-save-file "~/.emacs.d/var/recentf")
     (add-to-list 'recentf-exclude no-littering-var-directory)
     (add-to-list 'recentf-exclude no-littering-etc-directory)))
 
@@ -321,9 +320,9 @@
 ;;;; dired
 
 (with-eval-after-load 'dired
-  (setopt dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
-                                   (seq string-start (1+ "#"))))
-          dired-dwim-target 'dired-dwim-target-recent)
+  (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
+                                 (seq string-start (1+ "#"))))
+        dired-dwim-target 'dired-dwim-target-recent)
 
   (define-keymap
     :keymap dired-mode-map
@@ -335,7 +334,7 @@
 (progn
   (diminish 'eldoc-mode)
 
-  (setopt eldoc-echo-area-prefer-doc-buffer t))
+  (setq eldoc-echo-area-prefer-doc-buffer t))
 
 ;;; Packages
 
@@ -426,8 +425,8 @@
 ;;;; sly
 
 (elpaca sly
-  (setopt inferior-lisp-program "sbcl --dynamic-space-size 8000"
-          sly-symbol-completion-mode nil))
+  (setq inferior-lisp-program "sbcl --dynamic-space-size 8000"
+        sly-symbol-completion-mode nil))
 
 ;;;;; sly-quicklisp
 
@@ -491,15 +490,15 @@
 
   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
 
-  (setopt lsp-keymap-prefix "C-c l"
-          lsp-eldoc-render-all nil
-          lsp-enable-on-type-formatting nil
-          lsp-ui-doc-alignment 'window
-          lsp-ui-doc-header t
-          lsp-ui-doc-border "black"
-          lsp-ui-doc-background '((t (:background "#dfd9cf")))
-          ;; lsp-flycheck-warning-unnecessary-face '((t (:inherit modus-themes-lang-warning)))
-          lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
+  (setq lsp-keymap-prefix "C-c l"
+        lsp-eldoc-render-all nil
+        lsp-enable-on-type-formatting nil
+        lsp-ui-doc-alignment 'window
+        lsp-ui-doc-header t
+        lsp-ui-doc-border "black"
+        lsp-ui-doc-background '((t (:background "#dfd9cf")))
+        ;; lsp-flycheck-warning-unnecessary-face '((t (:inherit modus-themes-lang-warning)))
+        lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
 
   (setq lsp-clients-clangd-args '("-j=4"
                                   "--log=error"
@@ -553,9 +552,9 @@
 ;;;; j-mode
 
 (elpaca j-mode
-  (setopt j-console-cmd
-          (locate-file "j9.4/jconsole.sh" exec-path
-                       nil #'file-executable-p)))
+  (setq j-console-cmd
+        (locate-file "j9.4/jconsole.sh" exec-path
+                     nil #'file-executable-p)))
 
 ;;;; cmake-mode
 
@@ -564,7 +563,7 @@
 ;;;; zig-mode
 
 (elpaca zig-mode
-  (setopt zig-format-on-save nil))
+  (setq zig-format-on-save nil))
 
 ;;;; ess
 
@@ -714,13 +713,13 @@
 (elpaca org
   (run-with-idle-timer 4 nil (lambda () (require 'org)))
 
-  (setopt org-agenda-include-diary t
-          org-src-window-setup 'plain
-          org-startup-truncated nil
-          org-insert-mode-line-in-empty-file t
-          org-confirm-babel-evaluate nil
-          org-fold-core-style 'overlays
-          org-startup-indented nil)
+  (setq org-agenda-include-diary t
+        org-src-window-setup 'plain
+        org-startup-truncated nil
+        org-insert-mode-line-in-empty-file t
+        org-confirm-babel-evaluate nil
+        org-fold-core-style 'overlays
+        org-startup-indented nil)
 
   (keymap-global-set "C-c c" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
@@ -807,9 +806,9 @@
 (elpaca no-littering
   (require 'no-littering)
   (no-littering-theme-backups)
-  (setopt backup-by-copying t
-          auto-save-file-name-transforms
-          `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
+  (setq backup-by-copying t
+        auto-save-file-name-transforms
+        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
 ;;;; crux
 
@@ -858,18 +857,18 @@
 ;;;; popper
 
 (elpaca popper
-  (setopt popper-display-function 'display-buffer-reuse-window
-          popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
-          popper-reference-buffers '("\\*Messages\\*"
-                                     "\\*Warnings\\*"
-                                     "Output\\*$"
-                                     "\\*Async Shell Command\\*"
-                                     "\\*sly-macroexpansion"
-                                     "\\*sly-description\\*"
-                                     "\\*projectile-files-errors\\*"
-                                     help-mode
-                                     helpful-mode
-                                     compilation-mode))
+  (setq popper-display-function 'display-buffer-reuse-window
+        popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
+        popper-reference-buffers '("\\*Messages\\*"
+                                   "\\*Warnings\\*"
+                                   "Output\\*$"
+                                   "\\*Async Shell Command\\*"
+                                   "\\*sly-macroexpansion"
+                                   "\\*sly-description\\*"
+                                   "\\*projectile-files-errors\\*"
+                                   help-mode
+                                   helpful-mode
+                                   compilation-mode))
 
   (define-keymap
     :keymap global-map
@@ -893,8 +892,8 @@
   (when window-system
     (ace-window-posframe-mode 1))
 
-  (setopt aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
-          aw-dispatch-always t)
+  (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
+        aw-dispatch-always t)
 
   (face-spec-set
    'aw-leading-char-face
@@ -936,15 +935,15 @@
   (run-with-idle-timer 1.5 nil (lambda () (require 'isearch+)))
 
   (with-eval-after-load 'isearch+
-    (setopt isearchp-lazy-dim-filter-failures-flag nil
-            isearchp-restrict-to-region-flag nil
-            isearchp-deactivate-region-flag nil
-            isearchp-movement-unit-alist '((?w . forward-word)
-                                           (?s . forward-sexp)
-                                           (?i . forward-list)
-                                           (?s . forward-sentence)
-                                           (?c . forward-char)
-                                           (?l . forward-line)))))
+    (setq isearchp-lazy-dim-filter-failures-flag nil
+          isearchp-restrict-to-region-flag nil
+          isearchp-deactivate-region-flag nil
+          isearchp-movement-unit-alist '((?w . forward-word)
+                                         (?s . forward-sexp)
+                                         (?i . forward-list)
+                                         (?s . forward-sentence)
+                                         (?c . forward-char)
+                                         (?l . forward-line)))))
 
 ;;;; isearch-prop
 
@@ -957,23 +956,23 @@
 (elpaca (conn-mode :host codeberg
                    :repo "crcs/conn-mode"
                    :files (:defaults "extensions/*"))
-  (setopt conn-lighter nil
-          conn-state-buffer-colors t
-          conn-mode-line-indicator-mode t
-          conn-modes '(prog-mode
-                       conf-mode
-                       diary-mode
-                       fundamental-mode
-                       (not pdf-outline-buffer-mode)
-                       text-mode
-                       outline-mode
-                       eshell-mode
-                       minibuffer-mode
-                       grep-mode
-                       occur-mode)
-          dot-state-cursor-type 'box
-          conn-state-cursor-type 'box
-          emacs-state-cursor-type 'box)
+  (setq conn-lighter nil
+        conn-state-buffer-colors t
+        conn-mode-line-indicator-mode t
+        conn-modes '(prog-mode
+                     conf-mode
+                     diary-mode
+                     fundamental-mode
+                     (not pdf-outline-buffer-mode)
+                     text-mode
+                     outline-mode
+                     eshell-mode
+                     minibuffer-mode
+                     grep-mode
+                     occur-mode)
+        dot-state-cursor-type 'box
+        conn-state-cursor-type 'box
+        emacs-state-cursor-type 'box)
 
   (conn-mode 1)
 
@@ -1055,7 +1054,7 @@
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
 
-    (setopt conn-complete-keys-prefix-help-command t)
+    (setq conn-complete-keys-prefix-help-command t)
 
     (conn-complete-keys-mode 1)
 
@@ -1093,13 +1092,13 @@
                    :main "bookmark+.el")
   (run-with-idle-timer 1 nil (lambda () (require 'bookmark+)))
 
-  (setopt bmkp-bookmark-map-prefix-keys '("x")
-          bookmark-default-file (expand-file-name "~/.emacs.d/var/bmkp/current-bookmark.el")
-          bmkp-last-as-first-bookmark-file nil
-          bmkp-prompt-for-tags-flag t
-          bookmark-version-control t
-          delete-old-versions t
-          bookmark-save-flag 1)
+  (setq bmkp-bookmark-map-prefix-keys '("x")
+        bookmark-default-file (expand-file-name "~/.emacs.d/var/bmkp/current-bookmark.el")
+        bmkp-last-as-first-bookmark-file nil
+        bmkp-prompt-for-tags-flag t
+        bookmark-version-control t
+        delete-old-versions t
+        bookmark-save-flag 1)
 
   (defun bmkp-org-bookmark-store-link-1 ()
     (when (eq major-mode #'bookmark-bmenu-mode)
@@ -1146,17 +1145,17 @@
 
   (with-eval-after-load 'conn-mode
     (define-keymap
-     :keymap conn-misc-edit-map
-     "R" 'vr/query-replace
-     "r" 'vr/replace)))
+      :keymap conn-misc-edit-map
+      "R" 'vr/query-replace
+      "r" 'vr/replace)))
 
 ;;;; avy
 
 (elpaca avy
-  (setopt avy-single-candidate-jump nil
-          avy-timeout-seconds 0.45
-          avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
-          avy-line-insert-style 'below)
+  (setq avy-single-candidate-jump nil
+        avy-timeout-seconds 0.45
+        avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
+        avy-line-insert-style 'below)
 
   (setf (alist-get 'avy-goto-char-timer avy-orders-alist) #'avy-order-closest)
 
@@ -1297,15 +1296,15 @@
 (elpaca embark
   (require 'embark)
 
-  (setopt embark-mixed-indicator-delay .66
-          embark-quit-after-action t
-          embark-indicators '(embark-minimal-indicator
-                              embark-highlight-indicator
-                              embark-isearch-highlight-indicator)
-          embark-prompter 'embark-keymap-prompter
-          embark-cycle-key "."
-          embark-help-key "?"
-          embark-confirm-act-all nil)
+  (setq embark-mixed-indicator-delay .66
+        embark-quit-after-action t
+        embark-indicators '(embark-minimal-indicator
+                            embark-highlight-indicator
+                            embark-isearch-highlight-indicator)
+        embark-prompter 'embark-keymap-prompter
+        embark-cycle-key "."
+        embark-help-key "?"
+        embark-confirm-act-all nil)
 
   (with-eval-after-load 'org
     (add-to-list 'embark-target-finders 'embark-org-target-link))
@@ -1541,11 +1540,11 @@
 ;;;; corfu
 
 (elpaca corfu
-  (setopt corfu-quit-at-boundary nil
-          corfu-quit-no-match nil
-          corfu-preview-current nil
-          corfu-on-exact-match nil
-          corfu-auto nil)
+  (setq corfu-quit-at-boundary nil
+        corfu-quit-no-match nil
+        corfu-preview-current nil
+        corfu-on-exact-match nil
+        corfu-auto nil)
 
   (global-corfu-mode 1)
 
@@ -1642,12 +1641,12 @@
       :keymap minibuffer-local-map
       "M-C" 'orderless-toggle-smart-case)
 
-    (setopt completion-styles '(orderless basic)
-            orderless-matching-styles '(orderless-literal
-                                        orderless-initialism
-                                        orderless-regexp)
-            completion-category-overrides '((file (styles basic partial-completion)))
-            orderless-component-separator #'orderless-escapable-split-on-space)))
+    (setq completion-styles '(orderless basic)
+          orderless-matching-styles '(orderless-literal
+                                      orderless-initialism
+                                      orderless-regexp)
+          completion-category-overrides '((file (styles basic partial-completion)))
+          orderless-component-separator #'orderless-escapable-split-on-space)))
 
 ;;;;; orderless-set-operations
 
@@ -1666,24 +1665,24 @@
 ;;;; consult
 
 (elpaca consult
-  (setopt consult-async-min-input 3
-          consult-yank-rotate nil
-          consult-narrow-key "M-N"
-          consult-ripgrep-args (concat consult-ripgrep-args " --multiline")
-          xref-show-xrefs-function #'consult-xref
-          xref-show-definitions-function #'consult-xref
-          register-preview-delay 0.3
-          register-preview-function #'consult-register-format
-          consult-project-function (lambda (_) (projectile-project-root))
-          completion-in-region-function #'consult-completion-in-region
-          consult-buffer-sources '(consult--source-hidden-buffer
-                                   consult--source-modified-buffer
-                                   consult--source-buffer
-                                   consult--source-bookmark
-                                   consult--source-recent-file
-                                   consult--source-file-register
-                                   consult--source-project-buffer-hidden
-                                   consult--source-project-recent-file-hidden))
+  (setq consult-async-min-input 3
+        consult-yank-rotate nil
+        consult-narrow-key "M-N"
+        consult-ripgrep-args (concat consult-ripgrep-args " --multiline")
+        xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref
+        register-preview-delay 0.3
+        register-preview-function #'consult-register-format
+        consult-project-function (lambda (_) (projectile-project-root))
+        completion-in-region-function #'consult-completion-in-region
+        consult-buffer-sources '(consult--source-hidden-buffer
+                                 consult--source-modified-buffer
+                                 consult--source-buffer
+                                 consult--source-bookmark
+                                 consult--source-recent-file
+                                 consult--source-file-register
+                                 consult--source-project-buffer-hidden
+                                 consult--source-project-recent-file-hidden))
 
   (define-key global-map [remap Info-search] 'consult-info)
   (define-key global-map [remap bookmark-jump] 'consult-bookmark)
@@ -1847,14 +1846,14 @@
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
-  (setopt vertico-preselect 'first
-          vertico-buffer-hide-prompt t
-          vertico-buffer-display-action '(display-buffer-reuse-window)
-          vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
-                                       #(" " 0 1 (face vertico-group-separator
-                                                       display (space :align-to right))))
-          vertico-count 10
-          vertico-cycle t)
+  (setq vertico-preselect 'first
+        vertico-buffer-hide-prompt t
+        vertico-buffer-display-action '(display-buffer-reuse-window)
+        vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
+                                     #(" " 0 1 (face vertico-group-separator
+                                                     display (space :align-to right))))
+        vertico-count 10
+        vertico-cycle t)
 
   (vertico-mode 1)
   (vertico-buffer-mode 1)
@@ -2025,7 +2024,7 @@
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
   (with-eval-after-load 'denote (require 'denote-org-extras))
 
-  (setopt denote-rename-buffer-mode t)
+  (setq denote-rename-buffer-mode t)
 
   (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n d" 'denote-dired-directory)
