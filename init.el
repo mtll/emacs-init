@@ -114,6 +114,8 @@
       yank-from-kill-ring-rotate nil
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path))
 
+(setq-default indent-tabs-mode nil)
+
 (minibuffer-depth-indicate-mode 1)
 (global-goto-address-mode 1)
 (show-paren-mode 1)
@@ -123,7 +125,6 @@
 (electric-pair-mode 1)
 (undelete-frame-mode 1)
 (context-menu-mode 1)
-(indent-tabs-mode 0)
 
 (define-key global-map [remap yank] 'yank-in-context)
 
@@ -303,15 +304,12 @@
 ;;;; recentf
 
 (progn
-  (require 'recentf)
-
-  (setq recentf-save-file (expand-file-name "var/recentf" user-emacs-directory)
-        recentf-max-saved-items 100
-        recentf-max-menu-items 15)
-
-  (recentf-mode 1)
-
   (with-eval-after-load 'no-littering
+    (setq recentf-max-saved-items 100
+          recentf-max-menu-items 15)
+
+    (recentf-mode 1)
+
     (add-to-list 'recentf-exclude no-littering-var-directory)
     (add-to-list 'recentf-exclude no-littering-etc-directory)))
 
@@ -1868,15 +1866,15 @@
                                         (vertico-buffer-display-action . (display-buffer-same-window)))
                                        (t buffer))
         vertico-multiform-commands '((completion-at-point
-	                              buffer
-	                              (vertico-buffer-display-action . (display-buffer-same-window)))
-	                             (tempel-insert
-	                              buffer
-	                              (vertico-buffer-display-action . (display-buffer-same-window)))
-	                             (tempel-complete
-	                              buffer
-	                              (vertico-buffer-display-action . (display-buffer-same-window)))))
-  
+                                      buffer
+                                      (vertico-buffer-display-action . (display-buffer-same-window)))
+                                     (tempel-insert
+                                      buffer
+                                      (vertico-buffer-display-action . (display-buffer-same-window)))
+                                     (tempel-complete
+                                      buffer
+                                      (vertico-buffer-display-action . (display-buffer-same-window)))))
+
   (vertico-mode 1)
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
