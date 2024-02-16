@@ -2029,9 +2029,9 @@
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
-  (with-eval-after-load 'denote (require 'denote-org-extras))
-
-  (denote-rename-buffer-mode 1)
+  (with-eval-after-load 'denote
+    (require 'denote-org-extras)
+    (denote-rename-buffer-mode 1))
 
   (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n d" 'denote-dired-directory)
