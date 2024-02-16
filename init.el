@@ -266,12 +266,11 @@
 (progn
   (require 'savehist)
 
-  (setq savehist-additional-variables
-        '(projectile-project-command-history
-          file-name-history
-          search-ring
-          regexp-search-ring
-          register-alist)
+  (setq savehist-additional-variables '(projectile-project-command-history
+                                        file-name-history
+                                        search-ring
+                                        regexp-search-ring
+                                        register-alist)
         savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
 
   (savehist-mode 1))
@@ -306,14 +305,13 @@
 (progn
   (require 'recentf)
 
-  (setq recentf-save-file "~/.emacs.d/var/recentf"
+  (setq recentf-save-file (expand-file-name "var/recentf" user-emacs-directory)
         recentf-max-saved-items 100
         recentf-max-menu-items 15)
 
   (recentf-mode 1)
 
   (with-eval-after-load 'no-littering
-    (setq recentf-save-file "~/.emacs.d/var/recentf")
     (add-to-list 'recentf-exclude no-littering-var-directory)
     (add-to-list 'recentf-exclude no-littering-etc-directory)))
 
@@ -1854,20 +1852,107 @@
 
 (elpaca (vertico :files (:defaults "extensions/*"))
   (setq vertico-preselect 'first
-        vertico-buffer-hide-prompt t
-        vertico-buffer-display-action '(display-buffer-reuse-window)
+        vertico-buffer-hide-prompt nil
+        vertico-buffer-display-action '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
         vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
                                      #(" " 0 1 (face vertico-group-separator
                                                      display (space :align-to right))))
-        vertico-count 10
-        vertico-cycle t)
-
+        vertico-multiform-categories '((lsp-capf
+                                        buffer
+                                        (vertico-buffer-display-action . (display-buffer-same-window)))
+                                       (file
+                                        buffer
+                                        (vertico-buffer-display-action . (display-buffer-same-window)))
+                                       (bookmark
+                                        buffer
+                                        (vertico-buffer-display-action . (display-buffer-same-window)))
+                                       (t buffer))
+        vertico-multiform-commands '((completion-at-point
+	                              buffer
+	                              (vertico-buffer-display-action . (display-buffer-same-window)))
+	                             (tempel-insert
+	                              buffer
+	                              (vertico-buffer-display-action . (display-buffer-same-window)))
+	                             (tempel-complete
+	                              buffer
+	                              (vertico-buffer-display-action . (display-buffer-same-window)))))
+  
   (vertico-mode 1)
-  (vertico-buffer-mode 1)
+  (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
-  (setq vertico-buffer-display-action
-        '(display-buffer-reuse-mode-window (mode . minibuffer-mode)))
+  (defun vertico-buffer--setup-ad ()
+    "Setup buffer display."
+    (let* ((action vertico-buffer-display-action)
+           (old-wins (mapcar (lambda (w) (cons w (window-buffer w))) (window-list)))
+           win old-buf tmp-buf
+           (_ (unwind-protect
+                  (progn
+                    (with-current-buffer
+                        (setq tmp-buf (generate-new-buffer "*vertico-buffer*"))
+                      ;; Set a fake major mode such that
+                      ;; `display-buffer-reuse-mode-window' does not take over!
+                      (setq major-mode 'vertico-buffer-mode))
+                    ;; Temporarily select the original window such that
+                    ;; `display-buffer-same-window' works.
+                    (setq win (with-minibuffer-selected-window
+                                (display-buffer tmp-buf action))
+                          old-buf (alist-get win old-wins))
+                    (set-window-buffer win (current-buffer)))
+                (kill-buffer tmp-buf)))
+           (old-no-other (window-parameter win 'no-other-window))
+           (old-no-delete (window-parameter win 'no-delete-other-windows))
+           (old-state (buffer-local-set-state
+                       cursor-in-non-selected-windows cursor-in-non-selected-windows
+                       show-trailing-whitespace nil
+                       truncate-lines t
+                       ;; face-remapping-alist (copy-tree `((mode-line-inactive mode-line)
+                       ;;					 ,@face-remapping-alist))
+                       mode-line-format
+                       (list (format  #(" %s%s " 1 3 (face mode-line-buffer-id))
+                                      (replace-regexp-in-string ":? *\\'" ""
+                                                                (minibuffer-prompt))
+                                      (let ((depth (recursion-depth)))
+                                        (if (< depth 2) "" (format " [%s]" depth)))))
+                       vertico-count (- (/ (window-pixel-height win)
+                                           (default-line-height)) 2))))
+      (set-window-parameter win 'no-other-window t)
+      (set-window-parameter win 'no-delete-other-windows t)
+      (set-window-dedicated-p win t)
+      (overlay-put vertico--candidates-ov 'window win)
+      (when (and vertico-buffer-hide-prompt vertico--count-ov)
+        (overlay-put vertico--count-ov 'window win))
+      (setq-local vertico-buffer--restore (make-symbol "vertico-buffer--restore"))
+      (fset vertico-buffer--restore
+            (lambda ()
+              (with-selected-window (active-minibuffer-window)
+                (when vertico-buffer--restore
+                  (when transient-mark-mode
+                    (with-silent-modifications
+                      (vertico--remove-face (point-min) (point-max) 'region)))
+                  (remove-hook 'pre-redisplay-functions #'vertico-buffer--redisplay 'local)
+                  (remove-hook 'minibuffer-exit-hook vertico-buffer--restore)
+                  (fset vertico-buffer--restore nil)
+                  (kill-local-variable 'vertico-buffer--restore)
+                  (buffer-local-restore-state old-state)
+                  (overlay-put vertico--candidates-ov 'window nil)
+                  (when vertico--count-ov (overlay-put vertico--count-ov 'window nil))
+                  (cond
+                   ((and (window-live-p win) (buffer-live-p old-buf))
+                    (set-window-parameter win 'no-other-window old-no-other)
+                    (set-window-parameter win 'no-delete-other-windows old-no-delete)
+                    (set-window-dedicated-p win nil)
+                    (set-window-buffer win old-buf))
+                   ((window-live-p win)
+                    (delete-window win)))
+                  (when vertico-buffer-hide-prompt
+                    (set-window-vscroll nil 0))))))
+      ;; We cannot use a buffer-local minibuffer-exit-hook here.  The hook will
+      ;; not be called when abnormally exiting the minibuffer from another buffer
+      ;; via `keyboard-escape-quit'.
+      (add-hook 'minibuffer-exit-hook vertico-buffer--restore)
+      (add-hook 'pre-redisplay-functions #'vertico-buffer--redisplay nil 'local)))
+  (advice-add 'vertico-buffer--setup :override #'vertico-buffer--setup-ad)
 
   (defun vertico--display-count-ad ()
     (when vertico-flat-mode
@@ -1889,14 +1974,14 @@
 
   (define-keymap
     :keymap vertico-map
-    "M-TAB" 'vertico-insert
-    "M-<tab>" 'vertico-insert
+    "M-i" 'vertico-insert
     "RET" 'vertico-directory-enter
     "DEL" 'vertico-directory-delete-char
     "C-<backspace>" 'vertico-directory-delete-word
     "C-DEL" 'vertico-directory-delete-word
     "M-<backspace>" 'vertico-directory-up
     "M-DEL" 'vertico-directory-up
+    "M-RET" 'vertico-exit-input
     "C-M-j" 'vertico-exit-input
     "C-M-<return>" 'vertico-exit-input
     "M-j" 'vertico-quick-jump
@@ -1918,10 +2003,9 @@
 
     (define-keymap
       :keymap vertico-map
-      "M-RET" 'embark-alt-dwim
       "TAB" 'embark-act-marked
       "<tab>" 'embark-act-marked
-      "C-t" 'embark-act-persist
+      "M-TAB" 'embark-act-persist
       "C-SPC" 'embark-select)))
 
 ;;;; marginalia
@@ -1965,6 +2049,8 @@
   (keymap-global-set "M-*" 'tempel-insert)
 
   (with-eval-after-load 'tempel
+    (setq tempel-path "/home/dave/.emacs.d/templates/*.eld")
+
     (defun conn-tempel-insert-ad (fn &rest args)
       (apply fn args)
       (when tempel--active
@@ -2158,7 +2244,7 @@
      :preview-key 'any
      :history 'consult-denote-history
      :add-history (seq-some #'thing-at-point '(region symbol))
-     :require-match (confirm-nonexistent-file-or-buffer)))
+     :require-match t))
 
   (with-eval-after-load 'embark
     (setf (alist-get 'consult-denote embark-keymap-alist)
