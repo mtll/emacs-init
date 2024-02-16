@@ -264,14 +264,17 @@
 ;;;; savehist
 
 (progn
+  (require 'savehist)
+
   (setq savehist-additional-variables
         '(projectile-project-command-history
           file-name-history
           search-ring
           regexp-search-ring
           register-alist)
-        savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory)
-        savehist-mode t))
+        savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
+
+  (savehist-mode 1))
 
 ;;;; repeat
 
@@ -962,7 +965,6 @@
                    :files (:defaults "extensions/*"))
   (setq conn-lighter nil
         conn-state-buffer-colors t
-        conn-mode-line-indicator-mode t
         conn-modes '(prog-mode
                      conf-mode
                      diary-mode
@@ -979,6 +981,7 @@
         emacs-state-cursor-type 'box)
 
   (conn-mode 1)
+  (conn-mode-line-indicator-mode 1)
 
   (keymap-global-set "C-S-j" 'backward-page)
   (keymap-global-set "C-S-l" 'forward-page)
@@ -2028,7 +2031,7 @@
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
   (with-eval-after-load 'denote (require 'denote-org-extras))
 
-  (setq denote-rename-buffer-mode t)
+  (denote-rename-buffer-mode 1)
 
   (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n d" 'denote-dired-directory)
