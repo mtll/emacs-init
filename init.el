@@ -1959,6 +1959,18 @@
       (overlay-put vertico--count-ov 'before-string "")))
   (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
 
+  (defun vertico-repeat-ad (&rest _)
+    (when (> (minibuffer-depth) 0)
+      (select-window
+       (if (and (equal (selected-window) (minibuffer-window))
+                (not (with-current-buffer
+                         (window-buffer (minibuffer-selected-window))
+                       (eq major-mode 'minibuffer-mode))))
+           (minibuffer-selected-window)
+         (minibuffer-window)))
+      t))
+  (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
+
   (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
   (face-spec-set 'vertico-group-separator
                  '((t :inherit default :background "#b7c9e6")))
