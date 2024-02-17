@@ -265,16 +265,17 @@
 ;;;; savehist
 
 (progn
-  (require 'savehist)
+  (with-eval-after-load 'no-littering
+    (require 'savehist)
 
-  (setq savehist-additional-variables '(projectile-project-command-history
-                                        file-name-history
-                                        search-ring
-                                        regexp-search-ring
-                                        register-alist)
-        savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
+    (setq savehist-additional-variables '(projectile-project-command-history
+                                          file-name-history
+                                          search-ring
+                                          regexp-search-ring
+                                          register-alist)
+          savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
 
-  (savehist-mode 1))
+    (savehist-mode 1)))
 
 ;;;; repeat
 
@@ -305,6 +306,8 @@
 
 (progn
   (with-eval-after-load 'no-littering
+    (require 'recentf)
+
     (setq recentf-max-saved-items 100
           recentf-max-menu-items 15)
 
