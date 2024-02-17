@@ -1893,6 +1893,8 @@
       (overlay-put vertico--count-ov 'before-string "")))
   (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
 
+  ;; I prefer it if the vertico buffer mode-line face
+  ;; is not remapped to always appear active.
   (defun vertico-buffer--setup-ad ()
     "Setup buffer display."
     (let* ((action vertico-buffer-display-action)
@@ -2145,6 +2147,9 @@
 
   (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n d" 'denote-dired-directory)
+  (keymap-global-set "C-c n n" 'denote)
+  (keymap-global-set "C-c n a" 'denote-keywords-add)
+  (keymap-global-set "C-c n r" 'denote-keywords-remove)
 
   (defun denote-dired-directory ()
     (interactive)
