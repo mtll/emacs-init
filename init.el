@@ -1485,6 +1485,20 @@
   (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
   (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
 
+  (define-keymap
+    :keymap minibuffer-mode-map
+    "C-TAB" 'embark-act-all
+    "C-<tab>" 'embark-act-all
+    "TAB" 'embark-act-marked
+    "<tab>" 'embark-act-marked
+    "M-TAB" 'embark-act-persist
+    "M-<tab>" 'embark-act-persist
+    "C-SPC" 'embark-select)
+
+  (with-eval-after-load 'vertico
+    (keymap-unset vertico-map "TAB")
+    (keymap-unset vertico-map "<tab>"))
+
   (with-eval-after-load 'org
     (defun embark-bookmark-link (cand)
       (when cand
@@ -2021,18 +2035,7 @@
       (kill-new (let ((cand (vertico--candidate)))
                   (if (consult--tofu-p (aref cand (1- (length cand))))
                       (substring cand 0 -1)
-                    cand)))))
-
-  (with-eval-after-load 'embark
-    (keymap-unset vertico-map "TAB")
-    (keymap-unset vertico-map "<tab>")
-
-    (define-keymap
-      :keymap vertico-map
-      "TAB" 'embark-act-marked
-      "<tab>" 'embark-act-marked
-      "M-TAB" 'embark-act-persist
-      "C-SPC" 'embark-select)))
+                    cand))))))
 
 ;;;; marginalia
 
@@ -2267,8 +2270,7 @@
 
     (defvar-keymap embark-consult-denote-map
       :parent embark-general-map
-      "M-RET" 'consult-denote-headings
-      "l" 'denote-link
+      "M-RET" 'denote-link
       "h" 'consult-denote-headings
       "E" 'embark-export)
 
