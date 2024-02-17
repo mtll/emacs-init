@@ -2166,57 +2166,6 @@
                    :jump-to-captured t)))
 
   (with-eval-after-load 'consult
-    (defun consult--note-make-builder (paths)
-      (let ((rg-cmd (consult--build-args consult-ripgrep-args))
-            (find-cmd (seq-mapcat (lambda (x)
-                                    (pcase x
-                                      ('"." paths)
-                                      ('"(" '("\\("))
-                                      ('")" '("\\)"))
-                                      (_ (list x))))
-                                  (consult--build-args consult-find-args))))
-        (lambda (input)
-          (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-                       (type (if (eq 0 (process-file-shell-command
-                                        (concat (car find-cmd) " -regextype emacs -version")))
-                                 'emacs 'basic))
-                       (`(,re) (funcall consult--regexp-compiler arg type t)))
-            (cons (list "sh" "-c"
-                        (string-join
-                         (append
-                          find-cmd
-                          (cdr (mapcan
-                                (lambda (x)
-                                  `("-and" "-iregex"
-                                    ,(format ".*%s.*"
-                                             (replace-regexp-in-string
-                                              "\\\\(\\?:" "\\(" x 'fixedcase 'literal))))
-                                re))
-                          opts '("|" "xargs" "-r") rg-cmd (list "-e" "^[*]+"))
-                         " "))
-                  #'ignore)))))
-
-    (defun consult-denote-headings (&optional initial)
-      (interactive)
-      (pcase-let* ((dir denote-directory)
-                   (`(,prompt ,paths ,dir) (consult--directory-prompt "Notes" dir))
-                   (default-directory dir)
-                   (builder (funcall #'consult--note-make-builder paths)))
-        (consult--read
-         (consult--async-command builder
-           (consult--grep-format builder))
-         :preview-key "C-j"
-         :prompt prompt
-         :lookup #'consult--lookup-member
-         :state (consult--grep-state)
-         :initial (consult--async-split-initial initial)
-         :add-history (consult--async-split-thingatpt 'symbol)
-         :require-match t
-         :category 'consult-denote-heading
-         :group #'consult--prefix-group
-         :history '(:input consult--note-history)
-         :sort nil)))
-
     (defun denote-backlinks-file (file)
       (when (denote-file-is-writable-and-supported-p file)
         (let* ((id (denote-retrieve-filename-identifier-with-error file))
@@ -2225,11 +2174,104 @@
           (xref--show-xrefs
            (apply-partially #'xref-matches-in-files id
                             (denote-directory-files nil :omit-current :text-only))
-           nil))))
+           nil))))))
 
-    (keymap-global-set "C-c n t" 'consult-denote-headings))
+;;;;; consult notes
+
+(elpaca consult-notes
+  (with-eval-after-load 'denote
+    (consult-notes-denote-mode 1))
+
+  (keymap-global-set "C-c n f" 'consult-denote)
+
+  (defun consult-denote ()
+    (interactive)
+    (require 'denote)
+    (require 'consult-notes)
+    (consult--read
+     (funcall (plist-get consult-notes-denote--source :items))
+     :category 'consult-denote
+     :lookup #'consult--lookup-member
+     :annotate (plist-get consult-notes-denote--source :annotate)
+     :prompt "Denotes: "
+     :state (consult-notes-denote--state)
+     :preview-key 'any
+     :history 'consult-denote-history
+     :add-history (seq-some #'thing-at-point '(region symbol))
+     :require-match t))
 
   (with-eval-after-load 'embark
+    (defun grep--process (lines)
+      (let ((file "") (file-len 0) result)
+        (save-match-data
+          (dolist (str lines)
+            (when (and (string-match consult--grep-match-regexp str)
+                       ;; Filter out empty context lines
+                       (or (/= (aref str (match-beginning 3)) ?-)
+                           (/= (match-end 0) (length str))))
+              ;; We share the file name across candidates to reduce
+              ;; the amount of allocated memory.
+              (unless (and (= file-len (- (match-end 1) (match-beginning 1)))
+                           (eq t (compare-strings
+                                  file 0 file-len
+                                  str (match-beginning 1) (match-end 1) nil)))
+                (setq file (match-string 1 str)
+                      file-len (length file)))
+              (let* ((line (match-string 2 str))
+                     (ctx (= (aref str (match-beginning 3)) ?-))
+                     (sep (if ctx "-" ":"))
+                     (content (substring str (match-end 0)))
+                     (line-len (length line)))
+                (when (length> content consult-grep-max-columns)
+                  (setq content (substring content 0 consult-grep-max-columns)))
+                (setq str (concat file sep line sep content))
+                ;; Store file name in order to avoid allocations in `consult--prefix-group'
+                (add-text-properties 0 file-len `(face consult-file consult--prefix-group ,file) str)
+                (put-text-property (1+ file-len) (+ 1 file-len line-len) 'face 'consult-line-number str)
+                (when ctx
+                  (add-face-text-property (+ 2 file-len line-len) (length str) 'consult-grep-context 'append str))
+                (push str result)))))
+        (nreverse result)))
+
+    (defun consult-denote-headings (files)
+      (interactive)
+      (let ((cmd (consult--build-args consult-ripgrep-args)))
+        (consult--read
+         (grep--process
+          (apply #'process-lines
+                 (append cmd '("-e" "^[*]+")
+                         (mapcar #'consult-notes-denote--file files))))
+         :preview-key 'any
+         :prompt "Heading: "
+         :lookup #'consult--lookup-member
+         :state (consult--grep-state)
+         :add-history (thing-at-point 'symbol)
+         :require-match t
+         :category 'consult-denote-heading
+         :group #'consult--prefix-group
+         :history '(:input consult--note-history)
+         :sort nil)))
+
+    (cl-pushnew 'consult-denote-headings embark-multitarget-actions)
+
+    (setf (alist-get 'consult-denote embark-keymap-alist)
+          '(embark-consult-denote-map))
+
+    (defun embark-export-notes (notes)
+      "Create a Dired buffer listing NOTES."
+      (embark-export-dired (mapcar #'consult-notes-denote--file notes))
+      (denote-dired-mode 1))
+
+    (setf (alist-get 'consult-denote embark-exporters-alist)
+          #'embark-export-notes)
+
+    (defvar-keymap embark-consult-denote-map
+      :parent embark-general-map
+      "M-RET" 'consult-denote-headings
+      "l" 'denote-link
+      "h" 'consult-denote-headings
+      "E" 'embark-export)
+
     (defun embark-consult-denote-heading-link (cand)
       (when-let (cand
                  (file-end (next-single-property-change 0 'face cand))
@@ -2249,44 +2291,3 @@
 
     (setf (alist-get 'consult-denote-heading embark-keymap-alist)
           (list 'embark-consult-denote-heading-map))))
-
-;;;;; consult notes
-
-(elpaca consult-notes
-  (with-eval-after-load 'denote
-    (consult-notes-denote-mode 1))
-
-  (keymap-global-set "C-c n f" 'consult-denote)
-  (consult-customize consult-notes :preview-key "C-j")
-
-  (defun consult-denote ()
-    (interactive)
-    (require 'denote)
-    (require 'consult-notes)
-    (consult--read
-     (funcall (plist-get consult-notes-denote--source :items))
-     :category 'consult-denote
-     :lookup #'consult--lookup-member
-     :annotate (plist-get consult-notes-denote--source :annotate)
-     :prompt "Denotes: "
-     :state (consult-notes-denote--state)
-     :preview-key 'any
-     :history 'consult-denote-history
-     :add-history (seq-some #'thing-at-point '(region symbol))
-     :require-match t))
-
-  (with-eval-after-load 'embark
-    (setf (alist-get 'consult-denote embark-keymap-alist)
-          '(embark-consult-denote-map))
-
-    (defun embark-export-notes (notes)
-      "Create a Dired buffer listing NOTES."
-      (embark-export-dired (mapcar #'consult-notes-denote--file notes))
-      (denote-dired-mode 1))
-
-    (setf (alist-get 'consult-denote embark-exporters-alist)
-          #'embark-export-notes)
-
-    (defvar-keymap embark-consult-denote-map
-      "M-RET" 'denote-link
-      "E" 'embark-export)))
