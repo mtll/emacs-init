@@ -736,6 +736,7 @@
 
   (with-eval-after-load 'org
     (keymap-unset org-mode-map "C-'")
+    (keymap-unset org-mode-map "C-,")
 
     (setf (alist-get "\\*Org Src.*" display-buffer-alist nil nil #'equal)
           '((display-buffer-same-window)))
