@@ -1652,22 +1652,23 @@
 ;;;; orderless
 
 (elpaca orderless
-  (with-eval-after-load 'orderless
-    (defun orderless-toggle-smart-case ()
-      (interactive)
-      (setq-local orderless-smart-case (not orderless-smart-case))
-      (message "smart-case: %s" orderless-smart-case))
+  (require 'orderless)
 
-    (define-keymap
-      :keymap minibuffer-local-map
-      "M-C" 'orderless-toggle-smart-case)
+  (defun orderless-toggle-smart-case ()
+    (interactive)
+    (setq-local orderless-smart-case (not orderless-smart-case))
+    (message "smart-case: %s" orderless-smart-case))
 
-    (setq completion-styles '(orderless basic)
-          orderless-matching-styles '(orderless-literal
-                                      orderless-initialism
-                                      orderless-regexp)
-          completion-category-overrides '((file (styles basic partial-completion)))
-          orderless-component-separator #'orderless-escapable-split-on-space)))
+  (define-keymap
+    :keymap minibuffer-local-map
+    "M-C" 'orderless-toggle-smart-case)
+
+  (setq completion-styles '(orderless basic)
+        orderless-matching-styles '(orderless-literal
+                                    orderless-initialism
+                                    orderless-regexp)
+        completion-category-overrides '((file (styles basic partial-completion)))
+        orderless-component-separator #'orderless-escapable-split-on-space))
 
 ;;;;; orderless-set-operations
 
