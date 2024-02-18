@@ -1902,6 +1902,15 @@
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
+  (defun vertico-buffer--redisplay-ad (win)
+    (when-let ((mbwin (active-minibuffer-window))
+               ((eq (window-buffer mbwin) (current-buffer))))
+      (unless (eq win mbwin)
+        (setq-local vertico-count (- (/ (window-pixel-height win)
+                                        (default-line-height))
+                                     2)))))
+  (advice-add 'vertico-buffer--redisplay :after 'vertico-buffer--redisplay-ad)
+
   (defun vertico--display-count-ad ()
     (when vertico-flat-mode
       (overlay-put vertico--count-ov 'before-string "")))
