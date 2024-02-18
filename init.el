@@ -1303,7 +1303,7 @@
 (elpaca embark
   (require 'embark)
 
-  (setq embark-mixed-indicator-delay .4
+  (setq embark-mixed-indicator-delay .5
         embark-quit-after-action t
         embark-verbose-indicator-display-action
         '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
@@ -1380,7 +1380,6 @@
                    nil nil #'equal)
         (alist-get type embark-alt-default-action-overrides)
         (alist-get t embark-alt-default-action-overrides)
-        ;; embark--command
         (keymap-lookup (embark--raw-action-keymap type) "M-RET")))
 
   (defun embark-alt-dwim (&optional arg)
@@ -1687,6 +1686,8 @@
 ;;;; consult
 
 (elpaca consult
+  (require 'consult)
+
   (setq consult-async-min-input 3
         consult-yank-rotate nil
         consult-narrow-key "M-N"
@@ -1831,26 +1832,25 @@
       "Y" 'consult-yank-pop
       "p" 'consult-register-load)
 
-    (with-eval-after-load 'consult
-      (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
+    (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
 
-      (with-eval-after-load 'dired
-        (defun conn-consult-ripgrep-dired-marked-files ()
-          (interactive)
-          (consult-ripgrep (dired-get-marked-files)))
-        (keymap-set dired-mode-map "M-s r" 'conn-consult-ripgrep-dired-marked-files))
+    (with-eval-after-load 'dired
+      (defun conn-consult-ripgrep-dired-marked-files ()
+        (interactive)
+        (consult-ripgrep (dired-get-marked-files)))
+      (keymap-set dired-mode-map "M-s r" 'conn-consult-ripgrep-dired-marked-files))
 
-      (with-eval-after-load 'ibuffer
-        (defun conn-consult-line-multi-ibuffer-marked ()
-          (interactive)
-          (consult-line-multi
-           `(:include
-             ,(mapcar (lambda (buf)
-                        (regexp-quote (buffer-name buf)))
-                      (ibuffer-get-marked-buffers)))))
-        (keymap-set ibuffer-mode-map "M-s j" 'conn-consult-line-multi-ibuffer-marked))
+    (with-eval-after-load 'ibuffer
+      (defun conn-consult-line-multi-ibuffer-marked ()
+        (interactive)
+        (consult-line-multi
+         `(:include
+           ,(mapcar (lambda (buf)
+                      (regexp-quote (buffer-name buf)))
+                    (ibuffer-get-marked-buffers)))))
+      (keymap-set ibuffer-mode-map "M-s j" 'conn-consult-line-multi-ibuffer-marked))
 
-      (advice-add #'register-preview :override #'consult-register-window))))
+    (advice-add #'register-preview :override #'consult-register-window)))
 
 ;;;;; consult-extras
 
@@ -1868,6 +1868,8 @@
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
+  (require 'vertico)
+
   (setq vertico-preselect 'first
         vertico-buffer-hide-prompt nil
         vertico-count 10
@@ -2158,8 +2160,13 @@
   (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n d" 'denote-dired-directory)
   (keymap-global-set "C-c n n" 'denote)
+  (keymap-global-set "C-c n s" 'denote-signature)
   (keymap-global-set "C-c n a" 'denote-keywords-add)
   (keymap-global-set "C-c n r" 'denote-keywords-remove)
+  (keymap-global-set "C-c n w" 'denote-rename-file)
+  (keymap-global-set "C-c n b" 'denote-backlinks)
+  (keymap-global-set "C-c n B" 'denote-find-backlink)
+  (keymap-global-set "C-c n l" 'denote-find-link)
 
   (defun denote-dired-directory ()
     (interactive)
@@ -2190,7 +2197,46 @@
 
 (elpaca consult-notes
   (with-eval-after-load 'denote
-    (consult-notes-denote-mode 1))
+    (consult-notes-denote-mode 1)
+
+    ;; Less extra spacing between candidates and annotation
+    (setf (plist-get consult-notes-denote--source :items)
+          (lambda ()
+            (let* ((max-width 0)
+                   (cands (mapcar (lambda (f)
+                                    (let* ((id (denote-retrieve-filename-identifier f))
+                                           (title-1 (or (denote-retrieve-title-value f (denote-filetype-heuristics f))
+                                                        (denote-retrieve-filename-title f)))
+                                           (title (if consult-notes-denote-display-id
+                                                      (concat id " " title-1)
+                                                    title-1))
+                                           (dir (file-relative-name (file-name-directory f) denote-directory))
+                                           (keywords (denote-extract-keywords-from-path f)))
+                                      (let ((current-width (string-width title)))
+                                        (when (> current-width max-width)
+                                          (setq max-width (+ 5 current-width))))
+                                      (propertize title 'denote-path f 'denote-keywords keywords)))
+                                  (funcall consult-notes-denote-files-function))))
+              (mapcar (lambda (c)
+                        (let* ((keywords (get-text-property 0 'denote-keywords c))
+                               (path (get-text-property 0 'denote-path c))
+                               (dirs (thread-first
+                                       (file-name-directory path)
+                                       (file-relative-name denote-directory)
+                                       (directory-file-name))))
+                          (concat c
+                                  ;; align keywords
+                                  (propertize " " 'display `(space :align-to (+ left ,(+ 2 max-width))))
+                                  "  "
+                                  (format "%18s"
+                                          (if keywords
+                                              (concat (propertize "#" 'face 'consult-notes-name)
+                                                      (propertize (mapconcat 'identity keywords " ")
+                                                                  'face 'consult-notes-name))
+                                            ""))
+                                  (when consult-notes-denote-dir
+                                    (format "%18s" (propertize (concat "/" dirs) 'face 'consult-notes-name))))))
+                      cands)))))
 
   (keymap-global-set "C-c n f" 'consult-denote)
 
@@ -2239,7 +2285,8 @@
                 (add-text-properties 0 file-len `(face consult-file consult--prefix-group ,file) str)
                 (put-text-property (1+ file-len) (+ 1 file-len line-len) 'face 'consult-line-number str)
                 (when ctx
-                  (add-face-text-property (+ 2 file-len line-len) (length str) 'consult-grep-context 'append str))
+                  (add-face-text-property (+ 2 file-len line-len) (length str)
+                                          'consult-grep-context 'append str))
                 (push str result)))))
         (nreverse result)))
 
