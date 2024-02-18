@@ -1485,19 +1485,16 @@
   (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
   (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
 
-  (define-keymap
-    :keymap minibuffer-mode-map
-    "C-TAB" 'embark-act-all
-    "C-<tab>" 'embark-act-all
-    "TAB" 'embark-act-marked
-    "<tab>" 'embark-act-marked
-    "M-TAB" 'embark-act-persist
-    "M-<tab>" 'embark-act-persist
-    "C-SPC" 'embark-select)
-
   (with-eval-after-load 'vertico
-    (keymap-unset vertico-map "TAB")
-    (keymap-unset vertico-map "<tab>"))
+    (define-keymap
+      :keymap vertico-map
+      "C-TAB" 'embark-act-all
+      "C-<tab>" 'embark-act-all
+      "M-TAB" 'embark-act-persist
+      "M-<tab>" 'embark-act-persist
+      "C-SPC" 'embark-select
+      "TAB" 'embark-act-marked
+      "<tab>" 'embark-act-marked))
 
   (with-eval-after-load 'org
     (defun embark-bookmark-link (cand)
