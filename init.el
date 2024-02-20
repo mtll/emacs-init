@@ -781,29 +781,34 @@
 ;;     (require 'exec-path-from-shell)
 ;;     (exec-path-from-shell-initialize)))
 
+;;;; ef-themes
+
+;; (elpaca ef-themes
+;;   (with-eval-after-load 'conn-mode
+;;     (face-spec-set 'conn-state-lighter-face '((t (:background "#f3bdbd" :box nil))))
+;;     (face-spec-set 'conn-dot-state-lighter-face '((t (:background "#d1ead5" :box nil))))
+;;     (face-spec-set 'conn-emacs-state-lighter-face '((t (:background "#cae1ff" :box nil))))))
+
 ;;;; modus-themes
 
 (elpaca modus-themes
   (require 'modus-themes)
 
-  (face-spec-set
-   'modus-themes-completion-match-0
-   '((t :foreground "unspecified" :background "#caf1c9")))
-  (face-spec-set
-   'modus-themes-completion-match-1
-   '((t :foreground "unspecified" :background "#e3cff1")))
-  (face-spec-set
-   'modus-themes-completion-match-2
-   '((t :foreground "unspecified" :background "#d1eff1")))
-  (face-spec-set
-   'modus-themes-completion-match-3
-   '((t :foreground "unspecified" :background "#f1cccc")))
-
   (setq modus-themes-common-palette-overrides
         (seq-concatenate
          'list
          '((bg-main "#f8f8f8")
-           (cursor "#000000"))
+           (cursor "#000000")
+           (bg-region "#e1e1e1")
+           (fg-region unspecified)
+           (fg-completion-match-0 unspecified)
+           (bg-completion-match-0 "#caf1c9")
+           (fg-completion-match-1 unspecified)
+           (bg-completion-match-1 "#e3cff1")
+           (fg-completion-match-2 unspecified)
+           (bg-completion-match-2 "#d1eff1")
+           (fg-completion-match-3 unspecified)
+           (bg-completion-match-3 "#f1cccc"))
          modus-themes-preset-overrides-warmer))
 
   (load-theme 'modus-operandi-tinted t))
@@ -1013,7 +1018,7 @@
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-set conn-state-map "." 'conn-expand-region)
+  (keymap-set conn-state-map "C-." 'conn-expand-region)
   (define-keymap
     :keymap dot-state-map
     "C-." 'conn-expand-dots
@@ -1750,6 +1755,13 @@
   (consult-customize consult-buffer :preview-key "C-j")
   (consult-customize consult-project-buffer :preview-key "C-j")
 
+  (defun consult--orderless-regexp-compiler (input type &rest _config)
+    (setq input (cdr (orderless-pattern-compiler input)))
+    (cons
+     (mapcar (lambda (r) (consult--convert-regexp r type)) input)
+     (lambda (str) (orderless--highlight input t str))))
+  (setq consult--regexp-compiler #'consult--orderless-regexp-compiler)
+
   (defun consult-async-pause (&optional arg)
     (interactive "P")
     (setq consult-async-min-input
@@ -1875,28 +1887,19 @@
         vertico-count 10
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
-        vertico-group-format (concat #(" %s " 0 4 (face vertico-group-title))
-                                     #(" " 0 1 (face vertico-group-separator
-                                                     display (space :align-to right))))
         vertico-multiform-categories '((lsp-capf
-                                        buffer
-                                        (vertico-buffer-display-action . (display-buffer-same-window)))
-                                       (file
-                                        buffer
-                                        (vertico-buffer-display-action . (display-buffer-same-window)))
-                                       (bookmark
-                                        buffer
-                                        (vertico-buffer-display-action . (display-buffer-same-window)))
+                                        buffer (vertico-buffer-display-action
+                                                display-buffer-same-window))
                                        (t buffer))
         vertico-multiform-commands '((completion-at-point
-                                      buffer
-                                      (vertico-buffer-display-action . (display-buffer-same-window)))
+                                      buffer (vertico-buffer-display-action
+                                              display-buffer-same-window))
                                      (tempel-insert
-                                      buffer
-                                      (vertico-buffer-display-action . (display-buffer-same-window)))
+                                      buffer (vertico-buffer-display-action
+                                              display-buffer-same-window))
                                      (tempel-complete
-                                      buffer
-                                      (vertico-buffer-display-action . (display-buffer-same-window)))))
+                                      buffer (vertico-buffer-display-action
+                                              display-buffer-same-window))))
 
   (vertico-mode 1)
   (vertico-multiform-mode 1)
@@ -2008,11 +2011,15 @@
       t))
   (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
 
-  (face-spec-set 'vertico-current '((t :background "#e1e1e1")))
+  (face-spec-set 'vertico-current '((t :inherit region)))
   (face-spec-set 'vertico-group-separator
-                 '((t :inherit default :background "#b7c9e6")))
+                 '((t :inherit shadow :strike-through t :background "unspecified")))
   (face-spec-set 'vertico-group-title
-                 '((t :inherit default :background "#b7c9e6" :bold t)))
+                 '((t :inherit shadow
+                      :bold t
+                      :slant italic
+                      :background "unspecified"
+                      :foreground "black")))
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
@@ -2051,6 +2058,8 @@
 (elpaca marginalia
   (marginalia-mode 1)
 
+  (setq marginalia-align 'column)
+
   (defun marginalia-annotate-alias (cand)
     "Annotate CAND with the function it aliases."
     (when-let ((sym (intern-soft cand))
@@ -2072,6 +2081,42 @@
        (david-marginalia-annotate-binding cand)
        (marginalia-annotate-alias cand)
        (marginalia--documentation (marginalia--function-doc sym)))))
+
+  (defvar marginalia-align-column 40)
+  
+  (defun marginalia--align-column (cands)
+    "Align annotations of CANDS according to `marginalia-align'."
+    (cl-loop
+     for (cand . ann) in cands do
+     (when-let (align (text-property-any 0 (length ann) 'marginalia--align t ann))
+       (setq marginalia--cand-width-max
+             (max marginalia--cand-width-max
+                  (* (ceiling (+ (string-width cand)
+                                 (compat-call string-width ann 0 align))
+                              marginalia--cand-width-step)
+                     marginalia--cand-width-step)))))
+    (cl-loop
+     for (cand . ann) in cands collect
+     (progn
+       (when-let (align (text-property-any 0 (length ann) 'marginalia--align t ann))
+         (put-text-property
+          align (1+ align) 'display
+          `(space :align-to
+                  ,(pcase-exhaustive marginalia-align
+                     ('center `(+ center ,marginalia-align-offset))
+                     ('left `(+ left ,(+ marginalia-align-offset marginalia--cand-width-max)))
+                     ('right `(+ right ,(+ marginalia-align-offset 1
+                                           (- (compat-call string-width ann 0 align)
+                                              (string-width ann)))))
+                     ('column `(+ left ,(+ marginalia-align-offset
+                                           (max marginalia-align-column
+                                                (* (ceiling (+ (string-width cand)
+                                                               (compat-call string-width ann 0 align))
+                                                            marginalia--cand-width-step)
+                                                   marginalia--cand-width-step)))))))
+          ann))
+       (list cand "" ann))))
+  (advice-add 'marginalia--align :override 'marginalia--align-column)
 
   (cl-pushnew #'marginalia-annotate-command-with-alias
               (alist-get 'command marginalia-annotator-registry))
@@ -2308,8 +2353,7 @@
          :group #'consult--prefix-group
          :history '(:input consult--note-history)
          :sort nil)))
-
-    (cl-pushnew 'consult-denote-headings embark-multitarget-actions)
+    (add-to-list 'embark-multitarget-actions 'consult-denote-headings)
 
     (setf (alist-get 'consult-denote embark-keymap-alist)
           '(embark-consult-denote-map))
