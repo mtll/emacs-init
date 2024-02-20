@@ -353,6 +353,12 @@
 ;;;; narrow-indirect
 
 (elpaca (narrow-indirect :host github :repo "emacsmirror/narrow-indirect")
+  (with-eval-after-load 'narrow-indirect
+    (with-eval-after-load 'modus-themes
+      (face-spec-set 'ni-mode-line-buffer-id
+                     '((t :inherit modus-themes-subtle-magenta
+                          :box (:line-width 1 :color "#675967"))))))
+
   (define-keymap
     :keymap ctl-x-4-map
     "n d" 'ni-narrow-to-defun-indirect-other-window
