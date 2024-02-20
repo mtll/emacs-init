@@ -367,7 +367,8 @@
 
   (with-eval-after-load 'embark
     (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
-    (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)))
+    (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
+    (keymap-set embark-alt-page-map "M-RET" 'ni-narrow-to-page-indirect-other-window)))
 
 ;;;; paredit
 
@@ -786,14 +787,6 @@
 ;;   (when (memq window-system '(mac ns x))
 ;;     (require 'exec-path-from-shell)
 ;;     (exec-path-from-shell-initialize)))
-
-;;;; ef-themes
-
-;; (elpaca ef-themes
-;;   (with-eval-after-load 'conn-mode
-;;     (face-spec-set 'conn-state-lighter-face '((t (:background "#f3bdbd" :box nil))))
-;;     (face-spec-set 'conn-dot-state-lighter-face '((t (:background "#d1ead5" :box nil))))
-;;     (face-spec-set 'conn-emacs-state-lighter-face '((t (:background "#cae1ff" :box nil))))))
 
 ;;;; modus-themes
 
@@ -1271,7 +1264,10 @@
   (define-key global-map [remap describe-function] 'helpful-callable)
   (define-key global-map [remap describe-variable] 'helpful-variable)
 
-  (push '(help-mode . helpful-mode) major-mode-remap-alist))
+  (push '(help-mode . helpful-mode) major-mode-remap-alist)
+
+  (with-eval-after-load 'embark
+    (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
 
 ;;;; all-the-icons
 
@@ -1316,19 +1312,15 @@
 
   (setq embark-mixed-indicator-delay .5
         embark-quit-after-action t
-        embark-verbose-indicator-display-action
-        '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
-        embark-indicators '(embark-mixed-indicator
-                            embark-minimal-indicator
+        embark-verbose-indicator-display-action '(display-buffer-reuse-mode-window
+                                                  (mode . minibuffer-mode))
+        embark-indicators '(embark-minimal-indicator
                             embark-highlight-indicator
                             embark-isearch-highlight-indicator)
         embark-prompter 'embark-keymap-prompter
         embark-cycle-key "."
         embark-help-key "?"
         embark-confirm-act-all nil)
-
-  (with-eval-after-load 'org
-    (add-to-list 'embark-target-finders 'embark-org-target-link))
 
   (keymap-global-set "M-." 'embark-dwim)
   (keymap-global-set "M-," 'embark-alt-dwim)
@@ -1466,15 +1458,10 @@
 
   (defvar-keymap embark-alt-page-map
     "RET" 'narrow-to-page
-    "M-RET" 'ni-narrow-to-page-indirect-other-window
     "m" 'mark-page)
 
   (setf (alist-get 'page embark-keymap-alist)
         (list 'embark-alt-page-map))
-
-  (define-keymap
-    :keymap embark-symbol-map
-    "M-RET" 'helpful-symbol)
 
   (defvar-keymap xref-go-back-repeat-map
     :repeat t
@@ -1482,18 +1469,31 @@
     "." 'xref-go-forward)
 
   (keymap-global-set "C-M-." 'embark-alt-dwim)
+  (keymap-set embark-heading-map "RET" #'outline-cycle)
 
   (define-keymap
     :keymap goto-map
     "," 'xref-go-back
     "." 'xref-go-forward)
 
-  (define-keymap
-    :keymap embark-heading-map
-    "RET" #'outline-cycle)
-
   (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
   (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
+
+  (with-eval-after-load 'consult
+    (defun embark-consult-kill-lines (cands)
+      (let (strs)
+        (pcase-dolist (`(,marker . ,line) (mapcar #'consult--get-location cands))
+          (with-current-buffer (marker-buffer marker)
+            (goto-char marker)
+            (let ((bol (line-beginning-position))
+                  (eol (line-end-position)))
+              (push (filter-buffer-substring bol eol) strs)
+              (delete-region bol (min (1+ eol) (point-max))))
+            ;; Does consult already do this?
+            (set-marker marker nil)))
+        (kill-new (string-join strs "\n"))))
+    (keymap-set embark-consult-location-map "C-w" 'embark-consult-kill-lines)
+    (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions))
 
   (with-eval-after-load 'vertico
     (define-keymap
@@ -1517,7 +1517,9 @@
 
     (define-keymap
       :keymap embark-bookmark-map
-      "M-RET" 'embark-bookmark-link))
+      "M-RET" 'embark-bookmark-link)
+
+    (add-to-list 'embark-target-finders 'embark-org-target-link))
 
   (with-eval-after-load 'conn-mode
     (keymap-set embark-region-map "RET" 'conn-copy-region)
