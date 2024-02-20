@@ -1892,7 +1892,6 @@
 
   (setq vertico-preselect 'first
         vertico-buffer-hide-prompt nil
-        vertico-count 10
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
         vertico-multiform-categories '((lsp-capf
@@ -2020,14 +2019,6 @@
   (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
 
   (face-spec-set 'vertico-current '((t :inherit region)))
-  (face-spec-set 'vertico-group-separator
-                 '((t :inherit shadow :strike-through t :background "unspecified")))
-  (face-spec-set 'vertico-group-title
-                 '((t :inherit shadow
-                      :bold t
-                      :slant italic
-                      :background "unspecified"
-                      :foreground "black")))
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
@@ -2091,7 +2082,7 @@
        (marginalia--documentation (marginalia--function-doc sym)))))
 
   (defvar marginalia-align-column 40)
-  
+
   (defun marginalia--align-column (cands)
     "Align annotations of CANDS according to `marginalia-align'."
     (cl-loop
