@@ -139,7 +139,7 @@
 (keymap-global-set "C-:"           'read-only-mode)
 (keymap-global-set "C-c e"         'eshell)
 (keymap-global-set "C-x C-b"       'ibuffer)
-(keymap-global-set "C-o"           goto-map)
+(keymap-global-set "M-o"           goto-map)
 (keymap-global-set "M-;"           'comment-line)
 (keymap-global-set "C-c c"         'compile)
 (keymap-global-set "M-W"           'other-window-prefix)
@@ -207,7 +207,7 @@
 
 (find-function-setup-keys)
 
-;;; tab-bar-mode
+;;;; tab-bar-mode
 
 (progn
   (tab-bar-mode 1)
@@ -796,18 +796,18 @@
   (setq modus-themes-common-palette-overrides
         (seq-concatenate
          'list
-         '((bg-main "#f8f8f8")
+         `((bg-main "#f8f8f8")
            (cursor "#000000")
            (bg-region "#e1e1e1")
            (fg-region unspecified)
-           (fg-completion-match-0 unspecified)
+           (fg-completion-match-0 "#323c32")
            (bg-completion-match-0 "#caf1c9")
-           (fg-completion-match-1 unspecified)
+           (fg-completion-match-1 "#38333c")
            (bg-completion-match-1 "#e3cff1")
-           (fg-completion-match-2 unspecified)
-           (bg-completion-match-2 "#d1eff1")
-           (fg-completion-match-3 unspecified)
-           (bg-completion-match-3 "#f1cccc"))
+           (fg-completion-match-2 "#3c3333")
+           (bg-completion-match-2 "#f1cccc")
+           (fg-completion-match-3 "#343b3c")
+           (bg-completion-match-3 "#d1eff1"))
          modus-themes-preset-overrides-warmer))
 
   (load-theme 'modus-operandi-tinted t))
@@ -954,7 +954,11 @@
                                          (?i . forward-list)
                                          (?s . forward-sentence)
                                          (?c . forward-char)
-                                         (?l . forward-line)))))
+                                         (?l . forward-line)))
+
+    (keymap-set isearch-mode-map "C-;" isearchp-filter-map)
+    (keymap-set isearchp-filter-map "a" 'isearchp-add-filter-predicate)
+    (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
 ;;;; isearch-prop
 
@@ -1308,12 +1312,13 @@
 ;;;; embark
 
 (elpaca embark
+  (defvar-keymap embark-alt-page-map
+    "RET" 'narrow-to-page
+    "m" 'mark-page)
+
   (require 'embark)
 
-  (setq embark-mixed-indicator-delay .5
-        embark-quit-after-action t
-        embark-verbose-indicator-display-action '(display-buffer-reuse-mode-window
-                                                  (mode . minibuffer-mode))
+  (setq embark-quit-after-action t
         embark-indicators '(embark-minimal-indicator
                             embark-highlight-indicator
                             embark-isearch-highlight-indicator)
@@ -1456,10 +1461,6 @@
   (setf (alist-get 'line embark-keymap-alist)
         (list 'embark-alt-line-map))
 
-  (defvar-keymap embark-alt-page-map
-    "RET" 'narrow-to-page
-    "m" 'mark-page)
-
   (setf (alist-get 'page embark-keymap-alist)
         (list 'embark-alt-page-map))
 
@@ -1492,7 +1493,7 @@
             ;; Does consult already do this?
             (set-marker marker nil)))
         (kill-new (string-join strs "\n"))))
-    (keymap-set embark-consult-location-map "C-w" 'embark-consult-kill-lines)
+    (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions))
 
   (with-eval-after-load 'vertico
@@ -1675,10 +1676,10 @@
     :keymap minibuffer-local-map
     "M-C" 'orderless-toggle-smart-case)
 
+  (setf (alist-get ?/ orderless-affix-dispatch-alist) 'orderless-regexp)
+
   (setq completion-styles '(orderless basic)
-        orderless-matching-styles '(orderless-literal
-                                    orderless-initialism
-                                    orderless-regexp)
+        orderless-matching-styles '(orderless-literal orderless-initialism)
         completion-category-overrides '((file (styles basic partial-completion)))
         orderless-component-separator #'orderless-escapable-split-on-space))
 
@@ -1722,6 +1723,7 @@
 
   (define-key global-map [remap Info-search] 'consult-info)
   (define-key global-map [remap bookmark-jump] 'consult-bookmark)
+  (define-key global-map [remap yank-pop] 'consult-yank-pop)
   (keymap-global-set "C-x k" 'kill-this-buffer)
   (keymap-global-set "M-X" 'consult-mode-command)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
@@ -1893,11 +1895,8 @@
   (setq vertico-preselect 'first
         vertico-buffer-hide-prompt nil
         vertico-cycle t
-        vertico-buffer-display-action '(display-buffer-reuse-mode-window (mode . minibuffer-mode))
-        vertico-multiform-categories '((lsp-capf
-                                        buffer (vertico-buffer-display-action
-                                                display-buffer-same-window))
-                                       (t buffer))
+        vertico-buffer-display-action '(display-buffer-reuse-mode-window
+                                        (mode . minibuffer-mode))
         vertico-multiform-commands '((completion-at-point
                                       buffer (vertico-buffer-display-action
                                               display-buffer-same-window))
@@ -1906,7 +1905,16 @@
                                               display-buffer-same-window))
                                      (tempel-complete
                                       buffer (vertico-buffer-display-action
-                                              display-buffer-same-window))))
+                                              display-buffer-same-window)))
+        vertico-multiform-categories '((lsp-capf
+                                        buffer (vertico-buffer-display-action
+                                                display-buffer-same-window))
+                                       (t buffer)))
+
+  (face-spec-set 'vertico-current
+                 '((t :inherit region)))
+  (face-spec-set 'vertico-group-title
+                 '((t :inherit modus-themes-heading-0 :italic t :bold t)))
 
   (vertico-mode 1)
   (vertico-multiform-mode 1)
@@ -2017,8 +2025,6 @@
          (minibuffer-window)))
       t))
   (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
-
-  (face-spec-set 'vertico-current '((t :inherit region)))
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
