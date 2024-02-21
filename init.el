@@ -139,7 +139,7 @@
 (keymap-global-set "C-:"           'read-only-mode)
 (keymap-global-set "C-c e"         'eshell)
 (keymap-global-set "C-x C-b"       'ibuffer)
-(keymap-global-set "M-o"           goto-map)
+(keymap-global-set "C-o"           goto-map)
 (keymap-global-set "M-;"           'comment-line)
 (keymap-global-set "C-c c"         'compile)
 (keymap-global-set "M-W"           'other-window-prefix)
@@ -993,8 +993,7 @@
 
   (keymap-global-set "C-S-j" 'backward-page)
   (keymap-global-set "C-S-l" 'forward-page)
-
-  (keymap-set conn-state-map "#" 'tear-off-window)
+  (keymap-global-set "C-c b" 'conn-buffer-map)
 
   (define-keymap
     :keymap page-navigation-repeat-map
@@ -1191,25 +1190,34 @@
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
   (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
+
   (define-keymap
     :keymap goto-map
     "q" 'avy-goto-char-timer
     "U" 'avy-goto-word-or-subword-1
+    "C-u" 'avy-goto-word-or-subword-1
     "O" 'avy-goto-word-or-subword-1
+    "C-o" 'avy-goto-word-or-subword-1
     "u" 'avy-goto-word-1-above
     "o" 'avy-goto-word-1-below
     "M" 'avy-goto-symbol-1
+    "C-m" 'avy-goto-symbol-1
     "N" 'avy-goto-symbol-1
+    "C-n" 'avy-goto-symbol-1
     "m" 'avy-goto-symbol-1-below
     "n" 'avy-goto-symbol-1-above
     "L" 'avy-goto-char
+    "C-l" 'avy-goto-char
     "K" 'avy-goto-line
+    "C-k" 'avy-goto-line
     "l" 'avy-goto-end-of-line
     "k" 'avy-goto-line-below
     "i" 'avy-goto-line-above
     "z" 'avy-resume
     "Y" 'david-avy-toggle-insertion-style
-    "I" 'avy-goto-char-in-line)
+    "C-y" 'david-avy-toggle-insertion-style
+    "I" 'avy-goto-char-in-line
+    "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
     (define-keymap
