@@ -321,7 +321,7 @@
 
   (defun david-recentf-setup-autosave ()
     (unless david-recentf-autosave
-      (thread-first
+      (thread-last
         (lambda ()
           (let ((inhibit-message t))
             (when recentf-mode
@@ -461,6 +461,7 @@
 ;;;; slime
 
 (elpaca slime
+  (run-with-idle-timer 3 nil (lambda () (require 'slime)))
   (require 'slime-autoloads)
 
   (setq inferior-lisp-program "sbcl"
@@ -481,7 +482,6 @@
                          slime-fontifying-fu
                          slime-quicklisp
                          slime-trace-dialog
-                         ;; slime-fuzzy
                          slime-hyperdoc
                          slime-quicklisp
                          slime-asdf
@@ -498,24 +498,6 @@
           (user-error "Synchronous Lisp Evaluation suppressed while reading input")
         (apply slime-eval args)))
     (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading)))
-
-;;;; sly
-
-;; (elpaca sly
-;;   (setq inferior-lisp-program "sbcl --dynamic-space-size 8000"
-;;         sly-symbol-completion-mode nil))
-
-;;;;; sly-quicklisp
-
-;; (elpaca sly-quicklisp)
-
-;;;;; sly-asdf
-
-;; (elpaca sly-asdf)
-
-;;;;; sly-stepper
-
-;; (elpaca (sly-stepper :host github :repo "joaotavora/sly-stepper"))
 
 ;;;; bqn-mode
 
