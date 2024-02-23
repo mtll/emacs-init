@@ -41,6 +41,10 @@
 (add-hook 'after-init-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
+;;;; persist
+
+(elpaca (persist :host github :repo "emacs-straight/persist"))
+
 ;;; Compat
 
 (elpaca compat (require 'compat))
@@ -106,13 +110,12 @@
       disabled-command-function nil
       switch-to-buffer-obey-display-actions t
       resize-mini-windows 'grow-only
-      tab-bar-show nil
-      tab-bar-tab-name-function 'tab-bar-tab-name-all
       minibuffer-prompt-properties '(read-only t
                                                cursor-intangible t
                                                face minibuffer-prompt)
       yank-from-kill-ring-rotate nil
-      exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path))
+      exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
+      edebug-inhibit-emacs-lisp-mode-bindings t)
 
 (setq-default indent-tabs-mode nil)
 
@@ -212,6 +215,9 @@
 (progn
   (tab-bar-mode 1)
   (tab-bar-history-mode 1)
+
+  (setq tab-bar-show nil
+        tab-bar-tab-name-function 'tab-bar-tab-name-all)
 
   (with-eval-after-load 'conn-mode
     (defvar-keymap tab-bar-history-mode-repeat-map
@@ -356,7 +362,7 @@
   (with-eval-after-load 'narrow-indirect
     (with-eval-after-load 'modus-themes
       (face-spec-set 'ni-mode-line-buffer-id
-                     '((t :inherit modus-themes-subtle-magenta
+                     '((t :background "#ffddff"
                           :box (:line-width 1 :color "#675967"))))))
 
   (define-keymap
@@ -807,10 +813,19 @@
            (fg-completion-match-2 "#3c3333")
            (bg-completion-match-2 "#f1cccc")
            (fg-completion-match-3 "#343b3c")
-           (bg-completion-match-3 "#d1eff1"))
+           (bg-completion-match-3 "#d1eff1")
+           (bg-search-lazy bg-magenta-subtle)
+           (bg-search-current bg-yellow-intense))
          modus-themes-preset-overrides-warmer))
 
-  (load-theme 'modus-operandi-tinted t))
+  (load-theme 'modus-operandi-tinted t)
+
+  (with-eval-after-load 'hi-lock
+    (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                                  "modus-themes-subtle-red"
+                                  "modus-themes-subtle-green"
+                                  "modus-themes-subtle-blue"
+                                  "modus-themes-subtle-yellow"))))
 
 ;;;; no-littering
 
@@ -913,8 +928,7 @@
   (keymap-global-set "C-;" 'ace-window)
 
   (with-eval-after-load 'conn-mode
-    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)
-    (keymap-set conn-common-map ";" 'ace-window)))
+    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
 
 ;;;; expand-region
 
@@ -1190,6 +1204,7 @@
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
   (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
+  (keymap-set isearch-mode-map "C-," 'avy-isearch)
 
   (define-keymap
     :keymap goto-map
@@ -1736,6 +1751,8 @@
   (keymap-global-set "M-X" 'consult-mode-command)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
   (keymap-global-set "C-x b" 'consult-buffer)
+  (keymap-global-set "C-h i" 'consult-info)
+  (keymap-global-set "C-h TAB" 'info)
 
   (keymap-set minibuffer-local-map "M-r" 'consult-history)
 
@@ -1743,7 +1760,6 @@
     :keymap search-map
     "K" 'consult-kmacro
     "n" 'consult-ripgrep-n
-    "c" 'consult-info
     "w" 'consult-man
     "e" 'consult-isearch-history
     "t" 'consult-outline
@@ -1856,6 +1872,8 @@
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
+    (keymap-set conn-buffer-map "u" 'consult-project-buffer)
+    (keymap-set conn-buffer-map "b" 'ibuffer)
 
     (define-keymap
       :keymap conn-state-map
@@ -2404,3 +2422,28 @@
 
     (setf (alist-get 'consult-denote-heading embark-keymap-alist)
           (list 'embark-consult-denote-heading-map))))
+
+;;;; activities
+
+(elpaca (activities :host github :repo "alphapapa/activities")
+  (with-eval-after-load 'activities
+    (activities-mode 1)
+    (activities-tabs-mode 1))
+
+  (keymap-global-set "C-x C-a C-n" 'activities-new)
+  (keymap-global-set "C-x C-a C-r" 'activities-resume)
+  (keymap-global-set "C-x C-a C-s" 'activities-suspend)
+  (keymap-global-set "C-x C-a C-k" 'activities-kill)
+  (keymap-global-set "C-x C-a RET" 'activities-switch)
+  (keymap-global-set "C-x C-a g" 'activities-revert)
+  (keymap-global-set "C-x C-a l" 'activities-list)
+
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-buffer-map "a n" 'activities-new)
+    (keymap-set conn-buffer-map "a r" 'activities-resume)
+    (keymap-set conn-buffer-map "a s" 'activities-suspend)
+    (keymap-set conn-buffer-map "a k" 'activities-kill)
+    (keymap-set conn-buffer-map "a RET" 'activities-switch)
+    (keymap-set conn-buffer-map "a t" 'activities-switch)
+    (keymap-set conn-buffer-map "a g" 'activities-revert)
+    (keymap-set conn-buffer-map "a l" 'activities-list)))
