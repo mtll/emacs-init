@@ -1719,30 +1719,25 @@
     (setq-local orderless-smart-case (not orderless-smart-case))
     (message "smart-case: %s" orderless-smart-case))
 
-  (define-keymap
-    :keymap minibuffer-local-map
-    "M-C" 'orderless-toggle-smart-case)
+  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
 
-  (setf (alist-get ?/ orderless-affix-dispatch-alist) 'orderless-regexp)
+  (orderless-define-completion-style orderless+mm
+    (orderless-affix-dispatch-alist (cons '(?* . orderless-major-mode)
+                                          orderless-affix-dispatch-alist)))
+
+  (setf (alist-get ?~ orderless-affix-dispatch-alist) 'orderless-regexp)
 
   (setq completion-styles '(orderless basic)
-        orderless-matching-styles '(orderless-literal orderless-initialism)
-        completion-category-overrides '((file (styles basic partial-completion)))
+        orderless-matching-styles '(orderless-literal)
+        completion-category-overrides '((file (styles basic partial-completion))
+                                        (buffer (styles orderless+mm)))
         orderless-component-separator #'orderless-escapable-split-on-space))
 
 ;;;;; orderless-set-operations
 
 (elpaca (orderless-set-operations :host codeberg
                                   :repo "crcs/orderless-set-operations")
-  (orderless-predicate-mode 1)
-
-  (setq orderless-predicate-dispatchers
-        '(orderless-contents-pred orderless-annotation-pred))
-
-  (define-orderless-predicate-advice
-      consult-buffer-advice
-    (consult-buffer read-buffer)
-    orderless-major-mode-pred orderless-buffer-modified-pred))
+  (orderless-predicate-mode 1))
 
 ;;;; consult
 
