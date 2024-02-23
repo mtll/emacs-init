@@ -213,11 +213,11 @@
 ;;;; tab-bar-mode
 
 (progn
-  (tab-bar-mode 1)
-  (tab-bar-history-mode 1)
-
   (setq tab-bar-show nil
         tab-bar-tab-name-function 'tab-bar-tab-name-all)
+
+  (tab-bar-mode 1)
+  (tab-bar-history-mode 1)
 
   (with-eval-after-load 'conn-mode
     (defvar-keymap tab-bar-history-mode-repeat-map
@@ -275,7 +275,8 @@
     (require 'savehist)
 
     (setq savehist-additional-variables '(projectile-project-command-history
-                                          file-name-history
+                                          ;; file-name-history
+                                          ;; recentf-list
                                           search-ring
                                           regexp-search-ring
                                           register-alist)
@@ -310,17 +311,29 @@
 
 ;;;; recentf
 
-(progn
-  (with-eval-after-load 'no-littering
-    (require 'recentf)
+(with-eval-after-load 'no-littering
+  (require 'recentf)
 
-    (setq recentf-max-saved-items 100
-          recentf-max-menu-items 15)
+  (setq recentf-max-saved-items 100
+        recentf-max-menu-items 15)
 
-    (recentf-mode 1)
+  (defvar david-recentf-autosave nil)
 
-    (add-to-list 'recentf-exclude no-littering-var-directory)
-    (add-to-list 'recentf-exclude no-littering-etc-directory)))
+  (defun david-recentf-setup-autosave ()
+    (unless david-recentf-autosave
+      (thread-first
+        (lambda ()
+          (let ((inhibit-message t))
+            (when recentf-mode
+              (recentf-save-list))))
+        (run-with-idle-timer 4 t)
+        (setq david-recentf-autosave))))
+  (add-hook 'recentf-mode-hook 'david-recentf-setup-autosave)
+
+  (recentf-mode 1)
+
+  (add-to-list 'recentf-exclude no-littering-var-directory)
+  (add-to-list 'recentf-exclude no-littering-etc-directory))
 
 ;;;; outline
 
@@ -383,10 +396,14 @@
 
   (dolist (mode '(lisp-data-mode-hook
                   eshell-mode-hook
-                  sly-mrepl-mode-hook))
+                  sly-mrepl-mode-hook
+                  slime-repl-mode-hook))
     (add-hook mode #'enable-paredit-mode))
 
   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
+
+  (eldoc-add-command 'paredit-backward-delete
+                     'paredit-close-round)
 
   (diminish 'paredit-mode)
 
@@ -441,19 +458,60 @@
     (conn-add-thing-movement-command 'sexp 'paredit-forward)
     (conn-add-thing-movement-command 'sexp 'paredit-backward)))
 
+;;;; slime
+
+(elpaca slime
+  (require 'slime-autoloads)
+
+  (setq inferior-lisp-program "sbcl"
+        slime-contribs '(slime-autodoc
+                         slime-xref-browser
+                         slime-repl
+                         slime-cl-indent
+                         slime-autodoc
+                         slime-editing-commands
+                         slime-fancy-inspector
+                         slime-fancy-trace
+                         slime-mdot-fu
+                         slime-macrostep
+                         slime-presentations
+                         slime-scratch
+                         slime-references
+                         slime-package-fu
+                         slime-fontifying-fu
+                         slime-quicklisp
+                         slime-trace-dialog
+                         ;; slime-fuzzy
+                         slime-hyperdoc
+                         slime-quicklisp
+                         slime-asdf
+                         slime-sbcl-exts
+                         slime-banner))
+
+  (with-eval-after-load 'slime
+    (slime-setup)
+
+    (keymap-unset slime-repl-mode-map "M-r")
+
+    (defun slime-repl-skip-eval-when-reading (slime-eval &rest args)
+      (if (slime-reading-p)
+          (user-error "Synchronous Lisp Evaluation suppressed while reading input")
+        (apply slime-eval args)))
+    (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading)))
+
 ;;;; sly
 
-(elpaca sly
-  (setq inferior-lisp-program "sbcl --dynamic-space-size 8000"
-        sly-symbol-completion-mode nil))
+;; (elpaca sly
+;;   (setq inferior-lisp-program "sbcl --dynamic-space-size 8000"
+;;         sly-symbol-completion-mode nil))
 
 ;;;;; sly-quicklisp
 
-(elpaca sly-quicklisp)
+;; (elpaca sly-quicklisp)
 
 ;;;;; sly-asdf
 
-(elpaca sly-asdf)
+;; (elpaca sly-asdf)
 
 ;;;;; sly-stepper
 
@@ -500,11 +558,6 @@
 ;;;; lsp-mode
 
 (elpaca lsp-mode
-  ;; (add-hook 'c-mode-hook 'lsp)
-  ;; (add-hook 'c++-mode-hook 'lsp)
-  ;; (add-hook 'erlang-mode-hook 'lsp)
-  ;; (add-hook 'elixir-mode-hook 'lsp)
-
   (keymap-global-set "C-c s" 'lsp)
 
   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
@@ -612,9 +665,7 @@
 
 ;;;;; hide-mode-line-mode
 
-(elpaca hide-mode-line
-  ;; (add-hook 'pdf-view-mode-hook #'hide-mode-line-mode)
-  )
+(elpaca hide-mode-line)
 
 ;;;; tex
 
@@ -629,8 +680,7 @@
   (add-hook 'latex-mode-hook #'cdlatex-mode)
   (add-hook 'org-mode-hook #'org-cdlatex-mode)
   (setf cdlatex-math-symbol-alist
-        '(
-          ( ?a  ("\\alpha"))
+        '(( ?a  ("\\alpha"))
           ( ?A  ("\\forall"         "\\aleph"))
           ( ?b  ("\\beta"))
           ( ?B  (""))
@@ -991,6 +1041,7 @@
                      conf-mode
                      diary-mode
                      fundamental-mode
+                     slime-repl-mode
                      (not pdf-outline-buffer-mode)
                      text-mode
                      outline-mode
@@ -1026,6 +1077,7 @@
                             occur-mode
                             diary-mode
                             fundamental-mode
+                            slime-repl-mode
                             "COMMIT_EDITMSG")
                           'emacs-state)
 
@@ -1235,10 +1287,6 @@
     "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
-    (define-keymap
-      :keymap conn-common-map
-      ","   'avy-goto-char-timer)
-
     (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
   (with-eval-after-load 'avy
@@ -1613,6 +1661,7 @@
   (keymap-set corfu-mode-map "M-SPC" #'corfu-start-and-insert-sep)
   (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
   (keymap-set corfu-map "C-j" #'corfu-quick-complete)
+  (keymap-set corfu-map "<return>" #'corfu-insert)
 
   (defun corfu-move-to-minibuffer ()
     (interactive)
