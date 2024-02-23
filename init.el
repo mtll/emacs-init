@@ -317,20 +317,13 @@
   (setq recentf-max-saved-items 100
         recentf-max-menu-items 15)
 
-  (defvar david-recentf-autosave nil)
-
-  (defun david-recentf-setup-autosave ()
-    (unless david-recentf-autosave
-      (thread-last
-        (lambda ()
-          (let ((inhibit-message t))
-            (when recentf-mode
-              (recentf-save-list))))
-        (run-with-idle-timer 4 t)
-        (setq david-recentf-autosave))))
-  (add-hook 'recentf-mode-hook 'david-recentf-setup-autosave)
-
   (recentf-mode 1)
+
+  (defvar david-recentf-autosave
+    (run-with-idle-timer 4 t (lambda ()
+                               (let ((inhibit-message t))
+                                 (when recentf-mode
+                                   (recentf-save-list))))))
 
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
