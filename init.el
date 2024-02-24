@@ -1709,6 +1709,10 @@
   (keymap-set minibuffer-local-map "C-c '" 'separedit)
   (keymap-set help-mode-map "C-c '" 'separedit))
 
+;;;; package-link-flymake
+
+(elpaca package-lint)
+
 ;;;; orderless
 
 (elpaca orderless
@@ -1718,16 +1722,20 @@
     (interactive)
     (setq-local orderless-smart-case (not orderless-smart-case))
     (message "smart-case: %s" orderless-smart-case))
-
   (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
 
   (orderless-define-completion-style orderless+mm
-    (orderless-affix-dispatch-alist (cons '(?* . orderless-major-mode)
-                                          orderless-affix-dispatch-alist)))
+    (orderless-affix-dispatch-alist
+     (append '((?* . orderless-major-mode))
+             orderless-affix-dispatch-alist)))
 
-  (setf (alist-get ?~ orderless-affix-dispatch-alist) 'orderless-regexp)
-
-  (setq completion-styles '(orderless basic)
+  (setq orderless-affix-dispatch-alist '((?^ . orderless-not)
+                                         (?/ . orderless-regexp)
+                                         (?! . orderless-without-literal)
+                                         (?@ . orderless-annotation)
+                                         (?, . orderless-initialism)
+                                         (?~ . orderless-flex))
+        completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal)
         completion-category-overrides '((file (styles basic partial-completion))
                                         (buffer (styles orderless+mm)))
@@ -1737,6 +1745,9 @@
 
 (elpaca (orderless-set-operations :host codeberg
                                   :repo "crcs/orderless-set-operations")
+  (setq oso--command-affix-overrides
+        '((consult-buffer (?* . orderless-major-mode))))
+
   (orderless-predicate-mode 1))
 
 ;;;; consult
@@ -1809,7 +1820,7 @@
   (consult-customize consult-project-buffer :preview-key "C-j")
 
   (defun consult--orderless-regexp-compiler (input type &rest _config)
-    (setq input (cdr (orderless-pattern-compiler input)))
+    (setq input (cdr (orderless-compile input)))
     (cons
      (mapcar (lambda (r) (consult--convert-regexp r type)) input)
      (lambda (str) (orderless--highlight input t str))))
