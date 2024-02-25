@@ -115,7 +115,8 @@
                                                face minibuffer-prompt)
       yank-from-kill-ring-rotate nil
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
-      edebug-inhibit-emacs-lisp-mode-bindings t)
+      edebug-inhibit-emacs-lisp-mode-bindings t
+      bidi-inhibit-bpa t)
 
 (setq-default indent-tabs-mode nil)
 
@@ -155,7 +156,7 @@
   :keymap ctl-x-map
   "s"   'save-buffer
   "C-s" 'save-some-buffers
-  "f" 'find-file
+  "f"   'find-file
   "C-f" 'set-fill-column)
 
 (define-keymap
@@ -1031,6 +1032,9 @@
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
 
+  (conn-add-mark-trail-command 'forward-whitespace)
+  (conn-add-mark-trail-command 'conn-backward-whitespace)
+
   (keymap-global-set "C-S-j" 'backward-page)
   (keymap-global-set "C-S-l" 'forward-page)
   (keymap-global-set "C-c b" 'conn-buffer-map)
@@ -1039,6 +1043,12 @@
     :keymap page-navigation-repeat-map
     "j" 'backward-page
     "l" 'forward-page)
+
+  (define-keymap
+    :keymap conn-misc-edit-map
+    "d" 'duplicate-dwim
+    "," 'subword-mode
+    "<" 'global-subword-mode)
 
   (define-keymap
     :keymap conn-misc-edit-map
@@ -1056,17 +1066,7 @@
                             "COMMIT_EDITMSG")
                           'emacs-state)
 
-  (add-hook 'read-only-mode-hook 'emacs-state)
-
-  (define-keymap
-    :keymap conn-common-map
-    "." 'forward-char
-    "," 'backward-char
-    "o" 'isearch-forward
-    "u" 'isearch-backward
-    "j" 'backward-word
-    "l" 'forward-word
-    ";" 'avy-goto-char-timer))
+  (add-hook 'read-only-mode-hook 'emacs-state))
 
 ;;;;; conn-expand-region
 
@@ -1113,7 +1113,9 @@
     (define-keymap
       :keymap conn-common-map
       "r" 'conn-embark-region
-      "e" 'embark-act)
+      "e" 'embark-dwim
+      "h" 'embark-alt-dwim
+      "H" 'embark-act)
 
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
@@ -1245,24 +1247,22 @@
 
   (define-keymap
     :keymap goto-map
-    "q" 'avy-goto-char-timer
-    "U" 'avy-goto-word-or-subword-1
-    "C-u" 'avy-goto-word-or-subword-1
-    "O" 'avy-goto-word-or-subword-1
-    "C-o" 'avy-goto-word-or-subword-1
-    "u" 'avy-goto-word-1-above
-    "o" 'avy-goto-word-1-below
+    "u" 'avy-goto-char-timer
+    "L" 'avy-goto-word-or-subword-1
+    "C-l" 'avy-goto-word-or-subword-1
+    "J" 'avy-goto-word-or-subword-1
+    "C-j" 'avy-goto-word-or-subword-1
+    "j" 'avy-goto-word-1-above
+    "l" 'avy-goto-word-1-below
     "M" 'avy-goto-symbol-1
     "C-m" 'avy-goto-symbol-1
     "N" 'avy-goto-symbol-1
     "C-n" 'avy-goto-symbol-1
     "m" 'avy-goto-symbol-1-below
     "n" 'avy-goto-symbol-1-above
-    "L" 'avy-goto-char
-    "C-l" 'avy-goto-char
     "K" 'avy-goto-line
     "C-k" 'avy-goto-line
-    "l" 'avy-goto-end-of-line
+    "o" 'avy-goto-end-of-line
     "k" 'avy-goto-line-below
     "i" 'avy-goto-line-above
     "z" 'avy-resume
@@ -1586,18 +1586,7 @@
       "l" 'conn-join-lines
       "TAB" 'indent-region
       "u" nil
-      "RET" 'eval-region)
-
-    (define-keymap
-      :keymap conn-state-map
-      "h" 'embark-dwim
-      "H" 'embark-alt-dwim)
-
-    (define-conn-mode-map
-     'emacs-state 'view-mode
-     (define-keymap
-       "h" 'embark-dwim
-       "H" 'embark-alt-dwim))))
+      "RET" 'eval-region)))
 
 ;;;;; embark-consult
 
