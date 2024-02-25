@@ -1056,7 +1056,17 @@
                             "COMMIT_EDITMSG")
                           'emacs-state)
 
-  (add-hook 'read-only-mode-hook 'emacs-state))
+  (add-hook 'read-only-mode-hook 'emacs-state)
+
+  (define-keymap
+    :keymap conn-common-map
+    "." 'forward-char
+    "," 'backward-char
+    "o" 'isearch-forward
+    "u" 'isearch-backward
+    "j" 'backward-word
+    "l" 'forward-word
+    ";" 'avy-goto-char-timer))
 
 ;;;;; conn-expand-region
 
@@ -1072,7 +1082,7 @@
 (with-eval-after-load 'isearch+
   (with-eval-after-load 'conn-mode
     (require 'conn-isearch+)
-    (keymap-set isearch-mode-map "C-," 'conn-isearch-in-dot-toggle)))
+    (keymap-set isearch-mode-map "M-," 'conn-isearch-in-dot-toggle)))
 
 ;;;;; conn-avy
 
@@ -1231,7 +1241,7 @@
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
   (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
-  (keymap-set isearch-mode-map "C-," 'avy-isearch)
+  (keymap-set isearch-mode-map "TAB" 'avy-isearch)
 
   (define-keymap
     :keymap goto-map
@@ -1725,9 +1735,8 @@
   (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
 
   (orderless-define-completion-style orderless+mm
-    (orderless-affix-dispatch-alist
-     (append '((?* . orderless-major-mode))
-             orderless-affix-dispatch-alist)))
+    (orderless-affix-dispatch-alist (append '((?* . orderless-major-mode))
+                                            orderless-affix-dispatch-alist)))
 
   (setq orderless-affix-dispatch-alist '((?^ . orderless-not)
                                          (?/ . orderless-regexp)
@@ -1763,7 +1772,6 @@
         xref-show-definitions-function #'consult-xref
         register-preview-delay 0.3
         register-preview-function #'consult-register-format
-        consult-project-function (lambda (_) (projectile-project-root))
         completion-in-region-function #'consult-completion-in-region
         consult-buffer-sources '(consult--source-hidden-buffer
                                  consult--source-modified-buffer
@@ -1866,6 +1874,9 @@
   (defun consult-ripgrep-n (&optional dir initial)
     (interactive "P")
     (consult--grep "Ripgrep N" #'consult--ripgrep-n-make-builder dir initial))
+
+  (with-eval-after-load 'projectile
+    (setq consult-project-function (lambda (_) (projectile-project-root))))
 
   (with-eval-after-load 'embark
     (with-eval-after-load 'org
@@ -2101,8 +2112,8 @@
     "M-RET" 'vertico-exit-input
     "C-M-j" 'vertico-exit-input
     "C-M-<return>" 'vertico-exit-input
-    "M-j" 'vertico-quick-jump
-    "M-J" 'vertico-quick-exit
+    "C-j" 'vertico-quick-jump
+    "C-S-j" 'vertico-quick-exit
     "C-w" 'david-vertico-copy-or-kill)
 
   (defun david-vertico-copy-or-kill (beg end)
