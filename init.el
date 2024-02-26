@@ -143,7 +143,7 @@
 (keymap-global-set "C-:"           'read-only-mode)
 (keymap-global-set "C-c e"         'eshell)
 (keymap-global-set "C-x C-b"       'ibuffer)
-(keymap-global-set "C-o"           goto-map)
+(keymap-global-set "M-o"           goto-map)
 (keymap-global-set "M-;"           'comment-line)
 (keymap-global-set "C-c c"         'compile)
 (keymap-global-set "M-W"           'other-window-prefix)
@@ -276,8 +276,6 @@
     (require 'savehist)
 
     (setq savehist-additional-variables '(projectile-project-command-history
-                                          ;; file-name-history
-                                          ;; recentf-list
                                           search-ring
                                           regexp-search-ring
                                           register-alist)
@@ -866,13 +864,15 @@
 
 (elpaca crux
   (keymap-global-set "C-<return>"   'crux-smart-open-line)
-  (keymap-global-set "<deleteline>" 'crux-smart-kill-line)
-  (keymap-global-set "C-k"          'crux-smart-kill-line)
   (keymap-global-set "C-x F"        'crux-sudo-edit)
   (keymap-global-set "C-x W"        'crux-open-with)
+  (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
+  (define-key global-map [remap kill-line] 'crux-smart-kill-line)
+  (define-key global-map [remap open-line] 'crux-smart-open-line)
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
+    (keymap-set conn-state-map "D" 'crux-kill-whole-line)
     (keymap-set ctl-x-x-map    "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
@@ -1474,7 +1474,7 @@
   (defun embark-alt-line-target-finder ()
     (when (and (not (minibufferp))
                (not (region-active-p))
-               (bolp))
+               (eolp))
       (let ((bounds (bounds-of-thing-at-point 'line)))
         (cons 'line (cons
                      (buffer-substring (car bounds) (cdr bounds))
@@ -1502,11 +1502,11 @@
 
   (defun embark-alt-scroll-down (&rest _)
     (scroll-down-command)
-    (move-beginning-of-line nil))
+    (move-end-of-line nil))
 
   (defun embark-alt-scroll-up (&rest _)
     (scroll-up-command)
-    (move-beginning-of-line nil))
+    (move-end-of-line nil))
 
   (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
 
