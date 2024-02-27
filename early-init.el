@@ -17,21 +17,22 @@
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (blink-cursor-mode -1)
+(menu-bar-mode -1)
 
 (setq window-resize-pixelwise t
+      custom-file (make-temp-file "emacs-custom-")
       frame-resize-pixelwise t
-      menu-bar-mode nil
       visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow)
       frame-title-format (list "%b")
-      custom-file (expand-file-name "custom.el" user-emacs-directory)
       native-comp-async-report-warnings-errors 'silent
       frame-inhibit-implied-resize t
       package-enable-at-startup nil
       initial-buffer-choice nil
+      ring-bell-function #'ignore
       inhibit-startup-screen t)
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
-(load custom-file 'noerror)
+(face-spec-set 'default '((t (:inherit nil :extend nil :stipple nil :background "#ffffff" :foreground "#000000" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight medium :height 142 :width normal :foundry "UKWN" :family "Iosevka DK"))))
 
 (provide 'early-init)
