@@ -361,6 +361,9 @@
 ;;   (require 'benchmark-init)
 ;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
+;; (profiler-start 'cpu+mem)
+;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
+
 ;;;; narrow-indirect
 
 (elpaca (narrow-indirect :host github :repo "emacsmirror/narrow-indirect")
@@ -939,22 +942,23 @@
 ;;;; ace-window
 
 (elpaca ace-window
-  (require 'ace-window)
+  (run-with-idle-timer 1 nil (lambda () (require 'ace-window)))
 
-  (when window-system
-    (ace-window-posframe-mode 1))
+  (with-eval-after-load 'ace-window
+    (when window-system
+      (ace-window-posframe-mode 1))
 
-  (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
-        aw-dispatch-always t)
+    (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
+          aw-dispatch-always t)
 
-  (face-spec-set
-   'aw-leading-char-face
-   '((t (:inherit ace-jump-face-foreground :height 5.0))))
+    (face-spec-set
+     'aw-leading-char-face
+     '((t (:inherit ace-jump-face-foreground :height 5.0))))
 
-  (keymap-global-set "C-;" 'ace-window)
+    (keymap-global-set "C-;" 'ace-window)
 
-  (with-eval-after-load 'conn-mode
-    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
+    (with-eval-after-load 'conn-mode
+      (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height))))
 
 ;;;; expand-region
 
@@ -1224,7 +1228,7 @@
         avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
         avy-line-insert-style 'below)
 
-  (setf (alist-get 'avy-goto-char-timer avy-orders-alist) #'avy-order-closest)
+  ;; (setf (alist-get 'avy-goto-char-timer avy-orders-alist) #'avy-order-closest)
 
   (setq avy-dispatch-alist '((?w  .  avy-action-kill-move)
                              (?d  .  avy-action-kill-stay)
@@ -1746,7 +1750,7 @@
   (setq oso--command-affix-overrides
         '((consult-buffer (?* . orderless-major-mode))))
 
-  (orderless-predicate-mode 1))
+  (oso-mode 1))
 
 ;;;; consult
 
@@ -2362,58 +2366,32 @@
      :add-history (seq-some #'thing-at-point '(region symbol))
      :require-match t))
 
-  (with-eval-after-load 'embark
-    (defun grep--process (lines)
-      (let ((file "") (file-len 0) result)
-        (save-match-data
-          (dolist (str lines)
-            (when (and (string-match consult--grep-match-regexp str)
-                       ;; Filter out empty context lines
-                       (or (/= (aref str (match-beginning 3)) ?-)
-                           (/= (match-end 0) (length str))))
-              ;; We share the file name across candidates to reduce
-              ;; the amount of allocated memory.
-              (unless (and (= file-len (- (match-end 1) (match-beginning 1)))
-                           (eq t (compare-strings
-                                  file 0 file-len
-                                  str (match-beginning 1) (match-end 1) nil)))
-                (setq file (match-string 1 str)
-                      file-len (length file)))
-              (let* ((line (match-string 2 str))
-                     (ctx (= (aref str (match-beginning 3)) ?-))
-                     (sep (if ctx "-" ":"))
-                     (content (substring str (match-end 0)))
-                     (line-len (length line)))
-                (when (length> content consult-grep-max-columns)
-                  (setq content (substring content 0 consult-grep-max-columns)))
-                (setq str (concat file sep line sep content))
-                ;; Store file name in order to avoid allocations in `consult--prefix-group'
-                (add-text-properties 0 file-len `(face consult-file consult--prefix-group ,file) str)
-                (put-text-property (1+ file-len) (+ 1 file-len line-len) 'face 'consult-line-number str)
-                (when ctx
-                  (add-face-text-property (+ 2 file-len line-len) (length str)
-                                          'consult-grep-context 'append str))
-                (push str result)))))
-        (nreverse result)))
+  (defun consult-denote-headings (files)
+    (interactive)
+    (let* ((compiler consult--regexp-compiler)
+           (consult--regexp-compiler
+            (lambda (&rest args)
+              (let ((res (apply compiler args)))
+                (setcdr res #'identity)
+                res)))
+           (builder (consult--ripgrep-make-builder
+                     (mapcar #'consult-notes-denote--file files))))
+      (consult--read
+       (consult--async-command builder
+         (consult--grep-format builder))
+       :preview-key 'any
+       :prompt "Heading: "
+       :lookup #'consult--lookup-member
+       :state (consult--grep-state)
+       :add-history (thing-at-point 'symbol)
+       :require-match t
+       :initial "#/^[*]+#"
+       :category 'consult-denote-heading
+       :group #'consult--prefix-group
+       :history '(:input consult--note-history)
+       :sort nil)))
 
-    (defun consult-denote-headings (files)
-      (interactive)
-      (let ((cmd (consult--build-args consult-ripgrep-args)))
-        (consult--read
-         (grep--process
-          (apply #'process-lines
-                 (append cmd '("-e" "^[*]+")
-                         (mapcar #'consult-notes-denote--file files))))
-         :preview-key 'any
-         :prompt "Heading: "
-         :lookup #'consult--lookup-member
-         :state (consult--grep-state)
-         :add-history (thing-at-point 'symbol)
-         :require-match t
-         :category 'consult-denote-heading
-         :group #'consult--prefix-group
-         :history '(:input consult--note-history)
-         :sort nil)))
+  (with-eval-after-load 'embark
     (add-to-list 'embark-multitarget-actions 'consult-denote-headings)
 
     (setf (alist-get 'consult-denote embark-keymap-alist)
