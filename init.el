@@ -2368,14 +2368,8 @@
 
   (defun consult-denote-headings (files)
     (interactive)
-    (let* ((compiler consult--regexp-compiler)
-           (consult--regexp-compiler
-            (lambda (&rest args)
-              (let ((res (apply compiler args)))
-                (setcdr res #'identity)
-                res)))
-           (builder (consult--ripgrep-make-builder
-                     (mapcar #'consult-notes-denote--file files))))
+    (let ((builder (consult--ripgrep-make-builder
+                    (mapcar #'consult-notes-denote--file files))))
       (consult--read
        (consult--async-command builder
          (consult--grep-format builder))
