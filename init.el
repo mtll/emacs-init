@@ -213,6 +213,58 @@
 ;;;; isearch
 
 (progn
+  (defun isearch-escapable-split-on-char (string char)
+    "Split STRING on spaces, which can be escaped with backslash."
+    (let ((quoted (regexp-quote char)))
+      (mapcar
+       (lambda (piece) (replace-regexp-in-string (string 0) char piece))
+       (split-string (replace-regexp-in-string
+                      (concat "\\\\\\" (substring quoted 0 (1- (length quoted)))
+                              "\\|\\\\" quoted)
+                      (lambda (x) (if (equal x quoted) (string 0) x))
+                      string 'fixedcase 'literal)
+                     (concat quoted "+") t))))
+
+  (defun isearch-ordered-compile (string &optional lax)
+    "Split STRING on spaces, which can be escaped with backslash."
+    (string-join
+     (mapcar (lambda (string)
+               (string-join
+                (mapcar (lambda (string)
+                          (string-join
+                           (mapcar (lambda (string)
+                                     (concat "\\(?:" string "\\)"))
+                                   (isearch-escapable-split-on-char string "*"))
+                           ".*?"))
+                        (isearch-escapable-split-on-char string "-"))
+                "[^ \t\n\r\v\f]*?"))
+             (isearch-escapable-split-on-char string " "))
+     "[ \t]+"))
+
+  (defun isearch-forward-ordered (&optional arg no-recursive-edit)
+    (interactive "P\np")
+    (let ((numarg  (prefix-numeric-value arg)))
+      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+             (call-interactively #'multi-isearch-buffers))
+            ((not (null arg))
+             (isearch-mode t t nil (not no-recursive-edit)))
+            (t (isearch-mode t nil nil (not no-recursive-edit) 'isearch-ordered-compile)))))
+  (define-key global-map [remap isearch-forward] 'isearch-forward-ordered)
+
+  (defun isearch-backward-ordered (&optional arg no-recursive-edit)
+    (interactive "P\np")
+    (let ((numarg  (prefix-numeric-value arg)))
+      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+             (call-interactively #'multi-isearch-buffers))
+            ((not (null arg))
+             (isearch-mode nil t nil (not no-recursive-edit)))
+            (t (isearch-mode nil nil nil (not no-recursive-edit) 'isearch-ordered-compile)))))
+  (define-key global-map [remap isearch-backward] 'isearch-backward-ordered)
+
   (defun isearch-repeat-direction ()
     (interactive)
     (if isearch-forward
@@ -1302,9 +1354,28 @@
     "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
+    (keymap-set conn-common-map "b" 'avy-goto-char-timer)
+
     (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
   (with-eval-after-load 'avy
+    (defun avy-isearch ()
+      "Jump to one of the current isearch candidates."
+      (interactive)
+      (avy-with avy-isearch
+        (let ((avy-background nil)
+              (avy-case-fold-search case-fold-search))
+          (prog1
+              (avy-process
+               (avy--regex-candidates (cond
+                                       (isearch-regexp isearch-string)
+                                       (isearch-regexp-function
+                                        (funcall isearch-regexp-function
+                                                 isearch-string
+                                                 isearch-lax-whitespace))
+                                       (t (regexp-quote isearch-string)))))
+            (isearch-done)))))
+
     (with-eval-after-load 'embark
       (defun avy-action-embark (pt)
         (unwind-protect
