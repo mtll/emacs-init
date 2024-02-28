@@ -6,7 +6,7 @@
           (lambda ()
             "Restore defalut values after init."
             (setq file-name-handler-alist default-file-name-handler-alist)
-            (setq gc-cons-threshold 5000000)
+            (setq gc-cons-threshold (* 8 1024 1024))
             (if (boundp 'after-focus-change-function)
                 (add-function :after after-focus-change-function
                               (lambda ()

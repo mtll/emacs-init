@@ -233,11 +233,11 @@
                 (mapcar (lambda (string)
                           (string-join
                            (mapcar (lambda (string)
-                                     (concat "\\(?:" string "\\)"))
+                                     (concat "\\(?:" (regexp-quote string) "\\)"))
                                    (isearch-escapable-split-on-char string "*"))
-                           ".*?"))
+                           ".+?"))
                         (isearch-escapable-split-on-char string "-"))
-                "[^ \t\n\r\v\f]*?"))
+                "[^ \t\n\r\v\f]+?"))
              (isearch-escapable-split-on-char string " "))
      "[ \t]+"))
 
