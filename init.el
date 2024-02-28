@@ -1019,6 +1019,8 @@
   (run-with-idle-timer 1.5 nil (lambda () (require 'isearch+)))
 
   (with-eval-after-load 'isearch+
+    (keymap-unset isearch-mode-map "C-t")
+    (keymap-set isearch-mode-map "C-:" 'isearchp-property-forward)
     (keymap-set isearch-mode-map "C-;" isearchp-filter-map)
     (keymap-set isearch-mode-map "C-y C-m" 'isearchp-yank-sexp-symbol-or-char)
     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
@@ -1141,7 +1143,7 @@
     (define-keymap
       :keymap conn-common-map
       "r" 'conn-embark-region
-      "e" 'embark-dwim
+      "t" 'embark-dwim
       "h" 'embark-alt-dwim
       "H" 'embark-act)
 
@@ -1270,7 +1272,7 @@
   (advice-add #'avy-process :around 'avy-process-disable-aw-update)
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
-  (keymap-set isearch-mode-map "M-SPC" 'avy-isearch)
+  (keymap-set isearch-mode-map "C-,"   'avy-isearch)
   ;; (keymap-set isearch-mode-map "TAB" 'avy-isearch)
 
   (define-keymap
@@ -1413,6 +1415,7 @@
 
   (keymap-global-set "M-." 'embark-dwim)
   (keymap-global-set "M-," 'embark-alt-dwim)
+  (keymap-global-set "C-t" 'embark-act)
 
   (define-keymap
     :keymap minibuffer-mode-map
