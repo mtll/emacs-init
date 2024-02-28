@@ -213,8 +213,16 @@
 ;;;; isearch
 
 (progn
+  (defun isearch-kill-region (&optional arg)
+    (interactive "P")
+    (isearch-done)
+    (if arg
+        (delete-region (region-beginning) (region-end))
+      (kill-region (region-beginning) (region-end))))
+  (keymap-set isearch-mode-map "C-w" 'isearch-kill-region)
+
   (defun isearch-escapable-split-on-char (string char)
-    "Split STRING on spaces, which can be escaped with backslash."
+    "Split STRING on CHAR, which can be escaped with backslash."
     (let ((quoted (regexp-quote char)))
       (mapcar
        (lambda (piece) (replace-regexp-in-string (string 0) char piece))
@@ -226,7 +234,6 @@
                      (concat quoted "+") t))))
 
   (defun isearch-ordered-compile (string &optional lax)
-    "Split STRING on spaces, which can be escaped with backslash."
     (string-join
      (mapcar (lambda (string)
                (string-join
@@ -239,31 +246,15 @@
                         (isearch-escapable-split-on-char string "-"))
                 "[^ \t\n\r\v\f]+?"))
              (isearch-escapable-split-on-char string " "))
-     "[ \t]+"))
+     search-whitespace-regexp))
 
-  (defun isearch-forward-ordered (&optional arg no-recursive-edit)
-    (interactive "P\np")
-    (let ((numarg  (prefix-numeric-value arg)))
-      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-             (call-interactively #'multi-isearch-buffers))
-            ((not (null arg))
-             (isearch-mode t t nil (not no-recursive-edit)))
-            (t (isearch-mode t nil nil (not no-recursive-edit) 'isearch-ordered-compile)))))
-  (define-key global-map [remap isearch-forward] 'isearch-forward-ordered)
+  (isearch-define-mode-toggle ordered "o" isearch-ordered-compile "\
+Turning on ordered search turns off regexp mode.")
+  (put 'isearch-ordered-compile 'isearch-message-prefix
+       (propertize "Ordered " 'face 'minibuffer-prompt))
 
-  (defun isearch-backward-ordered (&optional arg no-recursive-edit)
-    (interactive "P\np")
-    (let ((numarg  (prefix-numeric-value arg)))
-      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-             (call-interactively #'multi-isearch-buffers))
-            ((not (null arg))
-             (isearch-mode nil t nil (not no-recursive-edit)))
-            (t (isearch-mode nil nil nil (not no-recursive-edit) 'isearch-ordered-compile)))))
-  (define-key global-map [remap isearch-backward] 'isearch-backward-ordered)
+  (with-eval-after-load 'isearch+
+    (setq search-default-regexp-mode #'isearch-ordered-compile))
 
   (defun isearch-repeat-direction ()
     (interactive)
