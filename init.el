@@ -64,7 +64,6 @@
 ;;;; emacs
 
 (setq fill-column 72
-      minibuffer-default-prompt-format ""
       use-short-answers t
       y-or-n-p-use-read-key t
       xref-search-program 'ripgrep
@@ -87,7 +86,7 @@
       read-minibuffer-restore-windows nil
       dired-listing-switches "-alFh --dired --group-directories-first"
       isearch-lazy-count t
-      isearch-yank-on-move t
+      isearch-yank-on-move 'shift
       enable-recursive-minibuffers t
       ediff-split-window-function #'ediff-split-fn
       uniquify-buffer-name-style 'post-forward
@@ -210,6 +209,23 @@
                      gcs-done)))
 
 (find-function-setup-keys)
+
+;;;; isearch
+
+(progn
+  (defun isearch-repeat-direction ()
+    (interactive)
+    (if isearch-forward
+        (isearch-repeat-forward)
+      (isearch-repeat-backward)))
+  (keymap-set isearch-mode-map "TAB" 'isearch-repeat-direction)
+
+  (defun isearch-change-direction ()
+    (interactive)
+    (if isearch-forward
+        (isearch-repeat-backward)
+      (isearch-repeat-forward)))
+  (keymap-set isearch-mode-map "M-TAB" 'isearch-change-direction))
 
 ;;;; tab-bar-mode
 
@@ -451,7 +467,9 @@
        "U" 'paredit-backward-up))
 
     (conn-add-thing-movement-command 'sexp 'paredit-forward)
-    (conn-add-thing-movement-command 'sexp 'paredit-backward)))
+    (conn-add-thing-movement-command 'sexp 'paredit-backward)
+    (conn-add-thing-movement-command 'sexp 'paredit-forward-up)
+    (conn-add-thing-movement-command 'sexp 'paredit-backward-up)))
 
 ;;;; slime
 
@@ -987,20 +1005,26 @@
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
+  (setq isearchp-lazy-dim-filter-failures-flag nil
+        isearchp-restrict-to-region-flag nil
+        isearchp-deactivate-region-flag nil
+        isearchp-initiate-edit-commands nil
+        isearchp-movement-unit-alist '((?w . forward-word)
+                                       (?s . forward-sexp)
+                                       (?i . forward-list)
+                                       (?s . forward-sentence)
+                                       (?c . forward-char)
+                                       (?l . forward-line)))
+
   (run-with-idle-timer 1.5 nil (lambda () (require 'isearch+)))
 
   (with-eval-after-load 'isearch+
-    (setq isearchp-lazy-dim-filter-failures-flag nil
-          isearchp-restrict-to-region-flag nil
-          isearchp-deactivate-region-flag nil
-          isearchp-movement-unit-alist '((?w . forward-word)
-                                         (?s . forward-sexp)
-                                         (?i . forward-list)
-                                         (?s . forward-sentence)
-                                         (?c . forward-char)
-                                         (?l . forward-line)))
-
     (keymap-set isearch-mode-map "C-;" isearchp-filter-map)
+    (keymap-set isearch-mode-map "C-y C-m" 'isearchp-yank-sexp-symbol-or-char)
+    (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
+    (keymap-set isearch-mode-map "C-y l" 'isearch-yank-word-or-char)
+    (keymap-set isearch-mode-map "C-y C-l" 'isearch-yank-word-or-char)
+    (keymap-set isearch-mode-map "M-o" 'isearchp-toggles-map)
     (keymap-set isearchp-filter-map "a" 'isearchp-add-filter-predicate)
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
@@ -1086,7 +1110,7 @@
 (with-eval-after-load 'isearch+
   (with-eval-after-load 'conn-mode
     (require 'conn-isearch+)
-    (keymap-set isearch-mode-map "M-," 'conn-isearch-in-dot-toggle)))
+    (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-dot-toggle)))
 
 ;;;;; conn-avy
 
@@ -1246,8 +1270,8 @@
   (advice-add #'avy-process :around 'avy-process-disable-aw-update)
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
-  (keymap-set isearch-mode-map "S-SPC" 'avy-isearch)
-  (keymap-set isearch-mode-map "TAB" 'avy-isearch)
+  (keymap-set isearch-mode-map "M-SPC" 'avy-isearch)
+  ;; (keymap-set isearch-mode-map "TAB" 'avy-isearch)
 
   (define-keymap
     :keymap goto-map
@@ -1529,7 +1553,6 @@
     "," 'xref-go-back
     "." 'xref-go-forward)
 
-  (keymap-global-set "C-M-." 'embark-alt-dwim)
   (keymap-set embark-heading-map "RET" #'outline-cycle)
 
   (define-keymap
@@ -1587,9 +1610,10 @@
 
     (define-keymap
       :keymap embark-region-map
-      "l" 'conn-join-lines
+      "j" 'conn-join-lines
+      "o" 'embark-isearch-forward
+      "u" 'embark-isearch-backward
       "TAB" 'indent-region
-      "u" nil
       "RET" 'eval-region)))
 
 ;;;;; embark-consult
@@ -1599,26 +1623,27 @@
 
   (define-keymap
     :keymap embark-region-map
-    "o" 'consult-line
-    "u o" 'consult-line
-    "u f" 'consult-find
-    "u g" 'consult-git-grep
-    "u l" 'consult-locate
-    "u i" 'consult-imenu
-    "u I" 'consult-imenu-multi
-    "u O" 'consult-line-multi
-    "u r" 'consult-ripgrep)
+    "l" 'consult-line
+    "h" nil
+    "h o" 'consult-line
+    "h f" 'consult-find
+    "h g" 'consult-git-grep
+    "h O" 'consult-locate
+    "h i" 'consult-imenu
+    "h I" 'consult-imenu-multi
+    "h L" 'consult-line-multi
+    "h r" 'consult-ripgrep)
 
   (define-keymap
     :keymap embark-general-map
-    "u o" 'consult-line
-    "u f" 'consult-find
-    "u g" 'consult-git-grep
-    "u l" 'consult-locate
-    "u i" 'consult-imenu
-    "u I" 'consult-imenu-multi
-    "u O" 'consult-line-multi
-    "u r" 'consult-ripgrep))
+    "h l" 'consult-line
+    "h f" 'consult-find
+    "h g" 'consult-git-grep
+    "h O" 'consult-locate
+    "h i" 'consult-imenu
+    "h I" 'consult-imenu-multi
+    "h L" 'consult-line-multi
+    "h r" 'consult-ripgrep))
 
 ;;;; corfu
 
@@ -1736,7 +1761,7 @@
                                          (?! . orderless-without-literal)
                                          (?@ . orderless-annotation)
                                          (?, . orderless-initialism)
-                                         (?~ . orderless-flex))
+                                         (?. . orderless-flex))
         completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal)
         completion-category-overrides '((file (styles basic partial-completion))
@@ -1794,13 +1819,13 @@
     "w" 'consult-man
     "e" 'consult-isearch-history
     "t" 'consult-outline
-    "o" 'consult-line
-    "O" 'consult-line-multi
+    "l" 'consult-line
+    "L" 'consult-line-multi
     "r" 'consult-ripgrep
     "G" 'consult-grep
     "g" 'consult-git-grep
     "f" 'consult-find
-    "l" 'consult-locate
+    "O" 'consult-locate
     "v" 'consult-focus-lines
     "k" 'consult-keep-lines
     "i" 'consult-imenu
@@ -2348,8 +2373,6 @@
                                     (format "%18s" (propertize (concat "/" dirs) 'face 'consult-notes-name))))))
                       cands)))))
 
-  (keymap-global-set "C-c n f" 'consult-denote)
-
   (defun consult-denote ()
     (interactive)
     (require 'denote)
@@ -2365,6 +2388,7 @@
      :history 'consult-denote-history
      :add-history (seq-some #'thing-at-point '(region symbol))
      :require-match t))
+  (keymap-global-set "C-c n f" 'consult-denote)
 
   (defun consult-denote-headings (files)
     (interactive)
