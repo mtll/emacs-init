@@ -576,8 +576,8 @@ Turning on ordered search turns off regexp mode.")
 
 ;;;; rustic
 
-(elpaca rustic
-  (setq rustic-lsp-client 'lsp-mode))
+;; (elpaca rustic
+;;   (setq rustic-lsp-client 'lsp-mode))
 
 ;;;; erlang
 
@@ -1059,7 +1059,7 @@ Turning on ordered search turns off regexp mode.")
                                        (?c . forward-char)
                                        (?l . forward-line)))
 
-  (run-with-idle-timer 1.5 nil (lambda () (require 'isearch+)))
+  (run-with-idle-timer 0.5 nil (lambda () (require 'isearch+)))
 
   (with-eval-after-load 'isearch+
     (keymap-unset isearch-mode-map "C-t")
@@ -1108,9 +1108,11 @@ Turning on ordered search turns off regexp mode.")
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
 
+  (keymap-global-set "C-c m" 'conn-toggle-mark-command)
   (keymap-global-set "C-S-j" 'backward-page)
   (keymap-global-set "C-S-l" 'forward-page)
   (keymap-global-set "C-c b" 'conn-buffer-map)
+  (keymap-global-set "C-c q" 'conn-misc-edit-map)
 
   (define-keymap
     :keymap page-navigation-repeat-map
@@ -1139,7 +1141,9 @@ Turning on ordered search turns off regexp mode.")
                             "COMMIT_EDITMSG")
                           'emacs-state)
 
-  (add-hook 'read-only-mode-hook 'emacs-state))
+  (add-hook 'read-only-mode-hook 'emacs-state)
+
+  (put 'emacs-state :conn-ephemeral-marks t))
 
 ;;;;; conn-expand-region
 
@@ -1742,18 +1746,18 @@ Turning on ordered search turns off regexp mode.")
 
 ;;;; projectile
 
-(elpaca projectile
-  (projectile-mode 1)
-  (diminish 'projectile-mode)
+;; (elpaca projectile
+;;   (projectile-mode 1)
+;;   (diminish 'projectile-mode)
 
-  (define-keymap
-    :keymap projectile-mode-map
-    "C-c p" 'projectile-command-map)
+;;   (define-keymap
+;;     :keymap projectile-mode-map
+;;     "C-c p" 'projectile-command-map)
 
-  (define-keymap
-    :keymap projectile-command-map
-    "I" 'projectile-invalidate-cache
-    "i" 'projectile-ibuffer))
+;;   (define-keymap
+;;     :keymap projectile-command-map
+;;     "I" 'projectile-invalidate-cache
+;;     "i" 'projectile-ibuffer))
 
 ;;;; bicycle
 
@@ -2032,10 +2036,19 @@ Turning on ordered search turns off regexp mode.")
     (keymap-global-set "C-h o" 'consult-symbol)
     (keymap-set goto-map "y" 'consult-all-marks)))
 
+;;;;; consult-project-extras
+
+(elpaca (consult-project-extras :host github
+                                :repo "Qkessler/consult-project-extra"
+                                :files (:defaults "consult-project-extra.el")
+                                :main "consult-project-extra.el")
+  (keymap-global-set "C-c j" 'consult-project-extra-find)
+  (keymap-global-set "C-c J" 'consult-project-extra-find-other))
+
 ;;;;; consult-projectile
 
-(elpaca consult-projectile
-  (keymap-global-set "C-c j" 'consult-projectile))
+;; (elpaca consult-projectile
+;;   (keymap-global-set "C-c j" 'consult-projectile))
 
 ;;;; vertico
 

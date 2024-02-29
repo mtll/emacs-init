@@ -2,9 +2,9 @@
 (defvar default-file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
 (setq gc-cons-threshold 500000000)
-(add-hook 'emacs-startup-hook
+(add-hook 'elpaca-after-init-hook
           (lambda ()
-            "Restore defalut values after init."
+            "Restore default values after init."
             (setq file-name-handler-alist default-file-name-handler-alist)
             (setq gc-cons-threshold (* 8 1024 1024))
             (if (boundp 'after-focus-change-function)
