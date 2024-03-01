@@ -225,7 +225,7 @@
 
   (defun isearch-escapable-split-on-char (string char)
     "Split STRING on CHAR, which can be escaped with backslash."
-    (let ((quoted (regexp-quote char)))
+    (let ((quoted (concat "\\" char)))
       (mapcar
        (lambda (piece) (replace-regexp-in-string (string 0) char piece))
        (split-string (replace-regexp-in-string
@@ -256,7 +256,29 @@ Turning on ordered search turns off regexp mode.")
        (propertize "Ordered " 'face 'minibuffer-prompt))
 
   (with-eval-after-load 'isearch+
-    (setq search-default-regexp-mode #'isearch-ordered-compile))
+    (defun isearch-forward-ordered (&optional arg no-recursive-edit)
+      "Do incremental search forward.
+See command `isearch-forward' for more information."
+      (interactive "P\np")
+      (let ((numarg  (prefix-numeric-value arg)))
+        (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+               (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+              ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+               (call-interactively #'multi-isearch-buffers))
+              (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit) #'isearch-ordered-compile)))))
+    (define-key global-map [remap isearch-forward] 'isearch-forward-ordered)
+
+    (defun isearch-backward-ordered (&optional arg no-recursive-edit)
+      "do incremental search backward.
+see command `isearch-forward' for more information."
+      (interactive "p\np")
+      (let ((numarg  (prefix-numeric-value arg)))
+        (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+               (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+              ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+               (call-interactively #'multi-isearch-buffers))
+              (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit) #'isearch-ordered-compile)))))
+    (define-key global-map [remap isearch-backward] 'isearch-backward-ordered))
 
   (defun isearch-repeat-direction ()
     (interactive)
@@ -381,9 +403,13 @@ Turning on ordered search turns off regexp mode.")
 
   (defvar david-recentf-autosave
     (run-with-idle-timer 4 t (lambda ()
-                               (let ((inhibit-message t))
-                                 (when recentf-mode
-                                   (recentf-save-list))))))
+                               (when recentf-mode
+                                 ;; inhibit-message t didn't seem to stop
+                                 ;; isearch messages from getting clobered
+                                 ;; so we do this instead.
+                                 (let ((message-log-max nil))
+                                   (with-temp-message (or (current-message) "")
+                                     (recentf-save-list)))))))
 
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
