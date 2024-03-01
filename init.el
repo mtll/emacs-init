@@ -1093,6 +1093,10 @@ Turning on ordered search turns off regexp mode.")
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
 
+  (set-default-conn-state '("COMMIT_EDITMSG") 'emacs-state)
+  (put 'emacs-state :conn-ephemeral-marks t)
+  (add-hook 'read-only-mode-hook 'emacs-state)
+
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
 
@@ -1118,14 +1122,7 @@ Turning on ordered search turns off regexp mode.")
     :keymap conn-misc-edit-map
     "d" 'duplicate-dwim
     "," 'subword-mode
-    "<" 'global-subword-mode)
-
-  (add-hook 'read-only-mode-hook 'emacs-state)
-
-  (put 'emacs-state :conn-ephemeral-marks t)
-  ;; (conn-hide-mark-cursor 'minibuffer-mode)
-
-  (set-default-conn-state '("COMMIT_EDITMSG") 'emacs-state))
+    "<" 'global-subword-mode))
 
 ;;;;; conn-expand-region
 
