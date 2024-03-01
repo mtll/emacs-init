@@ -388,14 +388,15 @@ see command `isearch-forward' for more information."
   (recentf-mode 1)
 
   (defvar david-recentf-autosave
-    (run-with-idle-timer 4 t (lambda ()
-                               (when recentf-mode
-                                 ;; inhibit-message t didn't seem to stop
-                                 ;; isearch messages from getting clobered
-                                 ;; so we do this instead.
-                                 (let ((message-log-max nil))
-                                   (with-temp-message (or (current-message) "")
-                                     (recentf-save-list)))))))
+    (run-with-idle-timer
+     4 t (lambda ()
+           (when recentf-mode
+             ;; inhibit-message t didn't seem to stop
+             ;; isearch messages from getting clobered
+             ;; so we do this instead.
+             (let ((message-log-max nil))
+               (with-temp-message (or (current-message) "")
+                 (recentf-save-list)))))))
 
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
@@ -1182,8 +1183,7 @@ see command `isearch-forward' for more information."
       :keymap conn-common-map
       "r" 'conn-embark-region
       "t" 'embark-dwim
-      "h" 'embark-alt-dwim
-      "H" 'embark-act)
+      "e" 'embark-alt-dwim)
 
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
