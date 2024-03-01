@@ -42,7 +42,7 @@
   (add-hook 'after-init-hook #'elpaca-process-queues)
   (elpaca `(,@elpaca-order)))
 
-;;;; persist
+;;; persist
 
 (elpaca (persist :host github :repo "emacs-straight/persist"))
 
@@ -201,15 +201,6 @@
         'split-window-horizontally
       'split-window-vertically))
 
-  (add-hook 'elpaca-after-init-hook
-            (lambda ()
-              (message "Emacs loaded %d packages in %s with %d garbage collections."
-                       (cdar elpaca--status-counts)
-                       (format "%.2f seconds"
-                               (float-time
-                                (time-subtract (current-time) before-init-time)))
-                       gcs-done)))
-
   (find-function-setup-keys))
 
 ;;;; isearch
@@ -317,14 +308,11 @@ see command `isearch-forward' for more information."
 ;;;; diary / calendar
 
 (progn
-  (require 'calendar)
   (keymap-global-set "<f5>" #'calendar)
   (setq diary-entry-marker 'highlight
         calendar-holiday-marker 'match)
   (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
-  (add-hook 'list-diary-entries-hook 'sort-diary-entries t)
-
-  (appt-activate 1))
+  (add-hook 'list-diary-entries-hook 'sort-diary-entries t))
 
 ;;;; cc-mode
 
@@ -394,8 +382,6 @@ see command `isearch-forward' for more information."
 ;;;; recentf
 
 (with-eval-after-load 'no-littering
-  (require 'recentf)
-
   (setq recentf-max-saved-items 100
         recentf-max-menu-items 15)
 
@@ -1206,17 +1192,10 @@ see command `isearch-forward' for more information."
     (setq conn-complete-keys-prefix-help-command t)
 
     (conn-complete-keys-mode 1)
-
+    
     (with-eval-after-load 'conn-consult
-      (defvar-keymap embark-consult-location-map
-        :parent embark-general-map
-        "D" 'conn-dot-consult-location-candidate)
-      (add-to-list 'embark-keymap-alist '(consult-location embark-consult-location-map))
-
-      (defvar-keymap embark-consult-grep-map
-        :parent embark-general-map
-        "D" 'conn-dot-consult-grep-candidate)
-      (add-to-list 'embark-keymap-alist '(consult-grep embark-consult-grep-map)))))
+      (keymap-set embark-consult-location-map "D" 'conn-dot-consult-location-candidate)
+      (keymap-set embark-consult-grep-map "D" 'conn-dot-consult-grep-candidate))))
 
 ;;;;; conn-consult
 
@@ -1354,7 +1333,7 @@ see command `isearch-forward' for more information."
     "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-common-map "b" 'avy-goto-char-timer)
+    (keymap-set conn-common-map "," 'avy-goto-char-timer)
 
     (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
@@ -1494,6 +1473,11 @@ see command `isearch-forward' for more information."
 
   (keymap-set embark-symbol-map "h" 'helpful-symbol)
   (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
+
+  (defvar-keymap embark-consult-location-map :parent embark-general-map)
+  (add-to-list 'embark-keymap-alist '(consult-location embark-consult-location-map))
+  (defvar-keymap embark-consult-grep-map :parent embark-general-map)
+  (add-to-list 'embark-keymap-alist '(consult-grep embark-consult-grep-map))
 
   (defun embark-act-persist ()
     (interactive)

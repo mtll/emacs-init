@@ -5,6 +5,12 @@
 (add-hook 'elpaca-after-init-hook
           (lambda ()
             "Restore default values after init."
+            (message "Emacs loaded %d packages in %s with %d garbage collections."
+                     (cdar elpaca--status-counts)
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract (current-time) before-init-time)))
+                     gcs-done)
             (setq file-name-handler-alist default-file-name-handler-alist)
             (setq gc-cons-threshold (* 8 1024 1024))
             (if (boundp 'after-focus-change-function)
