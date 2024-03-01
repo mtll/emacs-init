@@ -2,44 +2,45 @@
 
 ;;; Elpaca
 
-(setq elpaca-core-date
-      (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
-(defvar elpaca-installer-version 0.6)
-(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                              :ref nil
-                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                              :build (:not elpaca--activate-package)))
-(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-       (build (expand-file-name "elpaca/" elpaca-builds-directory))
-       (order (cdr elpaca-order))
-       (default-directory repo))
-  (add-to-list 'load-path (if (file-exists-p build) build repo))
-  (unless (file-exists-p repo)
-    (make-directory repo t)
-    (when (< emacs-major-version 28) (require 'subr-x))
-    (condition-case-unless-debug err
-        (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                 ((zerop (call-process "git" nil buffer t "clone"
-                                       (plist-get order :repo) repo)))
-                 ((zerop (call-process "git" nil buffer t "checkout"
-                                       (or (plist-get order :ref) "--"))))
-                 (emacs (concat invocation-directory invocation-name))
-                 ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                       "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                 ((require 'elpaca))
-                 ((elpaca-generate-autoloads "elpaca" repo)))
-            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-          (error "%s" (with-current-buffer buffer (buffer-string))))
-      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-  (unless (require 'elpaca-autoloads nil t)
-    (require 'elpaca)
-    (elpaca-generate-autoloads "elpaca" repo)
-    (load "./elpaca-autoloads")))
-(add-hook 'after-init-hook #'elpaca-process-queues)
-(elpaca `(,@elpaca-order))
+(progn
+  (setq elpaca-core-date
+        (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
+  (defvar elpaca-installer-version 0.6)
+  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                                :ref nil
+                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                                :build (:not elpaca--activate-package)))
+  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+         (build (expand-file-name "elpaca/" elpaca-builds-directory))
+         (order (cdr elpaca-order))
+         (default-directory repo))
+    (add-to-list 'load-path (if (file-exists-p build) build repo))
+    (unless (file-exists-p repo)
+      (make-directory repo t)
+      (when (< emacs-major-version 28) (require 'subr-x))
+      (condition-case-unless-debug err
+          (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                   ((zerop (call-process "git" nil buffer t "clone"
+                                         (plist-get order :repo) repo)))
+                   ((zerop (call-process "git" nil buffer t "checkout"
+                                         (or (plist-get order :ref) "--"))))
+                   (emacs (concat invocation-directory invocation-name))
+                   ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                         "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                   ((require 'elpaca))
+                   ((elpaca-generate-autoloads "elpaca" repo)))
+              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+            (error "%s" (with-current-buffer buffer (buffer-string))))
+        ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+    (unless (require 'elpaca-autoloads nil t)
+      (require 'elpaca)
+      (elpaca-generate-autoloads "elpaca" repo)
+      (load "./elpaca-autoloads")))
+  (add-hook 'after-init-hook #'elpaca-process-queues)
+  (elpaca `(,@elpaca-order)))
 
 ;;;; persist
 
@@ -63,152 +64,153 @@
 
 ;;;; emacs
 
-(setq fill-column 72
-      use-short-answers t
-      y-or-n-p-use-read-key t
-      xref-search-program 'ripgrep
-      read-process-output-max (* 1024 1024)
-      scroll-error-top-bottom t
-      browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "firefox"
-      delete-by-moving-to-trash t
-      pulse-iterations 16
-      xref-history-storage 'xref-window-local-history
-      xref-prompt-for-identifier nil
-      view-read-only t
-      set-mark-command-repeat-pop t
-      read-file-name-completion-ignore-case t
-      read-buffer-completion-ignore-case t
-      translate-upper-case-key-bindings nil
-      show-paren-context-when-offscreen 'child-frame
-      sentence-end-double-space nil
-      tab-always-indent 'complete
-      read-minibuffer-restore-windows nil
-      dired-listing-switches "-alFh --dired --group-directories-first"
-      isearch-lazy-count t
-      isearch-yank-on-move 'shift
-      enable-recursive-minibuffers t
-      ediff-split-window-function #'ediff-split-fn
-      uniquify-buffer-name-style 'post-forward
-      uniquify-separator " | "
-      uniquify-after-kill-buffer-p t
-      uniquify-ignore-buffers-re "^\\*"
-      global-mark-ring-max 32
-      mark-ring-max 32
-      undo-limit 8000000
-      undo-strong-limit 16000000
-      undo-outer-limit 32000000
-      read-process-output-max (ash 1 18)
-      mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
-                                       ((meta))
-                                       ((control meta) . global-text-scale)
-                                       ((control) . text-scale))
-      mouse-wheel-progressive-speed nil
-      register-separator ?+
-      history-delete-duplicates t
-      disabled-command-function nil
-      switch-to-buffer-obey-display-actions t
-      resize-mini-windows 'grow-only
-      minibuffer-prompt-properties '(read-only t
-                                               cursor-intangible t
-                                               face minibuffer-prompt)
-      yank-from-kill-ring-rotate nil
-      exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
-      edebug-inhibit-emacs-lisp-mode-bindings t
-      bidi-inhibit-bpa t)
+(progn
+  (setq fill-column 72
+        use-short-answers t
+        y-or-n-p-use-read-key t
+        xref-search-program 'ripgrep
+        read-process-output-max (* 1024 1024)
+        scroll-error-top-bottom t
+        browse-url-browser-function 'browse-url-generic
+        browse-url-generic-program "firefox"
+        delete-by-moving-to-trash t
+        pulse-iterations 16
+        xref-history-storage 'xref-window-local-history
+        xref-prompt-for-identifier nil
+        view-read-only t
+        set-mark-command-repeat-pop t
+        read-file-name-completion-ignore-case t
+        read-buffer-completion-ignore-case t
+        translate-upper-case-key-bindings nil
+        show-paren-context-when-offscreen 'child-frame
+        sentence-end-double-space nil
+        tab-always-indent 'complete
+        read-minibuffer-restore-windows nil
+        dired-listing-switches "-alFh --dired --group-directories-first"
+        isearch-lazy-count t
+        isearch-yank-on-move 'shift
+        enable-recursive-minibuffers t
+        ediff-split-window-function #'ediff-split-fn
+        uniquify-buffer-name-style 'post-forward
+        uniquify-separator " | "
+        uniquify-after-kill-buffer-p t
+        uniquify-ignore-buffers-re "^\\*"
+        global-mark-ring-max 32
+        mark-ring-max 32
+        undo-limit 8000000
+        undo-strong-limit 16000000
+        undo-outer-limit 32000000
+        read-process-output-max (ash 1 18)
+        mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
+                                         ((meta))
+                                         ((control meta) . global-text-scale)
+                                         ((control) . text-scale))
+        mouse-wheel-progressive-speed nil
+        register-separator ?+
+        history-delete-duplicates t
+        disabled-command-function nil
+        switch-to-buffer-obey-display-actions t
+        resize-mini-windows 'grow-only
+        minibuffer-prompt-properties '(read-only t
+                                                 cursor-intangible t
+                                                 face minibuffer-prompt)
+        yank-from-kill-ring-rotate nil
+        exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
+        edebug-inhibit-emacs-lisp-mode-bindings t
+        bidi-inhibit-bpa t)
 
-(setq-default indent-tabs-mode nil)
+  (setq-default indent-tabs-mode nil)
 
-(minibuffer-depth-indicate-mode 1)
-(global-goto-address-mode 1)
-(show-paren-mode 1)
-(delete-selection-mode 1)
-(column-number-mode 1)
-(line-number-mode 1)
-(electric-pair-mode 1)
-(undelete-frame-mode 1)
-(context-menu-mode 1)
+  (minibuffer-depth-indicate-mode 1)
+  (global-goto-address-mode 1)
+  (show-paren-mode 1)
+  (delete-selection-mode 1)
+  (column-number-mode 1)
+  (line-number-mode 1)
+  (electric-pair-mode 1)
+  (undelete-frame-mode 1)
+  (context-menu-mode 1)
 
-(define-key global-map [remap yank] 'yank-in-context)
+  (define-key global-map [remap yank] 'yank-in-context)
 
-(keymap-global-unset "C-x C-c")
-(keymap-global-unset "C-z")
-(keymap-global-unset "C-x C-z")
+  (keymap-global-unset "C-x C-c")
+  (keymap-global-unset "C-z")
+  (keymap-global-unset "C-x C-z")
 
-(keymap-global-set "S-<backspace>" 'cycle-spacing)
-(keymap-global-set "C-|"           'indent-relative)
-(keymap-global-set "M-N"           'tab-bar-switch-to-next-tab)
-(keymap-global-set "M-P"           'tab-bar-switch-to-prev-tab)
-(keymap-global-set "C-:"           'read-only-mode)
-(keymap-global-set "C-c e"         'eshell)
-(keymap-global-set "C-x C-b"       'ibuffer)
-(keymap-global-set "M-o"           goto-map)
-(keymap-global-set "M-;"           'comment-line)
-(keymap-global-set "C-c c"         'compile)
-(keymap-global-set "M-W"           'other-window-prefix)
-(keymap-global-set "M-F"           'other-frame-prefix)
+  (keymap-global-set "S-<backspace>" 'cycle-spacing)
+  (keymap-global-set "C-|"           'indent-relative)
+  (keymap-global-set "M-N"           'tab-bar-switch-to-next-tab)
+  (keymap-global-set "M-P"           'tab-bar-switch-to-prev-tab)
+  (keymap-global-set "C-:"           'read-only-mode)
+  (keymap-global-set "C-c e"         'eshell)
+  (keymap-global-set "C-x C-b"       'ibuffer)
+  (keymap-global-set "M-o"           goto-map)
+  (keymap-global-set "M-;"           'comment-line)
+  (keymap-global-set "C-c c"         'compile)
+  (keymap-global-set "M-W"           'other-window-prefix)
+  (keymap-global-set "M-F"           'other-frame-prefix)
 
-(keymap-set text-mode-map "M-TAB" #'completion-at-point)
-(keymap-set help-map "M-k" #'describe-keymap)
+  (keymap-set text-mode-map "M-TAB" #'completion-at-point)
+  (keymap-set help-map "M-k" #'describe-keymap)
 
-(define-keymap
-  :keymap ctl-x-map
-  "s"   'save-buffer
-  "C-s" 'save-some-buffers
-  "f"   'find-file
-  "C-f" 'set-fill-column)
+  (define-keymap
+    :keymap ctl-x-map
+    "s"   'save-buffer
+    "C-s" 'save-some-buffers
+    "f"   'find-file
+    "C-f" 'set-fill-column)
 
-(define-keymap
-  :keymap window-prefix-map
-  "t" 'tab-detach
-  "f" 'tear-off-window)
+  (define-keymap
+    :keymap window-prefix-map
+    "t" 'tab-detach
+    "f" 'tear-off-window)
 
-(define-keymap
-  :keymap emacs-lisp-mode-map
-  "C-c C-z" 'eval-buffer
-  "C-c C-m" 'emacs-lisp-macroexpand
-  "C-c C-e" 'eval-print-last-sexp
-  "C-c C-f" 'find-function
-  "C-c C-l" 'pp-eval-last-sexp
-  "C-c C-r" 'eval-region)
+  (define-keymap
+    :keymap emacs-lisp-mode-map
+    "C-c C-z" 'eval-buffer
+    "C-c C-m" 'emacs-lisp-macroexpand
+    "C-c C-e" 'eval-print-last-sexp
+    "C-c C-f" 'find-function
+    "C-c C-l" 'pp-eval-last-sexp
+    "C-c C-r" 'eval-region)
 
-(defun kill-frame-and-buffer ()
-  (interactive)
-  (when-let ((buf (window-buffer (frame-root-window))))
-    (kill-buffer buf))
-  (delete-frame))
-(keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
+  (defun kill-frame-and-buffer ()
+    (interactive)
+    (when-let ((buf (window-buffer (frame-root-window))))
+      (kill-buffer buf))
+    (delete-frame))
+  (keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
 
-(defun disable-minibuffer-max-height (fn &rest args)
-  (let ((max-mini-window-height 1.0))
-    (apply fn args)))
+  (defun disable-minibuffer-max-height (fn &rest args)
+    (let ((max-mini-window-height 1.0))
+      (apply fn args)))
 
-(defun crm-indicator (args)
-  (cons (format "[CRM%s] %s"
-                (replace-regexp-in-string
-                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                 crm-separator)
-                (car args))
-        (cdr args)))
-(advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
 
-(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
-(defun ediff-split-fn ()
-  (if (> (frame-width) 150)
-      'split-window-horizontally
-    'split-window-vertically))
+  (defun ediff-split-fn ()
+    (if (> (frame-width) 150)
+        'split-window-horizontally
+      'split-window-vertically))
 
-(add-hook 'elpaca-after-init-hook
-          (lambda ()
-            (message "Emacs loaded %d packages in %s with %d garbage collections."
-                     (cdar elpaca--status-counts)
-                     (format "%.2f seconds"
-                             (float-time
-                              (time-subtract (current-time) before-init-time)))
-                     gcs-done)))
+  (add-hook 'elpaca-after-init-hook
+            (lambda ()
+              (message "Emacs loaded %d packages in %s with %d garbage collections."
+                       (cdar elpaca--status-counts)
+                       (format "%.2f seconds"
+                               (float-time
+                                (time-subtract (current-time) before-init-time)))
+                       gcs-done)))
 
-(find-function-setup-keys)
+  (find-function-setup-keys))
 
 ;;;; isearch
 
@@ -231,7 +233,7 @@
                               "\\|\\\\" quoted)
                       (lambda (x) (if (equal x quoted) (string 0) x))
                       string 'fixedcase 'literal)
-                     (concat quoted "+") t))))
+                     (concat quoted "+")))))
 
   (defun isearch-ordered-compile (string &optional lax)
     (string-join
@@ -1003,23 +1005,22 @@ Turning on ordered search turns off regexp mode.")
 ;;;; ace-window
 
 (elpaca ace-window
-  (run-with-idle-timer 1 nil (lambda () (require 'ace-window)))
+  (require 'ace-window)
 
-  (with-eval-after-load 'ace-window
-    (when window-system
-      (ace-window-posframe-mode 1))
+  (when window-system
+    (ace-window-posframe-mode 1))
 
-    (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
-          aw-dispatch-always t)
+  (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
+        aw-dispatch-always t)
 
-    (face-spec-set
-     'aw-leading-char-face
-     '((t (:inherit ace-jump-face-foreground :height 5.0))))
+  (face-spec-set
+   'aw-leading-char-face
+   '((t (:inherit ace-jump-face-foreground :height 5.0))))
 
-    (keymap-global-set "C-;" 'ace-window)
+  (keymap-global-set "C-;" 'ace-window)
 
-    (with-eval-after-load 'conn-mode
-      (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height))))
+  (with-eval-after-load 'conn-mode
+    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
 
 ;;;; expand-region
 
@@ -1029,25 +1030,26 @@ Turning on ordered search turns off regexp mode.")
 ;;;; zones
 
 (elpaca zones
-  (run-with-idle-timer 2 nil (lambda () (require 'zones)))
+  (require 'zones)
 
-  (with-eval-after-load 'zones
-    (defun david-zz-widen ()
-      (interactive)
-      (zz-narrow '(4)))
+  (defun david-zz-widen ()
+    (interactive)
+    (zz-narrow '(4)))
 
-    (define-keymap
-      :keymap narrow-map
-      "w" 'david-zz-widen
-      "*" 'zz-replace-regexp-zones
-      "/" 'zz-replace-string-zones
-      "%" 'zz-map-query-replace-regexp-zones)))
+  (define-keymap
+    :keymap narrow-map
+    "w" 'david-zz-widen
+    "*" 'zz-replace-regexp-zones
+    "/" 'zz-replace-string-zones
+    "%" 'zz-map-query-replace-regexp-zones))
 
 ;;;; isearch+
 
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
+  (run-with-idle-timer 0.33 nil (lambda () (require 'isearch+)))
+
   (setq isearchp-lazy-dim-filter-failures-flag nil
         isearchp-restrict-to-region-flag nil
         isearchp-deactivate-region-flag nil
@@ -1058,8 +1060,6 @@ Turning on ordered search turns off regexp mode.")
                                        (?s . forward-sentence)
                                        (?c . forward-char)
                                        (?l . forward-line)))
-
-  (run-with-idle-timer 0.5 nil (lambda () (require 'isearch+)))
 
   (with-eval-after-load 'isearch+
     (keymap-unset isearch-mode-map "C-t")
@@ -1086,18 +1086,6 @@ Turning on ordered search turns off regexp mode.")
                    :files (:defaults "extensions/*"))
   (setq conn-lighter nil
         conn-state-buffer-colors t
-        conn-modes '(prog-mode
-                     conf-mode
-                     diary-mode
-                     fundamental-mode
-                     slime-repl-mode
-                     (not pdf-outline-buffer-mode)
-                     text-mode
-                     outline-mode
-                     eshell-mode
-                     minibuffer-mode
-                     grep-mode
-                     occur-mode)
         dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
@@ -1113,6 +1101,7 @@ Turning on ordered search turns off regexp mode.")
   (keymap-global-set "C-S-l" 'forward-page)
   (keymap-global-set "C-c b" 'conn-buffer-map)
   (keymap-global-set "C-c q" 'conn-misc-edit-map)
+  (keymap-global-set "M-n" 'conn-embark-region)
 
   (define-keymap
     :keymap page-navigation-repeat-map
@@ -1131,19 +1120,12 @@ Turning on ordered search turns off regexp mode.")
     "," 'subword-mode
     "<" 'global-subword-mode)
 
-  (set-default-conn-state '(minibuffer-mode
-                            eshell-mode
-                            grep-mode
-                            occur-mode
-                            diary-mode
-                            fundamental-mode
-                            slime-repl-mode
-                            "COMMIT_EDITMSG")
-                          'emacs-state)
-
   (add-hook 'read-only-mode-hook 'emacs-state)
 
-  (put 'emacs-state :conn-ephemeral-marks t))
+  (put 'emacs-state :conn-ephemeral-marks t)
+  ;; (conn-hide-mark-cursor 'minibuffer-mode)
+
+  (set-default-conn-state '("COMMIT_EDITMSG") 'emacs-state))
 
 ;;;;; conn-expand-region
 
@@ -1362,13 +1344,13 @@ Turning on ordered search turns off regexp mode.")
               (avy-case-fold-search case-fold-search))
           (prog1
               (avy-process
-               (avy--regex-candidates (cond
-                                       (isearch-regexp isearch-string)
-                                       (isearch-regexp-function
-                                        (funcall isearch-regexp-function
-                                                 isearch-string
-                                                 isearch-lax-whitespace))
-                                       (t (regexp-quote isearch-string)))))
+               (avy--regex-candidates
+                (cond
+                 ((functionp isearch-regexp-function)
+                  (funcall isearch-regexp-function isearch-string))
+                 (isearch-regexp-function (word-search-regexp isearch-string))
+                 (isearch-regexp isearch-string)
+                 (t (regexp-quote isearch-string)))))
             (isearch-done)))))
 
     (with-eval-after-load 'embark
