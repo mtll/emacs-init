@@ -234,20 +234,20 @@
                           (string-join
                            (mapcar (lambda (string)
                                      (regexp-quote string))
-                                   (isearch-escapable-split-on-char string "."))
+                                   (isearch-escapable-split-on-char string "*"))
                            ".+?"))
                         (isearch-escapable-split-on-char string "-"))
                 "[^ \t\n\r\v\f]+?"))
              (isearch-escapable-split-on-char string " "))
      search-whitespace-regexp))
 
-  (isearch-define-mode-toggle ordered "*" isearch-wildcards-compile "\
-Turning on ordered search turns off regexp mode.")
+  (isearch-define-mode-toggle wildcards "*" isearch-wildcards-compile "\
+Turning on wildcards search turns off regexp mode.")
   (put 'isearch-wildcards-compile 'isearch-message-prefix
-       (propertize "Ordered " 'face 'minibuffer-prompt))
+       (propertize "Wildcard " 'face 'minibuffer-prompt))
 
   (with-eval-after-load 'isearch+
-    (defun isearch-forward-ordered (&optional arg no-recursive-edit)
+    (defun isearch-forward-wildcard (&optional arg no-recursive-edit)
       "Do incremental search forward.
 See command `isearch-forward' for more information."
       (interactive "P\np")
@@ -258,9 +258,9 @@ See command `isearch-forward' for more information."
                (call-interactively #'multi-isearch-buffers))
               (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
                                #'isearch-wildcards-compile)))))
-    (define-key global-map [remap isearch-forward] 'isearch-forward-ordered)
+    (define-key global-map [remap isearch-forward] 'isearch-forward-wildcard)
 
-    (defun isearch-backward-ordered (&optional arg no-recursive-edit)
+    (defun isearch-backward-wildcard (&optional arg no-recursive-edit)
       "do incremental search backward.
 see command `isearch-forward' for more information."
       (interactive "p\np")
@@ -271,7 +271,7 @@ see command `isearch-forward' for more information."
                (call-interactively #'multi-isearch-buffers))
               (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
                                #'isearch-wildcards-compile)))))
-    (define-key global-map [remap isearch-backward] 'isearch-backward-ordered))
+    (define-key global-map [remap isearch-backward] 'isearch-backward-wildcard))
 
   (defun isearch-repeat-direction ()
     (interactive)
