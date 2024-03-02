@@ -226,7 +226,7 @@
                       string 'fixedcase 'literal)
                      (concat quoted "+")))))
 
-  (defun isearch-wildcard-compile (string &optional lax)
+  (defun isearch-wildcards-compile (string &optional lax)
     (string-join
      (mapcar (lambda (string)
                (string-join
@@ -241,9 +241,9 @@
              (isearch-escapable-split-on-char string " "))
      search-whitespace-regexp))
 
-  (isearch-define-mode-toggle ordered "*" isearch-wildcard-compile "\
+  (isearch-define-mode-toggle ordered "*" isearch-wildcards-compile "\
 Turning on ordered search turns off regexp mode.")
-  (put 'isearch-wildcard-compile 'isearch-message-prefix
+  (put 'isearch-wildcards-compile 'isearch-message-prefix
        (propertize "Ordered " 'face 'minibuffer-prompt))
 
   (with-eval-after-load 'isearch+
@@ -257,7 +257,7 @@ See command `isearch-forward' for more information."
               ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
                (call-interactively #'multi-isearch-buffers))
               (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
-                               #'isearch-wildcard-compile)))))
+                               #'isearch-wildcards-compile)))))
     (define-key global-map [remap isearch-forward] 'isearch-forward-ordered)
 
     (defun isearch-backward-ordered (&optional arg no-recursive-edit)
@@ -270,7 +270,7 @@ see command `isearch-forward' for more information."
               ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
                (call-interactively #'multi-isearch-buffers))
               (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
-                               #'isearch-wildcard-compile)))))
+                               #'isearch-wildcards-compile)))))
     (define-key global-map [remap isearch-backward] 'isearch-backward-ordered))
 
   (defun isearch-repeat-direction ()
