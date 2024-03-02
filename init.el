@@ -1108,19 +1108,21 @@ see command `isearch-forward' for more information."
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
 
-  (set-default-conn-state '("COMMIT_EDITMSG") 'emacs-state)
+  (set-default-conn-state '("COMMIT_EDITMSG.*") 'emacs-state)
   (put 'emacs-state :conn-ephemeral-marks t)
   (add-hook 'read-only-mode-hook 'emacs-state)
 
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
 
-  (keymap-global-set "C-c m" 'conn-toggle-mark-command)
-  (keymap-global-set "C-S-j" 'backward-page)
-  (keymap-global-set "C-S-l" 'forward-page)
-  (keymap-global-set "C-c b" 'conn-buffer-map)
-  (keymap-global-set "C-c q" 'conn-misc-edit-map)
-  (keymap-global-set "M-n" 'conn-embark-region)
+  (define-keymap
+    :keymap global-map
+    "C-c m" 'conn-toggle-mark-command
+    "C-S-j" 'backward-page
+    "C-S-l" 'forward-page
+    "C-c b" 'conn-buffer-map
+    "C-c a" 'conn-misc-edit-map
+    "M-n" 'conn-embark-region)
 
   (define-keymap
     :keymap page-navigation-repeat-map
