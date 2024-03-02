@@ -48,17 +48,12 @@
 
 ;;; Compat
 
-(elpaca compat (require 'compat))
+(elpaca compat)
 
 ;;; Diminish
 
 (elpaca diminish
-  (require 'diminish)
   (diminish 'visual-line-mode))
-
-;;; Wait
-
-(elpaca-wait)
 
 ;;; Built-in
 
@@ -152,6 +147,11 @@
 
   (keymap-set text-mode-map "M-TAB" #'completion-at-point)
   (keymap-set help-map "M-k" #'describe-keymap)
+
+  (define-keymap
+    :keymap goto-map
+    "," 'xref-go-back
+    "." 'xref-go-forward)
 
   (define-keymap
     :keymap ctl-x-map
@@ -374,12 +374,14 @@ see command `isearch-forward' for more information."
 (progn
   (setq auto-revert-interval .01)
   (global-auto-revert-mode 1)
-  (diminish 'auto-revert-mode))
+  (with-eval-after-load 'diminish
+    (diminish 'auto-revert-mode)))
 
 ;;;; face-remap
 
 (with-eval-after-load 'face-remap
-  (diminish 'buffer-face-mode))
+  (with-eval-after-load 'diminish
+    (diminish 'buffer-face-mode)))
 
 ;;;; recentf
 
@@ -408,7 +410,8 @@ see command `isearch-forward' for more information."
 (progn
   (keymap-global-set "C-c L" 'outline-minor-mode)
   (with-eval-after-load 'outline
-    (diminish 'outline-minor-mode)))
+    (with-eval-after-load 'diminish
+      (diminish 'outline-minor-mode))))
 
 ;;;; dired
 
@@ -425,7 +428,8 @@ see command `isearch-forward' for more information."
 ;;;; eldoc
 
 (progn
-  (diminish 'eldoc-mode)
+  (with-eval-after-load 'diminish
+    (diminish 'eldoc-mode))
 
   (setq eldoc-echo-area-prefer-doc-buffer t))
 
@@ -463,7 +467,7 @@ see command `isearch-forward' for more information."
 ;;;; paredit
 
 (elpaca (paredit :host github :repo "emacsmirror/paredit")
-  (require 'paredit)
+  ;; (require 'paredit)
 
   (dolist (mode '(lisp-data-mode-hook
                   eshell-mode-hook
@@ -476,60 +480,62 @@ see command `isearch-forward' for more information."
   (eldoc-add-command 'paredit-backward-delete
                      'paredit-close-round)
 
-  (diminish 'paredit-mode)
+  (with-eval-after-load 'paredit
+    (with-eval-after-load 'diminish
+      (diminish 'paredit-mode))
 
-  (keymap-unset paredit-mode-map "RET")
-  (keymap-unset paredit-mode-map "M-s")
-  (keymap-unset paredit-mode-map "M-;")
-  (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
+    (keymap-unset paredit-mode-map "RET")
+    (keymap-unset paredit-mode-map "M-s")
+    (keymap-unset paredit-mode-map "M-;")
+    (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
 
-  (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
+    (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
 
-  (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
-    (or endp
-        (cond ((eq (char-syntax delimiter) ?\()
-               (not (or (looking-back ",@" nil t)
-                        (looking-back "'" nil t)
-                        (looking-back "`" nil t)
-                        (looking-back "#." nil t))))
-              ((eq (char-syntax delimiter) ?\")
-               (not (or (looking-back "#" nil t)
-                        (looking-back "#." nil t))))
-              (else t))))
+    (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
+      (or endp
+          (cond ((eq (char-syntax delimiter) ?\()
+                 (not (or (looking-back ",@" nil t)
+                          (looking-back "'" nil t)
+                          (looking-back "`" nil t)
+                          (looking-back "#." nil t))))
+                ((eq (char-syntax delimiter) ?\")
+                 (not (or (looking-back "#" nil t)
+                          (looking-back "#." nil t))))
+                (else t))))
 
-  (add-to-list 'paredit-space-for-delimiter-predicates
-               'paredit-space-for-delimiter-predicates-lisp)
+    (add-to-list 'paredit-space-for-delimiter-predicates
+                 'paredit-space-for-delimiter-predicates-lisp)
 
-  (defun paredit-kill-rectangle-advice (fn &rest args)
-    (if (not rectangle-mark-mode)
-        (apply fn args)
-      (setq this-command 'kill-rectangle)
-      (call-interactively 'kill-rectangle)))
-  (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
+    (defun paredit-kill-rectangle-advice (fn &rest args)
+      (if (not rectangle-mark-mode)
+          (apply fn args)
+        (setq this-command 'kill-rectangle)
+        (call-interactively 'kill-rectangle)))
+    (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
 
-  (defun paredit-disable-electric-pair ()
-    (electric-pair-local-mode -1))
+    (defun paredit-disable-electric-pair ()
+      (electric-pair-local-mode -1))
 
-  (with-eval-after-load 'conn-mode
-    (define-conn-mode-map
-     'conn-state 'paredit-mode
-     (define-keymap
-       "C-<backspace>" 'paredit-backward-kill-word
-       "M-DEL"         'paredit-backward-kill-word
-       "DEL"           'paredit-backward-delete))
+    (with-eval-after-load 'conn-mode
+      (define-conn-mode-map
+       'conn-state 'paredit-mode
+       (define-keymap
+         "C-<backspace>" 'paredit-backward-kill-word
+         "M-DEL"         'paredit-backward-kill-word
+         "DEL"           'paredit-backward-delete))
 
-    (define-conn-mode-map
-     '(conn-state dot-state) 'paredit-mode
-     (define-keymap
-       "m" 'paredit-forward
-       "n" 'paredit-backward
-       "O" 'paredit-forward-up
-       "U" 'paredit-backward-up))
+      (define-conn-mode-map
+       '(conn-state dot-state) 'paredit-mode
+       (define-keymap
+         "m" 'paredit-forward
+         "n" 'paredit-backward
+         "O" 'paredit-forward-up
+         "U" 'paredit-backward-up))
 
-    (conn-add-thing-movement-command 'sexp 'paredit-forward)
-    (conn-add-thing-movement-command 'sexp 'paredit-backward)
-    (conn-add-thing-movement-command 'sexp 'paredit-forward-up)
-    (conn-add-thing-movement-command 'sexp 'paredit-backward-up)))
+      (conn-add-thing-movement-command 'sexp 'paredit-forward)
+      (conn-add-thing-movement-command 'sexp 'paredit-backward)
+      (conn-add-thing-movement-command 'sexp 'paredit-forward-up)
+      (conn-add-thing-movement-command 'sexp 'paredit-backward-up))))
 
 ;;;; slime
 
@@ -889,8 +895,9 @@ see command `isearch-forward' for more information."
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
-  ;; (dtrt-indent-global-mode 1)
-  (diminish 'dtrt-indent-mode))
+  (with-eval-after-load 'dtrt-indent-mode
+    (with-eval-after-load 'diminish
+      (diminish 'dtrt-indent-mode))))
 
 ;;;; exec-path-from-shell
 
@@ -935,11 +942,14 @@ see command `isearch-forward' for more information."
 ;;;; no-littering
 
 (elpaca no-littering
-  (require 'no-littering)
-  (no-littering-theme-backups)
+  (run-with-idle-timer 0.25 nil (lambda () (require 'no-littering)))
+
   (setq backup-by-copying t
-        auto-save-file-name-transforms
-        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
+          auto-save-file-name-transforms
+          `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+
+  (with-eval-after-load 'no-littering
+    (no-littering-theme-backups)))
 
 ;;;; crux
 
@@ -1020,11 +1030,6 @@ see command `isearch-forward' for more information."
 ;;;; ace-window
 
 (elpaca ace-window
-  (require 'ace-window)
-
-  (when window-system
-    (ace-window-posframe-mode 1))
-
   (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
         aw-dispatch-always t)
 
@@ -1033,6 +1038,10 @@ see command `isearch-forward' for more information."
    '((t (:inherit ace-jump-face-foreground :height 5.0))))
 
   (keymap-global-set "C-;" 'ace-window)
+
+  (with-eval-after-load 'ace-window
+    (when window-system
+      (ace-window-posframe-mode 1)))
 
   (with-eval-after-load 'conn-mode
     (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
@@ -1045,10 +1054,9 @@ see command `isearch-forward' for more information."
 ;;;; zones
 
 (elpaca zones
-  (require 'zones)
-
   (defun david-zz-widen ()
     (interactive)
+    (require 'zones)
     (zz-narrow '(4)))
 
   (define-keymap
@@ -1117,11 +1125,11 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap global-map
-    "C-c m" 'conn-toggle-mark-command
     "C-S-j" 'backward-page
     "C-S-l" 'forward-page
     "C-c b" 'conn-buffer-map
     "C-c a" 'conn-misc-edit-map
+    "C-c q" 'conn-toggle-mark-command
     "M-n" 'conn-embark-region)
 
   (define-keymap
@@ -1167,6 +1175,12 @@ see command `isearch-forward' for more information."
 ;;;;; conn-embark
 
 (with-eval-after-load 'conn-mode
+  (define-keymap
+    :keymap conn-common-map
+    "r" 'conn-embark-region
+    "e" 'embark-dwim
+    "t" 'embark-alt-dwim)
+
   (with-eval-after-load 'embark
     (require 'conn-embark)
 
@@ -1183,12 +1197,6 @@ see command `isearch-forward' for more information."
       "g" 'conn-duplicate-region
       "G" 'conn-duplicate-and-comment-region)
 
-    (define-keymap
-      :keymap conn-common-map
-      "r" 'conn-embark-region
-      "t" 'embark-dwim
-      "e" 'embark-alt-dwim)
-
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
@@ -1196,17 +1204,17 @@ see command `isearch-forward' for more information."
     (setq conn-complete-keys-prefix-help-command t)
 
     (conn-complete-keys-mode 1)
-    
-    (with-eval-after-load 'conn-consult
+
+    (with-eval-after-load 'consult
       (keymap-set embark-consult-location-map "D" 'conn-dot-consult-location-candidate)
       (keymap-set embark-consult-grep-map "D" 'conn-dot-consult-grep-candidate))))
 
 ;;;;; conn-consult
 
 (with-eval-after-load 'conn-mode
+  (keymap-set search-map "t" 'conn-consult-thing)
   (with-eval-after-load 'consult
-    (require 'conn-consult)
-    (keymap-set search-map "t" 'conn-consult-thing)))
+    (require 'conn-consult)))
 
 ;;;; ialign
 
@@ -1289,8 +1297,6 @@ see command `isearch-forward' for more information."
         avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
         avy-line-insert-style 'below)
 
-  ;; (setf (alist-get 'avy-goto-char-timer avy-orders-alist) #'avy-order-closest)
-
   (setq avy-dispatch-alist '((?w  .  avy-action-kill-move)
                              (?d  .  avy-action-kill-stay)
                              (?t  .  avy-action-teleport)
@@ -1300,15 +1306,16 @@ see command `isearch-forward' for more information."
                              (?$  .  avy-action-ispell)
                              (?\\ .  avy-action-zap-to-char)))
 
-  (defun avy-process-disable-aw-update (&rest app)
-    (cl-letf (((symbol-function 'aw-update) #'ignore))
-      (apply app)))
+  (with-eval-after-load 'ace-window
+    ;; stops ace-window from breaking when minibuffer indicator is enabled
+    (defun avy-process-disable-aw-update (&rest app)
+      (cl-letf (((symbol-function 'aw-update) #'ignore))
+        (apply app)))
 
-  (advice-add #'avy-process :around 'avy-process-disable-aw-update)
+    (advice-add #'avy-process :around 'avy-process-disable-aw-update))
 
   (keymap-global-set           "C-,"   'avy-goto-char-timer)
   (keymap-set isearch-mode-map "C-,"   'avy-isearch)
-  ;; (keymap-set isearch-mode-map "TAB" 'avy-isearch)
 
   (define-keymap
     :keymap goto-map
@@ -1420,7 +1427,8 @@ see command `isearch-forward' for more information."
 ;;;;; all-the-icons-dired
 
 (elpaca all-the-icons-dired
-  (diminish 'all-the-icons-dired-mode)
+  (with-eval-after-load 'diminish
+    (diminish 'all-the-icons-dired-mode))
   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
 ;;;; magit
@@ -1452,12 +1460,6 @@ see command `isearch-forward' for more information."
 ;;;; embark
 
 (elpaca embark
-  (defvar-keymap embark-alt-page-map
-    "RET" 'narrow-to-page
-    "m" 'mark-page)
-
-  (require 'embark)
-
   (setq embark-quit-after-action t
         embark-indicators '(embark-minimal-indicator
                             embark-highlight-indicator
@@ -1467,6 +1469,10 @@ see command `isearch-forward' for more information."
         embark-help-key "?"
         embark-confirm-act-all nil)
 
+  (defvar-keymap embark-alt-page-map
+    "RET" 'narrow-to-page
+    "m" 'mark-page)
+
   (keymap-global-set "M-." 'embark-dwim)
   (keymap-global-set "M-," 'embark-alt-dwim)
   (keymap-global-set "C-t" 'embark-act)
@@ -1474,14 +1480,6 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap minibuffer-mode-map
     "C-M-." 'embark-export)
-
-  (keymap-set embark-symbol-map "h" 'helpful-symbol)
-  (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-
-  (defvar-keymap embark-consult-location-map :parent embark-general-map)
-  (add-to-list 'embark-keymap-alist '(consult-location embark-consult-location-map))
-  (defvar-keymap embark-consult-grep-map :parent embark-general-map)
-  (add-to-list 'embark-keymap-alist '(consult-grep embark-consult-grep-map))
 
   (defun embark-act-persist ()
     (interactive)
@@ -1513,13 +1511,6 @@ see command `isearch-forward' for more information."
        nil from-frame from-number new-frame nil)
       (with-selected-frame new-frame
         (tab-bar-close-tab))))
-
-  (defvar-keymap embark-tab-bar-map
-    "d" 'embark-tab-delete
-    "r" 'embark-tab-rename
-    "t" 'embark-tab-detach)
-
-  (add-to-list 'embark-keymap-alist '(tab-bar embark-tab-bar-map))
 
   (defcustom embark-alt-default-action-overrides nil
     "`embark-default-action-overrides' for alternate actions."
@@ -1598,34 +1589,46 @@ see command `isearch-forward' for more information."
     (scroll-up-command)
     (move-end-of-line nil))
 
-  (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
+  (defvar-keymap embark-consult-location-map)
+  (defvar-keymap embark-consult-grep-map)
 
-  (defvar-keymap embark-alt-line-map
-    "RET" 'embark-alt-scroll-up
-    "M-RET" 'embark-alt-scroll-down)
+  (with-eval-after-load 'embark
+    (defvar-keymap embark-tab-bar-map
+      "d" 'embark-tab-delete
+      "r" 'embark-tab-rename
+      "t" 'embark-tab-detach)
+    (add-to-list 'embark-keymap-alist '(tab-bar embark-tab-bar-map))
 
-  (setf (alist-get 'line embark-keymap-alist)
-        (list 'embark-alt-line-map))
+    (keymap-set embark-symbol-map "h" 'helpful-symbol)
+    (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
 
-  (setf (alist-get 'page embark-keymap-alist)
-        (list 'embark-alt-page-map))
+    (set-keymap-parent embark-consult-location-map embark-general-map)
+    (set-keymap-parent embark-consult-grep-map embark-general-map)
+    (add-to-list 'embark-keymap-alist '(consult-location embark-consult-location-map))
+    (add-to-list 'embark-keymap-alist '(consult-grep embark-consult-grep-map))
 
-  (defvar-keymap xref-go-back-repeat-map
-    :repeat t
-    "," 'xref-go-back
-    "." 'xref-go-forward)
+    (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
 
-  (keymap-set embark-heading-map "RET" #'outline-cycle)
+    (defvar-keymap embark-alt-line-map
+      "RET" 'embark-alt-scroll-up
+      "M-RET" 'embark-alt-scroll-down)
 
-  (define-keymap
-    :keymap goto-map
-    "," 'xref-go-back
-    "." 'xref-go-forward)
+    (setf (alist-get 'line embark-keymap-alist)
+          (list 'embark-alt-line-map))
 
-  (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
-  (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
+    (setf (alist-get 'page embark-keymap-alist)
+          (list 'embark-alt-page-map))
 
-  (with-eval-after-load 'consult
+    (defvar-keymap xref-go-back-repeat-map
+      :repeat t
+      "," 'xref-go-back
+      "." 'xref-go-forward)
+
+    (keymap-set embark-heading-map "RET" #'outline-cycle)
+
+    (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
+    (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
+
     (defun embark-consult-kill-lines (cands)
       (let (strs)
         (pcase-dolist (`(,marker . ,line) (mapcar #'consult--get-location cands))
@@ -1639,7 +1642,33 @@ see command `isearch-forward' for more information."
             (set-marker marker nil)))
         (kill-new (string-join strs "\n"))))
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
-    (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions))
+    (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
+
+    (with-eval-after-load 'conn-mode
+      (keymap-set embark-region-map "RET" 'conn-copy-region)
+
+      (define-keymap
+        :keymap embark-region-map
+        "j" 'conn-join-lines
+        "o" 'embark-isearch-forward
+        "u" 'embark-isearch-backward
+        "TAB" 'indent-region
+        "RET" 'eval-region))
+
+    (with-eval-after-load 'org
+      (defun embark-bookmark-link (cand)
+        (when cand
+          (let* ((desc (read-string "Description: "))
+                 (fmt (if (string= desc "")
+                          "[[bmk:%s]]"
+                        "[[bmk:%s][%s]]")))
+            (insert (format fmt cand desc)))))
+
+      (define-keymap
+        :keymap embark-bookmark-map
+        "M-RET" 'embark-bookmark-link)
+
+      (add-to-list 'embark-target-finders 'embark-org-target-link)))
 
   (with-eval-after-load 'vertico
     (define-keymap
@@ -1650,62 +1679,35 @@ see command `isearch-forward' for more information."
       "M-<tab>" 'embark-act-persist
       "C-SPC" 'embark-select
       "TAB" 'embark-act-marked
-      "<tab>" 'embark-act-marked))
-
-  (with-eval-after-load 'org
-    (defun embark-bookmark-link (cand)
-      (when cand
-        (let* ((desc (read-string "Description: "))
-               (fmt (if (string= desc "")
-                        "[[bmk:%s]]"
-                      "[[bmk:%s][%s]]")))
-          (insert (format fmt cand desc)))))
-
-    (define-keymap
-      :keymap embark-bookmark-map
-      "M-RET" 'embark-bookmark-link)
-
-    (add-to-list 'embark-target-finders 'embark-org-target-link))
-
-  (with-eval-after-load 'conn-mode
-    (keymap-set embark-region-map "RET" 'conn-copy-region)
-
-    (define-keymap
-      :keymap embark-region-map
-      "j" 'conn-join-lines
-      "o" 'embark-isearch-forward
-      "u" 'embark-isearch-backward
-      "TAB" 'indent-region
-      "RET" 'eval-region)))
+      "<tab>" 'embark-act-marked)))
 
 ;;;;; embark-consult
 
 (elpaca embark-consult
-  (require 'embark-consult)
+  (with-eval-after-load 'embark
+    (define-keymap
+      :keymap embark-region-map
+      "l" 'consult-line
+      "h" nil
+      "h o" 'consult-line
+      "h f" 'consult-find
+      "h g" 'consult-git-grep
+      "h O" 'consult-locate
+      "h i" 'consult-imenu
+      "h I" 'consult-imenu-multi
+      "h L" 'consult-line-multi
+      "h r" 'consult-ripgrep)
 
-  (define-keymap
-    :keymap embark-region-map
-    "l" 'consult-line
-    "h" nil
-    "h o" 'consult-line
-    "h f" 'consult-find
-    "h g" 'consult-git-grep
-    "h O" 'consult-locate
-    "h i" 'consult-imenu
-    "h I" 'consult-imenu-multi
-    "h L" 'consult-line-multi
-    "h r" 'consult-ripgrep)
-
-  (define-keymap
-    :keymap embark-general-map
-    "h l" 'consult-line
-    "h f" 'consult-find
-    "h g" 'consult-git-grep
-    "h O" 'consult-locate
-    "h i" 'consult-imenu
-    "h I" 'consult-imenu-multi
-    "h L" 'consult-line-multi
-    "h r" 'consult-ripgrep))
+    (define-keymap
+      :keymap embark-general-map
+      "h l" 'consult-line
+      "h f" 'consult-find
+      "h g" 'consult-git-grep
+      "h O" 'consult-locate
+      "h i" 'consult-imenu
+      "h I" 'consult-imenu-multi
+      "h L" 'consult-line-multi
+      "h r" 'consult-ripgrep)))
 
 ;;;; corfu
 
@@ -1741,7 +1743,6 @@ see command `isearch-forward' for more information."
 
 ;; (elpaca projectile
 ;;   (projectile-mode 1)
-;;   (diminish 'projectile-mode)
 
 ;;   (define-keymap
 ;;     :keymap projectile-mode-map
@@ -1806,18 +1807,6 @@ see command `isearch-forward' for more information."
 ;;;; orderless
 
 (elpaca orderless
-  (require 'orderless)
-
-  (defun orderless-toggle-smart-case ()
-    (interactive)
-    (setq-local orderless-smart-case (not orderless-smart-case))
-    (message "smart-case: %s" orderless-smart-case))
-  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
-
-  (orderless-define-completion-style orderless+mm
-    (orderless-affix-dispatch-alist (append '((?* . orderless-major-mode))
-                                            orderless-affix-dispatch-alist)))
-
   (setq orderless-affix-dispatch-alist '((?^ . orderless-not)
                                          (?/ . orderless-regexp)
                                          (?! . orderless-without-literal)
@@ -1828,26 +1817,35 @@ see command `isearch-forward' for more information."
         orderless-matching-styles '(orderless-literal)
         completion-category-overrides '((file (styles basic partial-completion))
                                         (buffer (styles orderless+mm)))
-        orderless-component-separator #'orderless-escapable-split-on-space))
+        orderless-component-separator #'orderless-escapable-split-on-space)
+
+  (defun orderless-toggle-smart-case ()
+    (interactive)
+    (setq-local orderless-smart-case (not orderless-smart-case))
+    (message "smart-case: %s" orderless-smart-case))
+  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
+
+  (with-eval-after-load 'orderless
+    (orderless-define-completion-style orderless+mm
+      (orderless-affix-dispatch-alist (append '((?* . orderless-major-mode))
+                                              orderless-affix-dispatch-alist)))))
 
 ;;;;; orderless-set-operations
 
 (elpaca (orderless-set-operations :host codeberg
                                   :repo "crcs/orderless-set-operations")
-  (setq oso--command-affix-overrides
-        '((consult-buffer (?* . orderless-major-mode))))
+  (with-eval-after-load 'orderless
+    (setq oso--command-affix-overrides
+          '((consult-buffer (?* . orderless-major-mode))))
 
-  (oso-mode 1))
+    (oso-mode 1)))
 
 ;;;; consult
 
 (elpaca consult
-  (require 'consult)
-
   (setq consult-async-min-input 3
         consult-yank-rotate nil
         consult-narrow-key "M-N"
-        consult-ripgrep-args (concat consult-ripgrep-args " --multiline")
         xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref
         register-preview-delay 0.3
@@ -1880,7 +1878,7 @@ see command `isearch-forward' for more information."
     "n" 'consult-ripgrep-n
     "w" 'consult-man
     "e" 'consult-isearch-history
-    "t" 'consult-outline
+    "o" 'consult-outline
     "l" 'consult-line
     "L" 'consult-line-multi
     "r" 'consult-ripgrep
@@ -1901,11 +1899,14 @@ see command `isearch-forward' for more information."
     "M-s j" 'consult-line
     "M-s J" 'consult-line-multi)
 
-  (consult-customize consult-completion-in-region :preview-key nil)
-  (consult-customize consult--source-bookmark :preview-key "C-j")
-  (consult-customize consult-bookmark :preview-key "C-j")
-  (consult-customize consult-buffer :preview-key "C-j")
-  (consult-customize consult-project-buffer :preview-key "C-j")
+  (with-eval-after-load 'consult
+    (setq consult-ripgrep-args (concat consult-ripgrep-args " --multiline"))
+
+    (consult-customize consult-completion-in-region :preview-key nil)
+    (consult-customize consult--source-bookmark :preview-key "C-j")
+    (consult-customize consult-bookmark :preview-key "C-j")
+    (consult-customize consult-buffer :preview-key "C-j")
+    (consult-customize consult-project-buffer :preview-key "C-j"))
 
   (defun consult--orderless-regexp-compiler (input type &rest _config)
     (setq input (cdr (orderless-compile input)))
@@ -1916,6 +1917,7 @@ see command `isearch-forward' for more information."
 
   (defun consult-async-pause (&optional arg)
     (interactive "P")
+    (require 'consult)
     (setq consult-async-min-input
           (if (eq consult-async-min-input most-positive-fixnum)
               (or (and arg (prefix-numeric-value arg)) 3)
@@ -2024,10 +2026,10 @@ see command `isearch-forward' for more information."
 ;;;;; consult-extras
 
 (elpaca (consult-extras :host codeberg :repo "crcs/consult-extras")
+  (keymap-global-set "C-h o" 'consult-symbol)
+  (keymap-set goto-map "y" 'consult-all-marks)
   (with-eval-after-load 'consult
-    (require 'consult-extras)
-    (keymap-global-set "C-h o" 'consult-symbol)
-    (keymap-set goto-map "y" 'consult-all-marks)))
+    (require 'consult-extras)))
 
 ;;;;; consult-project-extras
 
@@ -2046,8 +2048,6 @@ see command `isearch-forward' for more information."
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
-  (require 'vertico)
-
   (setq vertico-preselect 'first
         vertico-buffer-hide-prompt nil
         vertico-cycle t
@@ -2221,6 +2221,9 @@ see command `isearch-forward' for more information."
 
   (setq marginalia-align 'column)
 
+  (keymap-global-set "M-A" 'marginalia-cycle)
+  (keymap-set minibuffer-local-map "M-A" 'marginalia-cycle)
+
   (defun marginalia-annotate-alias (cand)
     "Annotate CAND with the function it aliases."
     (when-let ((sym (intern-soft cand))
@@ -2242,6 +2245,8 @@ see command `isearch-forward' for more information."
        (david-marginalia-annotate-binding cand)
        (marginalia-annotate-alias cand)
        (marginalia--documentation (marginalia--function-doc sym)))))
+  (cl-pushnew #'marginalia-annotate-command-with-alias
+              (alist-get 'command marginalia-annotator-registry))
 
   (defvar marginalia-align-column 40)
 
@@ -2277,13 +2282,7 @@ see command `isearch-forward' for more information."
                                                    marginalia--cand-width-step)))))))
           ann))
        (list cand "" ann))))
-  (advice-add 'marginalia--align :override 'marginalia--align-column)
-
-  (cl-pushnew #'marginalia-annotate-command-with-alias
-              (alist-get 'command marginalia-annotator-registry))
-
-  (keymap-global-set "M-A" 'marginalia-cycle)
-  (keymap-set minibuffer-local-map "M-A" 'marginalia-cycle))
+  (advice-add 'marginalia--align :override 'marginalia--align-column))
 
 ;;;; tempel
 
@@ -2320,7 +2319,8 @@ see command `isearch-forward' for more information."
 
 (elpaca page-break-lines
   (global-page-break-lines-mode)
-  (diminish 'page-break-lines-mode))
+  (with-eval-after-load 'diminish
+    (diminish 'page-break-lines-mode)))
 
 ;;;; sage-shell-mode
 
@@ -2388,16 +2388,15 @@ see command `isearch-forward' for more information."
                    :kill-buffer t
                    :jump-to-captured t)))
 
-  (with-eval-after-load 'consult
-    (defun denote-backlinks-file (file)
-      (when (denote-file-is-writable-and-supported-p file)
-        (let* ((id (denote-retrieve-filename-identifier-with-error file))
-               (xref-show-xrefs-function #'denote-link--prepare-backlinks)
-               (project-find-functions #'denote-project-find))
-          (xref--show-xrefs
-           (apply-partially #'xref-matches-in-files id
-                            (denote-directory-files nil :omit-current :text-only))
-           nil))))))
+  (defun denote-backlinks-file (file)
+    (when (denote-file-is-writable-and-supported-p file)
+      (let* ((id (denote-retrieve-filename-identifier-with-error file))
+             (xref-show-xrefs-function #'denote-link--prepare-backlinks)
+             (project-find-functions #'denote-project-find))
+        (xref--show-xrefs
+         (apply-partially #'xref-matches-in-files id
+                          (denote-directory-files nil :omit-current :text-only))
+         nil)))))
 
 ;;;;; consult notes
 
