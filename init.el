@@ -50,11 +50,6 @@
 
 (elpaca compat)
 
-;;; Diminish
-
-(elpaca diminish
-  (diminish 'visual-line-mode))
-
 ;;; Built-in
 
 ;;;; emacs
@@ -435,6 +430,11 @@ see command `isearch-forward' for more information."
 
 ;;; Packages
 
+;;;; Diminish
+
+(elpaca diminish
+  (diminish 'visual-line-mode))
+
 ;;;; benchmark-init
 
 ;; (elpaca benchmark-init
@@ -467,8 +467,6 @@ see command `isearch-forward' for more information."
 ;;;; paredit
 
 (elpaca (paredit :host github :repo "emacsmirror/paredit")
-  ;; (require 'paredit)
-
   (dolist (mode '(lisp-data-mode-hook
                   eshell-mode-hook
                   sly-mrepl-mode-hook
@@ -909,44 +907,45 @@ see command `isearch-forward' for more information."
 ;;;; modus-themes
 
 (elpaca modus-themes
-  (require 'modus-themes)
+  (run-with-timer 0.5 nil (lambda () (require 'modus-themes)))
 
-  (setq modus-themes-common-palette-overrides
-        (seq-concatenate
-         'list
-         `((bg-main "#f8f8f8")
-           (cursor "#000000")
-           (bg-region "#e1e1e1")
-           (fg-region unspecified)
-           (fg-completion-match-0 "#323c32")
-           (bg-completion-match-0 "#caf1c9")
-           (fg-completion-match-1 "#38333c")
-           (bg-completion-match-1 "#e3cff1")
-           (fg-completion-match-2 "#3c3333")
-           (bg-completion-match-2 "#f1cccc")
-           (fg-completion-match-3 "#343b3c")
-           (bg-completion-match-3 "#d1eff1")
-           (bg-search-lazy bg-magenta-subtle)
-           (bg-search-current bg-yellow-intense))
-         modus-themes-preset-overrides-warmer))
+  (with-eval-after-load 'modus-themes
+    (setq modus-themes-common-palette-overrides
+          (seq-concatenate
+           'list
+           `((bg-main "#f8f8f8")
+             (cursor "#000000")
+             (bg-region "#e1e1e1")
+             (fg-region unspecified)
+             (fg-completion-match-0 "#323c32")
+             (bg-completion-match-0 "#caf1c9")
+             (fg-completion-match-1 "#38333c")
+             (bg-completion-match-1 "#e3cff1")
+             (fg-completion-match-2 "#3c3333")
+             (bg-completion-match-2 "#f1cccc")
+             (fg-completion-match-3 "#343b3c")
+             (bg-completion-match-3 "#d1eff1")
+             (bg-search-lazy bg-magenta-subtle)
+             (bg-search-current bg-yellow-intense))
+           modus-themes-preset-overrides-warmer))
 
-  (load-theme 'modus-operandi-tinted t)
+    (load-theme 'modus-operandi-tinted t)
 
-  (with-eval-after-load 'hi-lock
-    (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                                  "modus-themes-subtle-red"
-                                  "modus-themes-subtle-green"
-                                  "modus-themes-subtle-blue"
-                                  "modus-themes-subtle-yellow"))))
+    (with-eval-after-load 'hi-lock
+      (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                                    "modus-themes-subtle-red"
+                                    "modus-themes-subtle-green"
+                                    "modus-themes-subtle-blue"
+                                    "modus-themes-subtle-yellow")))))
 
 ;;;; no-littering
 
 (elpaca no-littering
-  (run-with-idle-timer 0.25 nil (lambda () (require 'no-littering)))
+  (run-with-timer 1 nil (lambda () (require 'no-littering)))
 
   (setq backup-by-copying t
-          auto-save-file-name-transforms
-          `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+        auto-save-file-name-transforms
+        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
 
   (with-eval-after-load 'no-littering
     (no-littering-theme-backups)))
@@ -1071,7 +1070,7 @@ see command `isearch-forward' for more information."
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
-  (run-with-idle-timer 0.33 nil (lambda () (require 'isearch+)))
+  (run-with-timer 1 nil (lambda () (require 'isearch+)))
 
   (setq isearchp-lazy-dim-filter-failures-flag nil
         isearchp-restrict-to-region-flag nil
@@ -1230,7 +1229,7 @@ see command `isearch-forward' for more information."
 (elpaca (bookmark+ :host github
                    :repo "emacsmirror/bookmark-plus"
                    :main "bookmark+.el")
-  (run-with-idle-timer 1 nil (lambda () (require 'bookmark+)))
+  (run-with-timer 1 nil (lambda () (require 'bookmark+)))
 
   (setq bmkp-bookmark-map-prefix-keys '("x")
         bookmark-default-file (expand-file-name "~/.emacs.d/var/bmkp/current-bookmark.el")
@@ -1445,7 +1444,7 @@ see command `isearch-forward' for more information."
 ;;;; cape
 
 (elpaca cape
-  (keymap-global-set "M-L" 'cape-line)
+  (keymap-global-set "M-L" #'cape-line)
 
   (add-hook 'text-mode-hook
             (lambda ()
