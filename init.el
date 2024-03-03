@@ -2520,35 +2520,25 @@ see command `isearch-forward' for more information."
     (setf (alist-get 'consult-denote-heading embark-keymap-alist)
           (list 'embark-consult-denote-heading-map))))
 
-;;;; activities
+;;;; tab bookmark
 
-(elpaca (activities :host github :repo "alphapapa/activities")
-  (with-eval-after-load 'activities
-    (activities-mode 1)
-    (activities-tabs-mode 1))
-
-  (keymap-global-set "C-x C-a C-n" 'activities-new)
-  (keymap-global-set "C-x C-a C-r" 'activities-resume)
-  (keymap-global-set "C-x C-a C-s" 'activities-suspend)
-  (keymap-global-set "C-x C-a C-k" 'activities-kill)
-  (keymap-global-set "C-x C-a RET" 'activities-switch)
-  (keymap-global-set "C-x C-a g" 'activities-revert)
-  (keymap-global-set "C-x C-a l" 'activities-list)
-
-  (with-eval-after-load 'conn-mode
-    (keymap-set conn-buffer-map "a n" 'activities-new)
-    (keymap-set conn-buffer-map "a r" 'activities-resume)
-    (keymap-set conn-buffer-map "a s" 'activities-suspend)
-    (keymap-set conn-buffer-map "a k" 'activities-kill)
-    (keymap-set conn-buffer-map "a RET" 'activities-switch)
-    (keymap-set conn-buffer-map "a t" 'activities-switch)
-    (keymap-set conn-buffer-map "a g" 'activities-revert)
-    (keymap-set conn-buffer-map "a l" 'activities-list)))
+(elpaca (tab-bookmark :host github
+                      :repo "minad/tab-bookmark")
+  (define-keymap
+    :keymap bookmark-map
+    "v b" 'tab-bookmark
+    "v r" 'tab-bookmark-rename
+    "v s" 'tab-bookmark-save
+    "v o" 'tab-bookmark-open
+    "v d" 'tab-bookmark-delete
+    "v k" 'tab-bookmark-push
+    "v i" 'tab-bookmark-pop))
 
 ;;;; diff-hl
 
 (elpaca diff-hl
   (run-with-timer
-   1 nil (lambda ()
-           (global-diff-hl-mode 1)
-           (add-hook 'dired-mode-hook #'diff-hl-dired-mode))))
+   1 nil
+   (lambda ()
+     (global-diff-hl-mode 1)
+     (add-hook 'dired-mode-hook #'diff-hl-dired-mode))))
