@@ -907,7 +907,7 @@ see command `isearch-forward' for more information."
 ;;;; modus-themes
 
 (elpaca modus-themes
-  (run-with-timer 0.5 nil (lambda () (require 'modus-themes)))
+  (run-with-timer 0.33 nil (lambda () (require 'modus-themes)))
 
   (with-eval-after-load 'modus-themes
     (setq modus-themes-common-palette-overrides

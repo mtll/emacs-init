@@ -5,12 +5,11 @@
 (add-hook 'elpaca-after-init-hook
           (lambda ()
             "Restore default values after init."
-            (message "Emacs loaded %d packages in %s with %d garbage collections."
+            (message "Emacs loaded %d packages in %s."
                      (cdar elpaca--status-counts)
                      (format "%.2f seconds"
                              (float-time
-                              (time-subtract (current-time) before-init-time)))
-                     gcs-done)
+                              (time-subtract (current-time) before-init-time))))
             (setq file-name-handler-alist default-file-name-handler-alist)
             (setq gc-cons-threshold (* 8 1024 1024))
             (if (boundp 'after-focus-change-function)
@@ -35,7 +34,8 @@
       package-enable-at-startup nil
       initial-buffer-choice nil
       ring-bell-function #'ignore
-      inhibit-startup-screen t)
+      inhibit-startup-screen t
+      inhibit-x-resources t)
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
