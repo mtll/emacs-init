@@ -1482,11 +1482,13 @@ see command `isearch-forward' for more information."
 
   (defun embark-act-persist ()
     (interactive)
+    (require 'embark)
     (let (embark-quit-after-action)
       (embark-act)))
 
   (defun embark-act-marked ()
     (interactive)
+    (require 'embark)
     (if (embark-selected-candidates)
         (embark-act-all)
       (embark-act)))
