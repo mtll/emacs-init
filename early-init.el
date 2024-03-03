@@ -35,10 +35,17 @@
       initial-buffer-choice nil
       ring-bell-function #'ignore
       inhibit-startup-screen t
-      inhibit-x-resources t)
+      inhibit-x-resources t
+      load-prefer-newer t)
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
-(face-spec-set 'default '((t (:inherit nil :extend nil :stipple nil :background "#ffffff" :foreground "#000000" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight medium :height 142 :width normal :foundry "UKWN" :family "Iosevka DK"))))
+(face-spec-set 'default '((t (:background "#ffffff"
+                              :foreground "#000000"
+                              :slant normal
+                              :weight medium
+                              :height 142
+                              :width normal
+                              :family "Iosevka DK"))))
 
 (provide 'early-init)

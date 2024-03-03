@@ -42,14 +42,6 @@
   (add-hook 'after-init-hook #'elpaca-process-queues)
   (elpaca `(,@elpaca-order)))
 
-;;; persist
-
-(elpaca (persist :host github :repo "emacs-straight/persist"))
-
-;;; Compat
-
-(elpaca compat)
-
 ;;; Built-in
 
 ;;;; emacs
@@ -429,6 +421,14 @@ see command `isearch-forward' for more information."
   (setq eldoc-echo-area-prefer-doc-buffer t))
 
 ;;; Packages
+
+;;;; persist
+
+(elpaca (persist :host github :repo "emacs-straight/persist"))
+
+;;;; Compat
+
+(elpaca compat)
 
 ;;;; Diminish
 
@@ -2544,3 +2544,11 @@ see command `isearch-forward' for more information."
     (keymap-set conn-buffer-map "a t" 'activities-switch)
     (keymap-set conn-buffer-map "a g" 'activities-revert)
     (keymap-set conn-buffer-map "a l" 'activities-list)))
+
+;;;; diff-hl
+
+(elpaca diff-hl
+  (run-with-timer
+   1 nil (lambda ()
+           (global-diff-hl-mode 1)
+           (add-hook 'dired-mode-hook #'diff-hl-dired-mode))))
