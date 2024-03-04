@@ -468,8 +468,9 @@ see command `isearch-forward' for more information."
 
 (elpaca (paredit :host github :repo "emacsmirror/paredit")
   (dolist (mode '(lisp-data-mode-hook
+                  eval-expression-minibuffer-setup-hook
+                  lisp-interaction-mode-hook
                   eshell-mode-hook
-                  sly-mrepl-mode-hook
                   slime-repl-mode-hook))
     (add-hook mode #'enable-paredit-mode))
 
@@ -477,6 +478,11 @@ see command `isearch-forward' for more information."
 
   (eldoc-add-command 'paredit-backward-delete
                      'paredit-close-round)
+
+  (defun override-slime-repl-bindings-with-paredit ()
+    (define-key slime-repl-mode-map
+                (read-kbd-macro paredit-backward-delete-key) nil))
+  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
 
   (with-eval-after-load 'paredit
     (with-eval-after-load 'diminish
@@ -538,7 +544,6 @@ see command `isearch-forward' for more information."
 ;;;; slime
 
 (elpaca slime
-  (run-with-idle-timer 3 nil (lambda () (require 'slime)))
   (require 'slime-autoloads)
 
   (setq inferior-lisp-program "sbcl"
@@ -564,6 +569,22 @@ see command `isearch-forward' for more information."
                          slime-asdf
                          slime-sbcl-exts
                          slime-banner))
+
+  (defun slime-setup-embark ()
+    (require 'embark)
+    (setq-local
+     embark-expression-map (define-keymap
+                             :parent embark-expression-map
+                             "RET" 'slime-interactive-eval)
+     embark-defun-map (define-keymap
+                        :parent embark-defun-map
+                        "RET" 'slime-eval-defun)
+     embark-identifier-map (define-keymap
+                             :parent embark-identifier-map
+                             "RET" 'slime-edit-definition
+                             "M-RET" 'slime-hyperdoc-lookup)))
+  (add-hook 'slime-mode-hook #'slime-setup-embark)
+  (add-hook 'slime-repl-mode-hook #'slime-setup-embark)
 
   (with-eval-after-load 'slime
     (slime-setup)
@@ -1108,6 +1129,15 @@ see command `isearch-forward' for more information."
                    :files (:defaults "extensions/*"))
   (setq conn-lighter nil
         conn-state-buffer-colors t
+        conn-modes '((not special-mode)
+                     (not minibuffer-mode)
+                     (not dired-mode)
+                     (not compilation-mode)
+                     (not slime-xref-mode)
+                     eshell-mode
+                     grep-mode
+                     occur-mode
+                     t)
         dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
@@ -1343,8 +1373,6 @@ see command `isearch-forward' for more information."
     "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-common-map "," 'avy-goto-char-timer)
-
     (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
   (with-eval-after-load 'avy
@@ -1476,9 +1504,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-," 'embark-alt-dwim)
   (keymap-global-set "C-t" 'embark-act)
 
-  (define-keymap
-    :keymap minibuffer-mode-map
-    "C-M-." 'embark-export)
+  (keymap-set minibuffer-mode-map "C-M-." 'embark-export)
 
   (defun embark-act-persist ()
     (interactive)
@@ -1602,6 +1628,7 @@ see command `isearch-forward' for more information."
 
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
+    (keymap-set embark-defun-map "M-RET" 'comment-region)
 
     (set-keymap-parent embark-consult-location-map embark-general-map)
     (set-keymap-parent embark-consult-grep-map embark-general-map)
@@ -1646,7 +1673,8 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
 
     (with-eval-after-load 'conn-mode
-      (keymap-set embark-region-map "RET" 'conn-copy-region)
+      (keymap-set embark-region-map "RET" #'conn-copy-region)
+      (keymap-set conn-common-map "." #'embark-act)
 
       (define-keymap
         :keymap embark-region-map
@@ -1654,7 +1682,8 @@ see command `isearch-forward' for more information."
         "o" 'embark-isearch-forward
         "u" 'embark-isearch-backward
         "TAB" 'indent-region
-        "RET" 'eval-region))
+        "M-RET" 'indent-region
+        "RET" 'copy-region-as-kill))
 
     (with-eval-after-load 'org
       (defun embark-bookmark-link (cand)
