@@ -1069,7 +1069,7 @@ see command `isearch-forward' for more information."
 ;;;; expand-region
 
 (elpaca expand-region
-  (keymap-global-set "C-." 'er/expand-region))
+  (keymap-global-set "C-t" 'er/expand-region))
 
 ;;;; zones
 
@@ -1181,11 +1181,11 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-set conn-state-map "C-." 'conn-expand-region)
+  (keymap-set conn-state-map "t" 'conn-expand-region)
   (define-keymap
     :keymap dot-state-map
-    "C-." 'conn-expand-dots
-    "C-M-." 'conn-contract-dots))
+    "t" 'conn-expand-dots
+    "T" 'conn-contract-dots))
 
 ;;;;; conn-isearch+
 
@@ -1204,11 +1204,13 @@ see command `isearch-forward' for more information."
 ;;;;; conn-embark
 
 (with-eval-after-load 'conn-mode
+  (setq prefix-help-command 'conn-complete-keys)
+
   (define-keymap
     :keymap conn-common-map
     "r" 'conn-embark-region
-    "e" 'embark-dwim
-    "t" 'embark-alt-dwim)
+    "h" 'embark-dwim
+    "H" 'embark-alt-dwim)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
@@ -1502,7 +1504,7 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "M-." 'embark-dwim)
   (keymap-global-set "M-," 'embark-alt-dwim)
-  (keymap-global-set "C-t" 'embark-act)
+  (keymap-global-set "C-." 'embark-act)
 
   (keymap-set minibuffer-mode-map "C-M-." 'embark-export)
 
@@ -1557,6 +1559,7 @@ see command `isearch-forward' for more information."
   (defun embark-alt-dwim (&optional arg)
     "alternate `embark-dwim'."
     (interactive "P")
+    (require 'embark)
     (if-let ((targets (embark--targets)))
         (let* ((target
                 (or (nth
@@ -1620,6 +1623,8 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-grep-map)
 
   (with-eval-after-load 'embark
+    (keymap-set embark-defun-map "n" 'narrow-to-defun)
+
     (defvar-keymap embark-tab-bar-map
       "d" 'embark-tab-delete
       "r" 'embark-tab-rename
@@ -1874,7 +1879,7 @@ see command `isearch-forward' for more information."
 
 (elpaca consult
   (setq consult-async-min-input 3
-        consult-yank-rotate nil
+        consult-yank-rotate t
         consult-narrow-key "M-N"
         xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref
