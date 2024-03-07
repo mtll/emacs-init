@@ -1182,11 +1182,11 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-set conn-state-map "t" 'conn-expand-region)
+  (keymap-set conn-state-map "h" 'conn-expand-region)
   (define-keymap
     :keymap dot-state-map
-    "t" 'conn-expand-dots
-    "T" 'conn-contract-dots))
+    "e" 'conn-expand-dots
+    "a" 'conn-contract-dots))
 
 ;;;;; conn-isearch+
 
@@ -1208,7 +1208,7 @@ see command `isearch-forward' for more information."
   (setq prefix-help-command 'conn-complete-keys)
 
   (define-keymap
-    :keymap conn-common-map
+    :keymap conn-state-map
     "r" 'conn-embark-region
     "e" 'embark-dwim
     "H" 'embark-alt-dwim)
@@ -2066,7 +2066,11 @@ see command `isearch-forward' for more information."
 
 ;;;;; consult-lsp
 
-(elpaca consult-lsp)
+(elpaca consult-lsp
+  (with-eval-after-load 'lsp-mode
+    (keymap-set lsp-mode-map "M-s m" 'consult-lsp-symbols)
+    (keymap-set lsp-mode-map "M-s d" 'consult-lsp-diagnostics)
+    (keymap-set lsp-mode-map "M-s M" 'consult-lsp-file-symbols)))
 
 ;;;;; consult-extras
 
