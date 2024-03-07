@@ -96,7 +96,6 @@
         minibuffer-prompt-properties '(read-only t
                                                  cursor-intangible t
                                                  face minibuffer-prompt)
-        yank-from-kill-ring-rotate nil
         exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
         edebug-inhibit-emacs-lisp-mode-bindings t
         bidi-inhibit-bpa t)
@@ -1160,7 +1159,7 @@ see command `isearch-forward' for more information."
     "C-S-l" 'forward-page
     "C-c b" 'conn-buffer-map
     "C-c a" 'conn-misc-edit-map
-    "C-c q" 'conn-toggle-mark-command
+    "C-c v" 'conn-toggle-mark-command
     "M-n" 'conn-embark-region)
 
   (define-keymap
@@ -1211,7 +1210,7 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap conn-common-map
     "r" 'conn-embark-region
-    "h" 'embark-dwim
+    "e" 'embark-dwim
     "H" 'embark-alt-dwim)
 
   (with-eval-after-load 'embark
@@ -1749,32 +1748,37 @@ see command `isearch-forward' for more information."
 ;;;; corfu
 
 (elpaca corfu
+  (run-with-timer
+   0.75 nil (lambda ()
+              (require 'corfu-info)
+              (global-corfu-mode 1)
+              (corfu-echo-mode 1)))
+
   (setq corfu-quit-at-boundary nil
         corfu-quit-no-match nil
         corfu-preview-current nil
         corfu-on-exact-match nil
-        corfu-auto nil)
+        corfu-auto nil
+        corfu-echo-delay 0.2)
 
-  (global-corfu-mode 1)
+  (with-eval-after-load 'corfu
+    (defun corfu-start-and-insert-sep ()
+      (interactive)
+      (completion-at-point)
+      (corfu-insert-separator))
 
-  (defun corfu-start-and-insert-sep ()
-    (interactive)
-    (completion-at-point)
-    (corfu-insert-separator))
+    (keymap-set corfu-mode-map "M-SPC" #'corfu-start-and-insert-sep)
+    (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
+    (keymap-set corfu-map "C-j" #'corfu-quick-complete)
+    (keymap-set corfu-map "<return>" #'corfu-insert)
 
-  (keymap-set corfu-mode-map "M-SPC" #'corfu-start-and-insert-sep)
-  (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
-  (keymap-set corfu-map "C-j" #'corfu-quick-complete)
-  (keymap-set corfu-map "<return>" #'corfu-insert)
-
-  (defun corfu-move-to-minibuffer ()
-    (interactive)
-    (when completion-in-region--data
-      (let ((completion-extra-properties (nth 4 completion-in-region--data))
-            completion-cycle-threshold completion-cycling)
-        (apply #'consult-completion-in-region completion-in-region--data))))
-
-  (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer))
+    (defun corfu-move-to-minibuffer ()
+      (interactive)
+      (when completion-in-region--data
+        (let ((completion-extra-properties (nth 4 completion-in-region--data))
+              completion-cycle-threshold completion-cycling)
+          (apply #'consult-completion-in-region completion-in-region--data))))
+    (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer)))
 
 ;;;; projectile
 
@@ -2060,6 +2064,10 @@ see command `isearch-forward' for more information."
 
     (advice-add #'register-preview :override #'consult-register-window)))
 
+;;;;; consult-lsp
+
+(elpaca consult-lsp)
+
 ;;;;; consult-extras
 
 (elpaca (consult-extras :host codeberg :repo "crcs/consult-extras")
@@ -2074,8 +2082,7 @@ see command `isearch-forward' for more information."
                                 :repo "Qkessler/consult-project-extra"
                                 :files (:defaults "consult-project-extra.el")
                                 :main "consult-project-extra.el")
-  (keymap-global-set "C-c j" 'consult-project-extra-find)
-  (keymap-global-set "C-c J" 'consult-project-extra-find-other))
+  (keymap-global-set "C-c j" 'consult-project-extra-find))
 
 ;;;;; consult-projectile
 
@@ -2090,7 +2097,7 @@ see command `isearch-forward' for more information."
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window
                                         (mode . minibuffer-mode))
-        vertico-multiform-commands '((completion-at-point
+        vertico-multiform-commands `((consult-completion-in-region
                                       buffer (vertico-buffer-display-action
                                               display-buffer-same-window))
                                      (tempel-insert
