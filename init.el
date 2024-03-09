@@ -1782,20 +1782,21 @@ see command `isearch-forward' for more information."
 ;;;; company
 
 (elpaca company
-  (setq company-transformers '(vertico-sort-length-alpha)
-        company-idle-delay nil
+  (setq company-idle-delay nil
+        company-lighter-base ""
         company-show-quick-access nil
         company-tooltip-flip-when-above t
         company-format-margin-function #'company-vscode-light-icons-margin
         company-search-regexp-function #'company-search-words-in-any-order-regexp)
 
-  (run-with-timer 0.5 nil (lambda ()
-                            (global-company-mode 1)
-                            (diminish 'company-mode)))
+  (run-with-timer 0.5 nil (lambda () (global-company-mode 1)))
 
   (with-eval-after-load 'company
     (keymap-set company-mode-map "C-s" #'company-filter-candidates)
     (keymap-set company-mode-map "C-M-s" #'company-search-candidates))
+
+  (with-eval-after-load 'vertico
+    (setq company-transformers '(vertico-sort-length-alpha)))
 
   (with-eval-after-load 'orderless
     (defun company-completion-at-point-advice (fn &rest args)
