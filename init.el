@@ -1793,8 +1793,10 @@ see command `isearch-forward' for more information."
                             (diminish 'company-mode)))
 
   (with-eval-after-load 'company
-    (keymap-set company-mode-map "C-s" #'company-filter-candidates)
-    (keymap-set company-mode-map "C-M-s" #'company-search-candidates))
+    (keymap-set company-active-map "M->" #'company-select-last)
+    (keymap-set company-active-map "M-<" #'company-select-first)
+    (keymap-set company-active-map "C-s" #'company-filter-candidates)
+    (keymap-set company-active-map "C-M-s" #'company-search-candidates))
 
   (with-eval-after-load 'vertico
     (setq company-transformers '(vertico-sort-length-alpha)))
