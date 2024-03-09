@@ -1144,6 +1144,10 @@ see command `isearch-forward' for more information."
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
 
+  (defun conn-exit-completion ()
+    (completion-in-region-mode -1))
+  (add-hook 'conn-transition-hook #'conn-exit-completion)
+
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
 
@@ -1752,28 +1756,45 @@ see command `isearch-forward' for more information."
   (run-with-timer
    0.33 nil (lambda ()
               (require 'cape)
-              (require 'corfu-info)
               (global-corfu-mode 1)
               (corfu-echo-mode 1)))
 
-  (setq corfu-quit-at-boundary nil
-        corfu-quit-no-match nil
+  (setq corfu-quit-at-boundary 'separator
+        corfu-quit-no-match 'separator
         corfu-preview-current nil
         corfu-on-exact-match nil
-        corfu-auto nil)
+        corfu-auto t
+        corfu-auto-delay 0.05
+        corfu-auto-prefix 3
+        corfu-map (define-keymap
+                    "<remap> <forward-sentence>" 'corfu-prompt-end
+                    "<remap> <backward-sentence>" 'corfu-prompt-beginning
+                    "<remap> <scroll-down-command>" #'corfu-scroll-down
+                    "<remap> <scroll-up-command>" #'corfu-scroll-up
+                    "<tab>" #'corfu-complete
+                    "C-h" #'corfu-info-documentation
+                    "M-h" #'corfu-info-location
+                    "M-n" #'corfu-next
+                    "M-p" #'corfu-previous
+                    "C-g" #'corfu-quit
+                    "TAB" #'corfu-complete
+                    "M-SPC" #'corfu-insert-separator))
 
   (with-eval-after-load 'corfu
     (defvar-local orderless-ignore-first nil)
-    
-    (defun corfu-in-region-sep-advice (beg end table &optional pred)
-      (when (and completion-in-region-mode
-                 (setq-local orderless-ignore-first (not (= beg end)))
-                 (eq end (point)))
-        (corfu-insert-separator)))
-    (advice-add 'corfu--in-region :after #'corfu-in-region-sep-advice)
 
-    (keymap-set corfu-map "M-TAB" #'corfu-quick-complete)
-    (keymap-set corfu-map "<return>" #'corfu-insert))
+    (defun ignore-first-hook ()
+      (pcase-let ((`(,beg ,end . _)
+                   completion-in-region--data))
+        (setq-local orderless-ignore-first (and beg end (not (= beg end))))))
+    (add-hook 'completion-in-region-mode-hook #'ignore-first-hook)
+
+    (defun corfu-sep-and-start ()
+      (interactive)
+      (completion-at-point)
+      (corfu-insert-separator))
+
+    (keymap-set corfu-mode-map "M-SPC" #'corfu-sep-and-start))
 
   (with-eval-after-load 'cape
     (with-eval-after-load 'lsp-mode
@@ -1781,7 +1802,8 @@ see command `isearch-forward' for more information."
         (setq-local completion-at-point-functions
                     (cl-nsubst
                      (cape-capf-noninterruptible
-                      (cape-capf-buster #'lsp-completion-at-point))
+                      (cape-capf-buster #'lsp-completion-at-point ;; #'string-prefix-p
+                                        ))
                      #'lsp-completion-at-point completion-at-point-functions)))
       (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
 
@@ -1790,7 +1812,8 @@ see command `isearch-forward' for more information."
         (setq-local completion-at-point-functions
                     (cl-nsubst
                      (cape-capf-noninterruptible
-                      (cape-capf-buster #'eglot-completion-at-point))
+                      (cape-capf-buster #'eglot-completion-at-point ;; #'string-prefix-p
+                                        ))
                      #'eglot-completion-at-point completion-at-point-functions)))
       (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
@@ -1807,6 +1830,67 @@ see command `isearch-forward' for more information."
           '((styles orderless-ignore-first))
           (alist-get 'lsp-capf completion-category-overrides)
           '((styles orderless-ignore-first)))))
+
+;;;; company
+
+;; (elpaca company
+;;   (setq company-idle-delay 0.05
+;;         company-minimum-prefix-length 3
+;;         company-show-quick-access nil
+;;         company-tooltip-flip-when-above t
+;;         company-format-margin-function #'company-vscode-light-icons-margin
+;;         company-search-regexp-function #'company-search-words-in-any-order-regexp)
+
+;;   (run-with-timer 0.33 nil (lambda ()
+;;                              (global-company-mode 1)
+;;                              (diminish 'company-mode)))
+
+;;   (with-eval-after-load 'company
+;;     (keymap-set company-active-map "M->" #'company-select-last)
+;;     (keymap-set company-active-map "M-<" #'company-select-first)
+;;     (keymap-set company-active-map "C-s" #'company-filter-candidates)
+;;     (keymap-set company-active-map "C-M-s" #'company-search-candidates))
+
+;;   (with-eval-after-load 'vertico
+;;     (setq company-transformers '(vertico-sort-length-alpha)))
+
+;;   (with-eval-after-load 'company
+;;     (with-eval-after-load 'orderless
+;;       (defun company-completion-at-point-advice (fn &rest args)
+;;         (if company-mode
+;;             (company-manual-begin)
+;;           (apply fn args)))
+;;       (advice-add 'completion-at-point :around #'company-completion-at-point-advice)
+
+;;       (defun company-start-sep ()
+;;         (interactive)
+;;         (company-manual-begin)
+;;         (insert "_"))
+;;       (keymap-global-set "M-SPC" #'company-start-sep)
+
+;;       (defun company-insert-sep ()
+;;         (interactive)
+;;         (insert "_"))
+;;       (keymap-set company-active-map "SPC" #'company-insert-sep)
+
+;;       (defun company-orderless-advice (fn &rest args)
+;;         (let ((orderless-match-faces [completions-common-part])
+;;               (orderless-component-separator "[_]+"))
+;;           (apply fn args)))
+;;       (advice-add 'company-capf--candidates :around #'company-orderless-advice)
+
+;;       (defun lsp-ignore-first (_pattern index _total)
+;;         (when (and (= index 0))
+;;           '(ignore)))
+
+;;       (orderless-define-completion-style orderless-ignore-first
+;;         (orderless-style-dispatchers '(lsp-ignore-first
+;;                                        orderless-affix-dispatch)))
+
+;;       (setf (alist-get 'eglot completion-category-overrides)
+;;             '((styles orderless-ignore-first))
+;;             (alist-get 'lsp-capf completion-category-overrides)
+;;             '((styles orderless-ignore-first))))))
 
 ;;;; projectile
 
@@ -1884,9 +1968,15 @@ see command `isearch-forward' for more information."
                                          (?. . orderless-flex))
         completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal)
+        orderless-style-dispatchers '(flex-first-if-completing)
         completion-category-overrides '((file (styles basic partial-completion))
                                         (buffer (styles orderless+mm)))
         orderless-component-separator #'orderless-escapable-split-on-space)
+
+  (defun flex-first-if-completing (pattern index _total)
+    (when (and (= index 0)
+               completion-in-region-mode)
+      `(orderless-flex . ,pattern)))
 
   (defun orderless-toggle-smart-case ()
     (interactive)
@@ -2149,7 +2239,7 @@ see command `isearch-forward' for more information."
       (when (and mbwin vertico-buffer-mode
                  (eq (window-buffer mbwin) (current-buffer))
                  (not (eq win mbwin))
-                 ;; Without this check we would be running this 
+                 ;; Without this check we would be running this
                  ;; in any vertico-posframe windows every time.
                  (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
         (setq-local vertico-count (- (/ (window-pixel-height win)
