@@ -1808,156 +1808,6 @@ see command `isearch-forward' for more information."
           (alist-get 'lsp-capf completion-category-overrides)
           '((styles orderless-ignore-first)))))
 
-;;;; company
-
-;; (elpaca company
-;;   (setq company-idle-delay nil
-;;         company-show-quick-access nil
-;;         company-tooltip-flip-when-above t
-;;         company-format-margin-function #'company-vscode-light-icons-margin
-;;         company-search-regexp-function #'company-search-words-in-any-order-regexp)
-
-;;   (run-with-timer 0.33 nil (lambda ()
-;;                             (global-company-mode 1)
-;;                             (diminish 'company-mode)))
-
-;;   (with-eval-after-load 'company
-;;     (keymap-set company-active-map "M->" #'company-select-last)
-;;     (keymap-set company-active-map "M-<" #'company-select-first)
-;;     (keymap-set company-active-map "C-s" #'company-filter-candidates)
-;;     (keymap-set company-active-map "C-M-s" #'company-search-candidates))
-
-;;   (with-eval-after-load 'vertico
-;;     (setq company-transformers '(vertico-sort-length-alpha)))
-
-;;   (with-eval-after-load 'orderless
-;;     (defun company-completion-at-point-advice (fn &rest args)
-;;       (if company-mode
-;;           (company-manual-begin)
-;;         (apply fn args)))
-;;     (advice-add 'completion-at-point :around #'company-completion-at-point-advice)
-
-;;     (defun company-start-sep ()
-;;       (interactive)
-;;       (company-manual-begin)
-;;       (insert "_"))
-;;     (keymap-global-set "M-SPC" #'company-start-sep)
-
-;;     (defun company-insert-sep ()
-;;       (interactive)
-;;       (insert "_"))
-;;     (keymap-set company-active-map "SPC" #'company-insert-sep)
-
-;;     (defun company-orderless-advice (fn &rest args)
-;;       (let ((orderless-match-faces [completions-common-part])
-;;             (orderless-matching-styles '(orderless-literal))
-;;             (orderless-component-separator "[ _]"))
-;;         (apply fn args)))
-;;     (advice-add 'company-capf--candidates :around #'company-orderless-advice))
-
-;;   (with-eval-after-load 'lsp-mode
-;;     (defun lsp-completion-at-point-ad ()
-;;       "Get lsp completions."
-;;       (when (or (--some (lsp--client-completion-in-comments? (lsp--workspace-client it))
-;;                         (lsp-workspaces))
-;;                 (not (nth 4 (syntax-ppss))))
-;;         (let* ((trigger-chars (-> (lsp--capability-for-method "textDocument/completion")
-;;                                   (lsp:completion-options-trigger-characters?)))
-;;                (bounds-start (or (cl-first (bounds-of-thing-at-point 'symbol))
-;;                                  (point)))
-;;                result done?
-;;                (candidates
-;;                 (lambda ()
-;;                   (lsp--catch 'input
-;;                       (let ((lsp--throw-on-input lsp-completion-use-last-result)
-;;                             (same-session? (and lsp-completion--cache
-;;                                                 ;; Special case for empty prefix and empty result
-;;                                                 (or (cl-second lsp-completion--cache)
-;;                                                     (not (string-empty-p
-;;                                                           (plist-get (cddr lsp-completion--cache) :prefix))))
-;;                                                 (equal (cl-first lsp-completion--cache) bounds-start)
-;;                                                 (s-prefix?
-;;                                                  (plist-get (cddr lsp-completion--cache) :prefix)
-;;                                                  (buffer-substring-no-properties bounds-start (point))))))
-;;                         (cond
-;;                          ((or done? result) result)
-;;                          ((and (not lsp-completion-no-cache)
-;;                                same-session?
-;;                                (listp (cl-second lsp-completion--cache)))
-;;                           (setf result (apply #'lsp-completion--filter-candidates
-;;                                               (cdr lsp-completion--cache))))
-;;                          (t
-;;                           (-let* ((resp (lsp-request-while-no-input
-;;                                          "textDocument/completion"
-;;                                          (plist-put (lsp--text-document-position-params)
-;;                                                     :context (lsp-completion--get-context trigger-chars same-session?))))
-;;                                   (completed (and resp
-;;                                                   (not (and (lsp-completion-list? resp)
-;;                                                             (lsp:completion-list-is-incomplete resp)))))
-;;                                   (items (lsp--while-no-input
-;;                                            (--> (cond
-;;                                                  ((lsp-completion-list? resp)
-;;                                                   (lsp:completion-list-items resp))
-;;                                                  (t resp))
-;;                                                 (if (or completed
-;;                                                         (seq-some #'lsp:completion-item-sort-text? it))
-;;                                                     (lsp-completion--sort-completions it)
-;;                                                   it)
-;;                                                 (-map (lambda (item)
-;;                                                         (lsp-put item
-;;                                                                  :_emacsStartPoint
-;;                                                                  (or (lsp-completion--guess-prefix item)
-;;                                                                      bounds-start)))
-;;                                                       it))))
-;;                                   (markers (list bounds-start (copy-marker (point) t)))
-;;                                   (prefix (buffer-substring-no-properties bounds-start (point)))
-;;                                   (lsp-completion--no-reordering (not lsp-completion-sort-initial-results)))
-;;                             (lsp-completion--clear-cache same-session?)
-;;                             (setf done? completed
-;;                                   lsp-completion--cache (list bounds-start
-;;                                                               (cond
-;;                                                                ((and done? (not (seq-empty-p items)))
-;;                                                                 (lsp-completion--to-internal items))
-;;                                                                ((not done?) :incomplete))
-;;                                                               :lsp-items nil
-;;                                                               :markers markers
-;;                                                               :prefix prefix)
-;;                                   result (lsp-completion--filter-candidates
-;;                                           (cond (done?
-;;                                                  (cl-second lsp-completion--cache))
-;;                                                 (lsp-completion-filter-on-incomplete
-;;                                                  (lsp-completion--to-internal items)))
-;;                                           :lsp-items items
-;;                                           :markers markers
-;;                                           :prefix prefix))))))
-;;                     (:interrupted lsp-completion--last-result)
-;;                     (`,res (setq lsp-completion--last-result res))))))
-;;           (list
-;;            bounds-start
-;;            (point)
-;;            (lambda (probe pred action)
-;;              (cond
-;;               ((eq action 'metadata)
-;;                '(metadata (category . lsp-capf)
-;;                           (display-sort-function . identity)
-;;                           (cycle-sort-function . identity)))
-;;               ((eq (car-safe action) 'boundaries) nil)
-;;               (t
-;;                (complete-with-action action (funcall candidates) probe pred))))
-;;            :annotation-function #'lsp-completion--annotate
-;;            :company-kind #'lsp-completion--candidate-kind
-;;            :company-deprecated #'lsp-completion--candidate-deprecated
-;;            ;; :company-require-match 'never
-;;            :company-prefix-length
-;;            (save-excursion
-;;              (and (lsp-completion--looking-back-trigger-characterp trigger-chars) t))
-;;            :company-match #'lsp-completion--company-match
-;;            :company-doc-buffer (-compose #'lsp-doc-buffer
-;;                                          #'lsp-completion--get-documentation)
-;;            :exit-function
-;;            (-rpartial #'lsp-completion--exit-fn candidates)))))
-;;     (advice-add 'lsp-completion-at-point :override #'lsp-completion-at-point-ad)))
-
 ;;;; projectile
 
 ;; (elpaca projectile
@@ -2294,15 +2144,13 @@ see command `isearch-forward' for more information."
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
-  ;; Why doesn't this work with vertico-posframe?
   (defun vertico-buffer--redisplay-ad (win)
     (let ((mbwin (active-minibuffer-window)))
       (when (and mbwin vertico-buffer-mode
                  (eq (window-buffer mbwin) (current-buffer))
                  (not (eq win mbwin))
-                 ;; Seems to fix the problem. This must be getting run
-                 ;; in the posframe window every time, so we need to
-                 ;; check for that.
+                 ;; Without this check we would be running this 
+                 ;; in any vertico-posframe windows every time.
                  (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
         (setq-local vertico-count (- (/ (window-pixel-height win)
                                         (default-line-height))
@@ -2437,6 +2285,8 @@ see command `isearch-forward' for more information."
                   (if (consult--tofu-p (aref cand (1- (length cand))))
                       (substring cand 0 -1)
                     cand))))))
+
+;;;;; vertico-posframe
 
 (elpaca vertico-posframe
   (setq vertico-posframe-poshandler #'posframe-poshandler-point-bottom-left-corner))
