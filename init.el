@@ -125,7 +125,8 @@
   (keymap-global-set "C-:"           'read-only-mode)
   (keymap-global-set "C-c e"         'eshell)
   (keymap-global-set "C-x C-b"       'ibuffer)
-  (keymap-global-set "M-o"           goto-map)
+  (keymap-global-set "C-o"           goto-map)
+  (keymap-global-set "M-o"           'open-line)
   (keymap-global-set "M-;"           'comment-line)
   (keymap-global-set "C-c c"         'compile)
   (keymap-global-set "M-W"           'other-window-prefix)
@@ -1182,7 +1183,8 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-set conn-state-map "h" 'conn-expand-region)
+  (keymap-set conn-state-map "H" 'conn-expand-region)
+  (keymap-global-set "M-," 'conn-expand-region)
   (define-keymap
     :keymap dot-state-map
     "e" 'conn-expand-dots
@@ -1210,8 +1212,7 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap conn-state-map
     "r" 'conn-embark-region
-    "e" 'embark-dwim
-    "H" 'embark-alt-dwim)
+    "e" 'embark-dwim)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
@@ -1346,8 +1347,7 @@ see command `isearch-forward' for more information."
 
     (advice-add #'avy-process :around 'avy-process-disable-aw-update))
 
-  (keymap-global-set           "C-,"   'avy-goto-char-timer)
-  (keymap-set isearch-mode-map "C-,"   'avy-isearch)
+  (keymap-set isearch-mode-map "C-o u"   'avy-isearch)
 
   (define-keymap
     :keymap goto-map
@@ -1376,7 +1376,8 @@ see command `isearch-forward' for more information."
     "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
-    (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
+    (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose)
+    (keymap-set conn-common-map "h" #'avy-goto-char-timer))
 
   (with-eval-after-load 'avy
     (defun avy-isearch ()
@@ -1503,9 +1504,9 @@ see command `isearch-forward' for more information."
     "RET" 'narrow-to-page
     "m" 'mark-page)
 
-  (keymap-global-set "M-." 'embark-dwim)
-  (keymap-global-set "M-," 'embark-alt-dwim)
-  (keymap-global-set "C-." 'embark-act)
+  (keymap-global-set "C-." 'embark-dwim)
+  (keymap-global-set "C-," 'embark-alt-dwim)
+  (keymap-global-set "M-." 'embark-act)
 
   (keymap-set minibuffer-mode-map "C-M-." 'embark-export)
 
@@ -1788,7 +1789,7 @@ see command `isearch-forward' for more information."
         company-format-margin-function #'company-vscode-light-icons-margin
         company-search-regexp-function #'company-search-words-in-any-order-regexp)
 
-  (run-with-timer 0.5 nil (lambda ()
+  (run-with-timer 0.33 nil (lambda ()
                             (global-company-mode 1)
                             (diminish 'company-mode)))
 
@@ -1810,8 +1811,8 @@ see command `isearch-forward' for more information."
 
     (defun company-start-sep ()
       (interactive)
-      (insert "_")
-      (company-manual-begin))
+      (company-manual-begin)
+      (insert "_"))
     (keymap-global-set "M-SPC" #'company-start-sep)
 
     (defun company-insert-sep ()
@@ -2258,18 +2259,10 @@ see command `isearch-forward' for more information."
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window
                                         (mode . minibuffer-mode))
-        vertico-multiform-commands `((consult-completion-in-region
-                                      buffer (vertico-buffer-display-action
-                                              display-buffer-same-window))
-                                     (tempel-insert
-                                      buffer (vertico-buffer-display-action
-                                              display-buffer-same-window))
-                                     (tempel-complete
-                                      buffer (vertico-buffer-display-action
-                                              display-buffer-same-window)))
-        vertico-multiform-categories '((lsp-capf
-                                        buffer (vertico-buffer-display-action
-                                                display-buffer-same-window))
+        vertico-multiform-commands `((consult-completion-in-region posframe)
+                                     (tempel-insert posframe)
+                                     (tempel-complete posframe))
+        vertico-multiform-categories '((lsp-capf posframe)
                                        (t buffer)))
 
   (face-spec-set 'vertico-current
@@ -2283,9 +2276,14 @@ see command `isearch-forward' for more information."
 
   ;; Why doesn't this work with vertico-posframe?
   (defun vertico-buffer--redisplay-ad (win)
-    (when-let ((mbwin (active-minibuffer-window))
-               ((eq (window-buffer mbwin) (current-buffer))))
-      (unless (eq win mbwin)
+    (let ((mbwin (active-minibuffer-window)))
+      (when (and mbwin vertico-buffer-mode
+                 (eq (window-buffer mbwin) (current-buffer))
+                 (not (eq win mbwin))
+                 ;; Seems to fix the problem. This must be getting run
+                 ;; in the posframe window every time, so we need to
+                 ;; check for that.
+                 (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
         (setq-local vertico-count (- (/ (window-pixel-height win)
                                         (default-line-height))
                                      2)))))
@@ -2419,6 +2417,9 @@ see command `isearch-forward' for more information."
                   (if (consult--tofu-p (aref cand (1- (length cand))))
                       (substring cand 0 -1)
                     cand))))))
+
+(elpaca vertico-posframe
+  (setq vertico-posframe-poshandler #'posframe-poshandler-point-bottom-left-corner))
 
 ;;;; marginalia
 
