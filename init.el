@@ -223,12 +223,12 @@
                                    (isearch-escapable-split-on-char string "*"))
                            ".+?"))
                         (isearch-escapable-split-on-char string "-"))
-                "[^ \t\n\r\v\f]+?"))
+                "[^ \t\n\r\v\f]+"))
              (isearch-escapable-split-on-char string " "))
      search-whitespace-regexp))
 
   (isearch-define-mode-toggle wildcards "*" isearch-wildcards-compile "\
-Turning on wildcards search turns off regexp mode.")
+Turning on wildcards turns off regexp mode.")
   (put 'isearch-wildcards-compile 'isearch-message-prefix
        (propertize "Wildcard " 'face 'minibuffer-prompt))
 
@@ -1747,38 +1747,75 @@ see command `isearch-forward' for more information."
 
 ;;;; corfu
 
-(elpaca corfu
-  (run-with-timer
-   0.75 nil (lambda ()
-              (require 'corfu-info)
-              (global-corfu-mode 1)
-              (corfu-echo-mode 1)))
+;; (elpaca corfu
+;;   (run-with-timer
+;;    0.75 nil (lambda ()
+;;               (require 'corfu-info)
+;;               (global-corfu-mode 1)
+;;               (corfu-echo-mode 1)))
 
-  (setq corfu-quit-at-boundary nil
-        corfu-quit-no-match nil
-        corfu-preview-current nil
-        corfu-on-exact-match nil
-        corfu-auto nil
-        corfu-echo-delay 0.2)
+;;   (setq corfu-quit-at-boundary nil
+;;         corfu-quit-no-match nil
+;;         corfu-preview-current nil
+;;         corfu-on-exact-match nil
+;;         corfu-auto nil)
 
-  (with-eval-after-load 'corfu
-    (defun corfu-start-and-insert-sep ()
+;;   (with-eval-after-load 'corfu
+;;     (defun corfu-start-and-insert-sep ()
+;;       (interactive)
+;;       (completion-at-point)
+;;       (corfu-insert-separator))
+
+;;     (keymap-set corfu-mode-map "M-SPC" #'corfu-start-and-insert-sep)
+;;     (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
+;;     (keymap-set corfu-map "C-j" #'corfu-quick-complete)
+;;     (keymap-set corfu-map "<return>" #'corfu-insert)
+
+;;     (defun corfu-move-to-minibuffer ()
+;;       (interactive)
+;;       (when completion-in-region--data
+;;         (let ((completion-extra-properties (nth 4 completion-in-region--data))
+;;               completion-cycle-threshold completion-cycling)
+;;           (apply #'consult-completion-in-region completion-in-region--data))))
+;;     (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer)))
+
+;;;; company
+
+(elpaca company
+  (setq company-transformers '(vertico-sort-length-alpha)
+        company-idle-delay nil
+        company-show-quick-access nil
+        company-tooltip-flip-when-above t
+        company-format-margin-function #'company-vscode-light-icons-margin)
+
+  (run-with-timer 0.5 nil (lambda ()
+                            (global-company-mode 1)
+                            (diminish 'company-mode)))
+
+  (with-eval-after-load 'orderless
+    (defun company-completion-at-point-advice (fn &rest args)
+      (if company-mode
+          (company-manual-begin)
+        (apply fn args)))
+    (advice-add 'completion-at-point :around #'company-completion-at-point-advice)
+
+    (defun company-start-sep ()
       (interactive)
-      (completion-at-point)
-      (corfu-insert-separator))
+      (insert "&")
+      (company-manual-begin))
+    (keymap-global-set "M-SPC" #'company-start-sep)
 
-    (keymap-set corfu-mode-map "M-SPC" #'corfu-start-and-insert-sep)
-    (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
-    (keymap-set corfu-map "C-j" #'corfu-quick-complete)
-    (keymap-set corfu-map "<return>" #'corfu-insert)
-
-    (defun corfu-move-to-minibuffer ()
+    (defun company-insert-sep ()
       (interactive)
-      (when completion-in-region--data
-        (let ((completion-extra-properties (nth 4 completion-in-region--data))
-              completion-cycle-threshold completion-cycling)
-          (apply #'consult-completion-in-region completion-in-region--data))))
-    (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer)))
+      (insert "&"))
+    (keymap-set company-active-map "SPC" #'company-insert-sep)
+
+    (defun company-orderless-advice (fn &rest args)
+      (let ((orderless-match-faces [completions-common-part])
+            (orderless-matching-styles '(orderless-literal))
+            (orderless-component-separator "[ &]"))
+        (apply fn args)))
+    (advice-add 'company-capf--candidates :around #'company-orderless-advice)))
 
 ;;;; projectile
 
@@ -1865,6 +1902,14 @@ see command `isearch-forward' for more information."
     (setq-local orderless-smart-case (not orderless-smart-case))
     (message "smart-case: %s" orderless-smart-case))
   (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
+
+  (defun complete-and-sep ()
+    (interactive)
+    (minibuffer-with-setup-hook
+        (lambda () (insert " "))
+      (completion-at-point)))
+
+  (keymap-set global-map "M-SPC" #'complete-and-sep)
 
   (with-eval-after-load 'orderless
     (orderless-define-completion-style orderless+mm
@@ -2124,6 +2169,7 @@ see command `isearch-forward' for more information."
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
+  ;; Why doesn't this work with vertico-posframe?
   (defun vertico-buffer--redisplay-ad (win)
     (when-let ((mbwin (active-minibuffer-window))
                ((eq (window-buffer mbwin) (current-buffer))))
