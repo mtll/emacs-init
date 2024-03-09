@@ -1797,7 +1797,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'orderless
     (defun lsp-ignore-first (_pattern index _total)
       (when (and (= index 0) orderless-ignore-first)
-        `(orderless-literal . "")))
+        '(ignore)))
 
     (orderless-define-completion-style orderless-ignore-first
       (orderless-style-dispatchers '(lsp-ignore-first
