@@ -425,6 +425,10 @@ see command `isearch-forward' for more information."
 
 ;;; Packages
 
+;;;; treesit-auto
+
+(elpaca treesit-auto)
+
 ;;;; persist
 
 (elpaca (persist :host github :repo "emacs-straight/persist"))
@@ -622,8 +626,8 @@ see command `isearch-forward' for more information."
 
 ;;;; rustic
 
-;; (elpaca rustic
-;;   (setq rustic-lsp-client 'lsp-mode))
+(elpaca rustic
+  (setq rustic-lsp-client 'lsp-mode))
 
 ;;;; erlang
 
@@ -1494,12 +1498,8 @@ see command `isearch-forward' for more information."
   (add-hook 'text-mode-hook
             (lambda ()
               (add-to-list 'completion-at-point-functions #'cape-dict)))
-
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev t)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-
-  (with-eval-after-load 'embark
-    (keymap-set embark-symbol-map "TAB" 'embark-cape-symbol)))
+  
+  (add-to-list 'completion-at-point-functions #'cape-file))
 
 ;;;; embark
 
@@ -1794,9 +1794,8 @@ see command `isearch-forward' for more information."
     (defvar-local orderless-ignore-first nil)
 
     (defun ignore-first-hook ()
-      (pcase-let ((`(,beg ,end . _)
-                   completion-in-region--data))
-        (setq-local orderless-ignore-first (and beg end (not (= beg end))))))
+      (pcase-let ((`(,beg ,end . _) completion-in-region--data))
+        (setq-local orderless-ignore-first (and beg end (/= beg end)))))
     (add-hook 'completion-in-region-mode-hook #'ignore-first-hook)
 
     (defun corfu-sep-and-start ()
@@ -1848,81 +1847,6 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'corfu
     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)))
-
-;;;; company
-
-;; (elpaca company
-;;   (setq company-idle-delay 0.05
-;;         company-minimum-prefix-length 3
-;;         company-show-quick-access nil
-;;         company-tooltip-flip-when-above t
-;;         company-format-margin-function #'company-vscode-light-icons-margin
-;;         company-search-regexp-function #'company-search-words-in-any-order-regexp)
-
-;;   (run-with-timer 0.33 nil (lambda ()
-;;                              (global-company-mode 1)
-;;                              (diminish 'company-mode)))
-
-;;   (with-eval-after-load 'company
-;;     (keymap-set company-active-map "M->" #'company-select-last)
-;;     (keymap-set company-active-map "M-<" #'company-select-first)
-;;     (keymap-set company-active-map "C-s" #'company-filter-candidates)
-;;     (keymap-set company-active-map "C-M-s" #'company-search-candidates))
-
-;;   (with-eval-after-load 'vertico
-;;     (setq company-transformers '(vertico-sort-length-alpha)))
-
-;;   (with-eval-after-load 'company
-;;     (with-eval-after-load 'orderless
-;;       (defun company-completion-at-point-advice (fn &rest args)
-;;         (if company-mode
-;;             (company-manual-begin)
-;;           (apply fn args)))
-;;       (advice-add 'completion-at-point :around #'company-completion-at-point-advice)
-
-;;       (defun company-start-sep ()
-;;         (interactive)
-;;         (company-manual-begin)
-;;         (insert "_"))
-;;       (keymap-global-set "M-SPC" #'company-start-sep)
-
-;;       (defun company-insert-sep ()
-;;         (interactive)
-;;         (insert "_"))
-;;       (keymap-set company-active-map "SPC" #'company-insert-sep)
-
-;;       (defun company-orderless-advice (fn &rest args)
-;;         (let ((orderless-match-faces [completions-common-part])
-;;               (orderless-component-separator "[_]+"))
-;;           (apply fn args)))
-;;       (advice-add 'company-capf--candidates :around #'company-orderless-advice)
-
-;;       (defun lsp-ignore-first (_pattern index _total)
-;;         (when (and (= index 0))
-;;           '(ignore)))
-
-;;       (orderless-define-completion-style orderless-ignore-first
-;;         (orderless-style-dispatchers '(lsp-ignore-first
-;;                                        orderless-affix-dispatch)))
-
-;;       (setf (alist-get 'eglot completion-category-overrides)
-;;             '((styles orderless-ignore-first))
-;;             (alist-get 'lsp-capf completion-category-overrides)
-;;             '((styles orderless-ignore-first))))))
-
-;;;; projectile
-
-;; (elpaca projectile
-;;   (projectile-mode 1)
-
-;;   (define-keymap
-;;     :keymap projectile-mode-map
-;;     "C-c p" 'projectile-command-map)
-
-;;   (define-keymap
-;;     :keymap projectile-command-map
-;;     "I" 'projectile-invalidate-cache
-;;     "i" 'projectile-ibuffer))
 
 ;;;; bicycle
 
