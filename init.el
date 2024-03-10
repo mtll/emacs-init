@@ -1802,8 +1802,7 @@ see command `isearch-forward' for more information."
         (setq-local completion-at-point-functions
                     (cl-nsubst
                      (cape-capf-noninterruptible
-                      (cape-capf-buster #'lsp-completion-at-point ;; #'string-prefix-p
-                                        ))
+                      (cape-capf-buster #'lsp-completion-at-point))
                      #'lsp-completion-at-point completion-at-point-functions)))
       (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
 
@@ -1812,8 +1811,7 @@ see command `isearch-forward' for more information."
         (setq-local completion-at-point-functions
                     (cl-nsubst
                      (cape-capf-noninterruptible
-                      (cape-capf-buster #'eglot-completion-at-point ;; #'string-prefix-p
-                                        ))
+                      (cape-capf-buster #'eglot-completion-at-point))
                      #'eglot-completion-at-point completion-at-point-functions)))
       (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
@@ -1830,6 +1828,15 @@ see command `isearch-forward' for more information."
           '((styles orderless-ignore-first))
           (alist-get 'lsp-capf completion-category-overrides)
           '((styles orderless-ignore-first)))))
+
+;;;; kind-icons
+
+(elpaca kind-icon
+  (setq kind-icon-use-icons nil
+        kind-icon-extra-space t)
+
+  (with-eval-after-load 'corfu
+    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)))
 
 ;;;; company
 
@@ -1968,14 +1975,14 @@ see command `isearch-forward' for more information."
                                          (?. . orderless-flex))
         completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal)
-        orderless-style-dispatchers '(flex-first-if-completing)
+        orderless-style-dispatchers '(flex-first-if-completing
+                                      orderless-affix-dispatch)
         completion-category-overrides '((file (styles basic partial-completion))
                                         (buffer (styles orderless+mm)))
         orderless-component-separator #'orderless-escapable-split-on-space)
 
   (defun flex-first-if-completing (pattern index _total)
-    (when (and (= index 0)
-               completion-in-region-mode)
+    (when (and (= index 0) completion-in-region-mode)
       `(orderless-flex . ,pattern)))
 
   (defun orderless-toggle-smart-case ()
