@@ -202,6 +202,7 @@
 ;;;; dictionary
 
 (progn
+  (require 'dictionary)
   (setq dictionary-server "localhost"))
 
 ;;;; isearch
@@ -1379,7 +1380,6 @@ see command `isearch-forward' for more information."
     (defun avy-process-disable-aw-update (&rest app)
       (cl-letf (((symbol-function 'aw-update) #'ignore))
         (apply app)))
-
     (advice-add #'avy-process :around 'avy-process-disable-aw-update))
 
   (keymap-set isearch-mode-map "C-o u"   'avy-isearch)
@@ -1477,8 +1477,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-h k" 'helpful-key)
   (keymap-global-set "C-h ," 'display-local-help)
   (keymap-global-set "C-h ." 'helpful-at-point)
-  (define-key global-map [remap describe-function] 'helpful-callable)
-  (define-key global-map [remap describe-variable] 'helpful-variable)
+  (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
+  (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
 
   (push '(help-mode . helpful-mode) major-mode-remap-alist)
 
@@ -1512,8 +1512,9 @@ see command `isearch-forward' for more information."
 (elpaca cape
   (keymap-global-set "M-L" #'cape-line)
 
-  (defun dictionary-definition-buffer (cand)
-    (require 'dictionary)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+
+  (defun dictionary-doc-lookup (cand)
     (let* ((buffer)
            (dictionary-display-definition-function
             (lambda (word dictionary definition)
@@ -1523,37 +1524,16 @@ see command `isearch-forward' for more information."
                 (with-current-buffer (help-buffer)
                   (insert definition)
                   (goto-char (point-min))
-                  (while (re-search-forward (rx "{"
-                                                (group-n 1 (* (not (any ?}))))
-                                                "}")
-                                            nil t)
-                    (help-xref-button 1 'help-word
-                                      (match-string 1)
-                                      dictionary))
                   (setq buffer (current-buffer)))))))
       (dictionary-search cand)
       buffer))
 
-  (defun cape-dict-doc (&optional interactive)
-    (interactive (list t))
-    (if interactive
-        (cape-interactive #'cape-dict)
-      (pcase-let ((`(,beg . ,end) (cape--bounds 'word)))
-        `(,beg ,end
-               ,(cape--properties-table
-                 (completion-table-case-fold
-                  (cape--dynamic-table beg end #'cape--dict-list)
-                  (not (cape--case-fold-p cape-dict-case-fold)))
-                 :sort nil ;; Presorted word list (by frequency)
-                 :category 'cape-dict)
-               :company-doc-buffer #'dictionary-definition-buffer
-               ,@cape--dict-properties))))
-
   (add-hook 'text-mode-hook
             (lambda ()
-              (add-to-list 'completion-at-point-functions #'cape-dict-doc)))
-
-  (add-to-list 'completion-at-point-functions #'cape-file))
+              (add-to-list 'completion-at-point-functions
+                           (cape-capf-properties
+                            #'cape-dict
+                            :company-doc-buffer #'dictionary-doc-lookup)))))
 
 ;;;; embark
 
