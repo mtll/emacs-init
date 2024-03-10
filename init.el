@@ -44,6 +44,7 @@
   (add-hook 'after-init-hook #'elpaca-process-queues)
   (elpaca `(,@elpaca-order)))
 
+
 ;;; Built-in
 
 ;;;; emacs
@@ -143,6 +144,11 @@
     "," 'xref-go-back
     "." 'xref-go-forward)
 
+  (defvar-keymap xref-go-back-repeat-map
+    :repeat t
+    "," 'xref-go-back
+    "." 'xref-go-forward)
+
   (define-keymap
     :keymap ctl-x-map
     "s"   'save-buffer
@@ -192,6 +198,11 @@
       'split-window-vertically))
 
   (find-function-setup-keys))
+
+;;;; dictionary
+
+(progn
+  (setq dictionary-server "localhost"))
 
 ;;;; isearch
 
@@ -329,8 +340,12 @@ see command `isearch-forward' for more information."
 
 ;;;; ispell
 
-(setq ispell-program-name "aspell"
-      ispell-dictionary "american")
+(progn
+  (if (executable-find "hunspell")
+      (setq ispell-program-name "hunspell")
+    (setq ispell-program-name "aspell"))
+
+  (setq ispell-dictionary "american"))
 
 ;;;; savehist
 
@@ -423,6 +438,7 @@ see command `isearch-forward' for more information."
 
   (setq eldoc-echo-area-prefer-doc-buffer t))
 
+
 ;;; Packages
 
 ;;;; treesit-auto
@@ -469,7 +485,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
     (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
-    (keymap-set embark-alt-page-map "M-RET" 'ni-narrow-to-page-indirect-other-window)))
+    (keymap-set embark-page-map "N" 'ni-narrow-to-page-indirect-other-window)))
 
 ;;;; paredit
 
@@ -959,7 +975,7 @@ see command `isearch-forward' for more information."
                  (bg-search-lazy bg-magenta-subtle)
                  (bg-search-current bg-yellow-intense))
                modus-themes-preset-overrides-warmer))
-        
+
         (load-theme 'modus-operandi-tinted t))))
 
   (with-eval-after-load 'hi-lock
@@ -1165,7 +1181,8 @@ see command `isearch-forward' for more information."
 
   (set-default-conn-state '("COMMIT_EDITMSG.*") 'emacs-state)
   (put 'emacs-state :conn-ephemeral-marks t)
-  (add-hook 'read-only-mode-hook 'emacs-state)
+  (add-hook 'view-mode-on-hook 'emacs-state)
+  (add-hook 'view-mode-off-hook 'conn-pop-state)
 
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
@@ -1495,10 +1512,47 @@ see command `isearch-forward' for more information."
 (elpaca cape
   (keymap-global-set "M-L" #'cape-line)
 
+  (defun dictionary-definition-buffer (cand)
+    (require 'dictionary)
+    (let* ((buffer)
+           (dictionary-display-definition-function
+            (lambda (word dictionary definition)
+              (let ((help-buffer-under-preparation t))
+                (help-setup-xref (list #'dictionary-search word dictionary)
+                                 (called-interactively-p 'interactive))
+                (with-current-buffer (help-buffer)
+                  (insert definition)
+                  (goto-char (point-min))
+                  (while (re-search-forward (rx "{"
+                                                (group-n 1 (* (not (any ?}))))
+                                                "}")
+                                            nil t)
+                    (help-xref-button 1 'help-word
+                                      (match-string 1)
+                                      dictionary))
+                  (setq buffer (current-buffer)))))))
+      (dictionary-search cand)
+      buffer))
+
+  (defun cape-dict-doc (&optional interactive)
+    (interactive (list t))
+    (if interactive
+        (cape-interactive #'cape-dict)
+      (pcase-let ((`(,beg . ,end) (cape--bounds 'word)))
+        `(,beg ,end
+               ,(cape--properties-table
+                 (completion-table-case-fold
+                  (cape--dynamic-table beg end #'cape--dict-list)
+                  (not (cape--case-fold-p cape-dict-case-fold)))
+                 :sort nil ;; Presorted word list (by frequency)
+                 :category 'cape-dict)
+               :company-doc-buffer #'dictionary-definition-buffer
+               ,@cape--dict-properties))))
+
   (add-hook 'text-mode-hook
             (lambda ()
-              (add-to-list 'completion-at-point-functions #'cape-dict)))
-  
+              (add-to-list 'completion-at-point-functions #'cape-dict-doc)))
+
   (add-to-list 'completion-at-point-functions #'cape-file))
 
 ;;;; embark
@@ -1512,10 +1566,6 @@ see command `isearch-forward' for more information."
         embark-cycle-key "."
         embark-help-key "?"
         embark-confirm-act-all nil)
-
-  (defvar-keymap embark-alt-page-map
-    "RET" 'narrow-to-page
-    "m" 'mark-page)
 
   (keymap-global-set "C-." 'embark-dwim)
   (keymap-global-set "C-," 'embark-alt-dwim)
@@ -1535,26 +1585,6 @@ see command `isearch-forward' for more information."
     (if (embark-selected-candidates)
         (embark-act-all)
       (embark-act)))
-
-  (defun embark-tab-delete (name)
-    (tab-bar-close-tab
-     (1+ (tab-bar--tab-index-by-name name))))
-
-  (defun embark-tab-rename (tab-name)
-    (tab-bar-rename-tab
-     (read-from-minibuffer
-      "New name for tab (leave blank for automatic naming): "
-      nil nil nil nil tab-name)))
-
-  (defun embark-tab-detach (tab-name)
-    (let* ((tabs (funcall tab-bar-tabs-function))
-           (tab-index (tab-bar--tab-index-by-name tab-name))
-           (from-frame (selected-frame))
-           (new-frame (make-frame `((name . ,tab-name)))))
-      (tab-bar-move-tab-to-frame
-       nil from-frame from-number new-frame nil)
-      (with-selected-frame new-frame
-        (tab-bar-close-tab))))
 
   (defcustom embark-alt-default-action-overrides nil
     "`embark-default-action-overrides' for alternate actions."
@@ -1597,21 +1627,6 @@ see command `isearch-forward' for more information."
                        (embark--quit-p action)))
       (user-error "No target found")))
 
-  (defun embark-alt-line-target-finder ()
-    (when (and (not (minibufferp))
-               (not (region-active-p))
-               (eolp))
-      (let ((bounds (bounds-of-thing-at-point 'line)))
-        (cons 'line (cons
-                     (buffer-substring (car bounds) (cdr bounds))
-                     bounds)))))
-
-  (defun embark-alt-page-target-finder ()
-    (when-let ((bounds (bounds-of-thing-at-point 'page)))
-      (cons 'page (cons
-                   (buffer-substring (car bounds) (cdr bounds))
-                   bounds))))
-
   (defun embark-alt-heading-target-finder ()
     (when (and (derived-mode-p 'outline-mode)
                (outline-on-heading-p))
@@ -1626,56 +1641,74 @@ see command `isearch-forward' for more information."
                (buffer-substring (car bounds) (cdr bounds))
                bounds)))))
 
-  (defun embark-alt-scroll-down (&rest _)
-    (scroll-down-command)
-    (move-end-of-line nil))
-
-  (defun embark-alt-scroll-up (&rest _)
-    (scroll-up-command)
-    (move-end-of-line nil))
-
   (defvar-keymap embark-consult-location-map)
   (defvar-keymap embark-consult-grep-map)
 
+  (defvar-keymap embark-page-map
+    "RET" 'forward-page
+    "M-RET" 'backward-page
+    "n" 'narrow-to-page
+    "m" 'mark-page)
+
+  (defvar-keymap embark-tab-bar-map
+    "d" 'embark-tab-delete
+    "r" 'embark-tab-rename
+    "t" 'embark-tab-detach)
+
   (with-eval-after-load 'embark
-    (keymap-set embark-defun-map "n" 'narrow-to-defun)
-
-    (defvar-keymap embark-tab-bar-map
-      "d" 'embark-tab-delete
-      "r" 'embark-tab-rename
-      "t" 'embark-tab-detach)
-    (add-to-list 'embark-keymap-alist '(tab-bar embark-tab-bar-map))
-
-    (keymap-set embark-symbol-map "h" 'helpful-symbol)
-    (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    (keymap-set embark-defun-map "M-RET" 'comment-region)
+    (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
+          (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
     (set-keymap-parent embark-consult-location-map embark-general-map)
     (set-keymap-parent embark-consult-grep-map embark-general-map)
     (add-to-list 'embark-keymap-alist '(consult-location embark-consult-location-map))
     (add-to-list 'embark-keymap-alist '(consult-grep embark-consult-grep-map))
 
+    (keymap-set embark-defun-map "n" 'narrow-to-defun)
+    (keymap-set embark-symbol-map "h" 'helpful-symbol)
+    (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
+    (keymap-set embark-defun-map "M-RET" 'comment-region)
     (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
-
-    (defvar-keymap embark-alt-line-map
-      "RET" 'embark-alt-scroll-up
-      "M-RET" 'embark-alt-scroll-down)
-
-    (setf (alist-get 'line embark-keymap-alist)
-          (list 'embark-alt-line-map))
-
-    (setf (alist-get 'page embark-keymap-alist)
-          (list 'embark-alt-page-map))
-
-    (defvar-keymap xref-go-back-repeat-map
-      :repeat t
-      "," 'xref-go-back
-      "." 'xref-go-forward)
-
     (keymap-set embark-heading-map "RET" #'outline-cycle)
 
-    (add-to-list 'embark-target-finders #'embark-alt-line-target-finder)
-    (add-to-list 'embark-target-finders #'embark-alt-page-target-finder t)
+    (defun embark-tab-delete (name)
+      (tab-bar-close-tab
+       (1+ (tab-bar--tab-index-by-name name))))
+
+    (defun embark-tab-rename (tab-name)
+      (tab-bar-rename-tab
+       (read-from-minibuffer
+        "New name for tab (leave blank for automatic naming): "
+        nil nil nil nil tab-name)))
+
+    (defun embark-tab-detach (tab-name)
+      (let* ((tabs (funcall tab-bar-tabs-function))
+             (tab-index (tab-bar--tab-index-by-name tab-name))
+             (from-frame (selected-frame))
+             (new-frame (make-frame `((name . ,tab-name)))))
+        (tab-bar-move-tab-to-frame
+         nil from-frame from-number new-frame nil)
+        (with-selected-frame new-frame
+          (tab-bar-close-tab))))
+
+    (defun embark-looking-at-page-target-finder ()
+      (when (or (save-excursion
+                  (beginning-of-line)
+                  (looking-at page-delimiter))
+                (eobp)
+                (bobp))
+        (let ((bounds (bounds-of-thing-at-point 'page)))
+          (cons 'page (cons
+                       (buffer-substring (car bounds) (cdr bounds))
+                       bounds)))))
+    (add-to-list 'embark-target-finders #'embark-looking-at-page-target-finder)
+
+    (defun embark-page-target-finder ()
+      (when-let ((bounds (bounds-of-thing-at-point 'page)))
+        (cons 'page (cons
+                     (buffer-substring (car bounds) (cdr bounds))
+                     bounds))))
+    (add-to-list 'embark-target-finders #'embark-page-target-finder t)
 
     (defun embark-consult-kill-lines (cands)
       (let (strs)
@@ -1791,13 +1824,6 @@ see command `isearch-forward' for more information."
                     "M-SPC" #'corfu-insert-separator))
 
   (with-eval-after-load 'corfu
-    (defvar-local orderless-ignore-first nil)
-
-    (defun ignore-first-hook ()
-      (pcase-let ((`(,beg ,end . _) completion-in-region--data))
-        (setq-local orderless-ignore-first (and beg end (/= beg end)))))
-    (add-hook 'completion-in-region-mode-hook #'ignore-first-hook)
-
     (defun corfu-sep-and-start ()
       (interactive)
       (completion-at-point)
@@ -1822,22 +1848,7 @@ see command `isearch-forward' for more information."
                      (cape-capf-noninterruptible
                       (cape-capf-buster #'eglot-completion-at-point))
                      #'eglot-completion-at-point completion-at-point-functions)))
-      (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
-
-  (with-eval-after-load 'orderless
-    (defun lsp-ignore-first (_pattern index _total)
-      (when (and (= index 0) orderless-ignore-first)
-        '(ignore)))
-
-    (orderless-define-completion-style orderless-ignore-first
-      (orderless-style-dispatchers '(lsp-ignore-first
-                                     orderless-kwd-dispatch
-                                     orderless-affix-dispatch)))
-
-    (setf (alist-get 'eglot completion-category-overrides)
-          '((styles orderless-ignore-first))
-          (alist-get 'lsp-capf completion-category-overrides)
-          '((styles orderless-ignore-first)))))
+      (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf))))
 
 ;;;; kind-icons
 
