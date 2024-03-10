@@ -3,14 +3,14 @@
 ;;; Elpaca
 
 (progn
-  (setq elpaca-core-date
-        (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
-  (defvar elpaca-installer-version 0.6)
+  ;; (setq elpaca-core-date
+  ;;       (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
+  (defvar elpaca-installer-version 0.7)
   (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
   (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
   (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
   (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                                :ref nil
+                                :ref nil :depth 1
                                 :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                                 :build (:not elpaca--activate-package)))
   (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
@@ -23,8 +23,10 @@
       (when (< emacs-major-version 28) (require 'subr-x))
       (condition-case-unless-debug err
           (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                   ((zerop (call-process "git" nil buffer t "clone"
-                                         (plist-get order :repo) repo)))
+                   ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                   ,@(when-let ((depth (plist-get order :depth)))
+                                                       (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                   ,(plist-get order :repo) ,repo))))
                    ((zerop (call-process "git" nil buffer t "checkout"
                                          (or (plist-get order :ref) "--"))))
                    (emacs (concat invocation-directory invocation-name))
@@ -131,6 +133,7 @@
   (keymap-global-set "C-c c"         'compile)
   (keymap-global-set "M-W"           'other-window-prefix)
   (keymap-global-set "M-F"           'other-frame-prefix)
+  (keymap-global-set "C-S-w"         'delete-region)
 
   (keymap-set text-mode-map "M-TAB" #'completion-at-point)
   (keymap-set help-map "M-k" #'describe-keymap)
@@ -492,8 +495,9 @@ see command `isearch-forward' for more information."
     (keymap-unset paredit-mode-map "M-s")
     (keymap-unset paredit-mode-map "M-;")
     (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
-
     (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
+    (keymap-set paredit-mode-map "<remap> <kill-region>" 'paredit-kill-region)
+    (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
 
     (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
       (or endp
@@ -1140,6 +1144,8 @@ see command `isearch-forward' for more information."
                      grep-mode
                      occur-mode
                      t)
+        conn-open-line-keys "M-o"
+        conn-delete-region-keys "C-S-w"
         dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
@@ -1157,6 +1163,8 @@ see command `isearch-forward' for more information."
 
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
+
+  (keymap-set conn-buffer-map "D" 'toggle-window-dedicated)
 
   (define-keymap
     :keymap global-map
@@ -1380,8 +1388,7 @@ see command `isearch-forward' for more information."
     "C-i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'conn-mode
-    (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose)
-    (keymap-set conn-common-map "h" #'avy-goto-char-timer))
+    (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
   (with-eval-after-load 'avy
     (defun avy-isearch ()
@@ -1684,6 +1691,7 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
 
     (with-eval-after-load 'conn-mode
+      (keymap-set conn-state-map "h" 'embark-alt-dwim)
       (keymap-set embark-region-map "RET" #'conn-copy-region)
       (keymap-set conn-common-map "." #'embark-act)
 
@@ -1822,6 +1830,7 @@ see command `isearch-forward' for more information."
 
     (orderless-define-completion-style orderless-ignore-first
       (orderless-style-dispatchers '(lsp-ignore-first
+                                     orderless-kwd-dispatch
                                      orderless-affix-dispatch)))
 
     (setf (alist-get 'eglot completion-category-overrides)
@@ -1968,17 +1977,17 @@ see command `isearch-forward' for more information."
 
 (elpaca orderless
   (setq orderless-affix-dispatch-alist '((?^ . orderless-not)
-                                         (?/ . orderless-regexp)
+                                         (?, . orderless-regexp)
                                          (?! . orderless-without-literal)
                                          (?@ . orderless-annotation)
-                                         (?, . orderless-initialism)
-                                         (?. . orderless-flex))
+                                         (?. . orderless-initialism)
+                                         (?/ . orderless-flex))
         completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal)
         orderless-style-dispatchers '(flex-first-if-completing
+                                      orderless-kwd-dispatch
                                       orderless-affix-dispatch)
-        completion-category-overrides '((file (styles basic partial-completion))
-                                        (buffer (styles orderless+mm)))
+        completion-category-overrides '((file (styles basic partial-completion)))
         orderless-component-separator #'orderless-escapable-split-on-space)
 
   (defun flex-first-if-completing (pattern index _total)
@@ -1989,21 +1998,13 @@ see command `isearch-forward' for more information."
     (interactive)
     (setq-local orderless-smart-case (not orderless-smart-case))
     (message "smart-case: %s" orderless-smart-case))
-  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
-
-  (with-eval-after-load 'orderless
-    (orderless-define-completion-style orderless+mm
-      (orderless-affix-dispatch-alist (append '((?* . orderless-major-mode))
-                                              orderless-affix-dispatch-alist)))))
+  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case))
 
 ;;;;; orderless-set-operations
 
 (elpaca (orderless-set-operations :host codeberg
                                   :repo "crcs/orderless-set-operations")
   (with-eval-after-load 'orderless
-    (setq oso--command-affix-overrides
-          '((consult-buffer (?* . orderless-major-mode))))
-
     (oso-mode 1)))
 
 ;;;; consult
