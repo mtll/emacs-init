@@ -48,4 +48,27 @@
                               :width normal
                               :family "Iosevka DK"))))
 
+(when (>= emacs-major-version 30)
+  (with-eval-after-load 'modus-themes
+    (setq modus-themes-common-palette-overrides
+          (seq-concatenate
+           'list
+           `((bg-main "#f8f8f8")
+             (cursor "#000000")
+             (bg-region "#e1e1e1")
+             (fg-region unspecified)
+             (fg-completion-match-0 "#323c32")
+             (bg-completion-match-0 "#caf1c9")
+             (fg-completion-match-1 "#38333c")
+             (bg-completion-match-1 "#e3cff1")
+             (fg-completion-match-2 "#3c3333")
+             (bg-completion-match-2 "#f1cccc")
+             (fg-completion-match-3 "#343b3c")
+             (bg-completion-match-3 "#d1eff1")
+             (bg-search-lazy bg-magenta-subtle)
+             (bg-search-current bg-yellow-intense))
+           modus-themes-preset-overrides-warmer)))
+
+  (load-theme 'modus-operandi-tinted t))
+
 (provide 'early-init)
