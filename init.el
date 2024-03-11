@@ -135,6 +135,8 @@
   (keymap-global-set "M-W"           'other-window-prefix)
   (keymap-global-set "M-F"           'other-frame-prefix)
   (keymap-global-set "C-S-w"         'delete-region)
+  (keymap-global-set "C-S-o"         'other-window)
+  (put 'other-window 'repeat-map nil)
 
   (keymap-set text-mode-map "M-TAB" #'completion-at-point)
   (keymap-set help-map "M-k" #'describe-keymap)
@@ -1612,15 +1614,11 @@ see command `isearch-forward' for more information."
     (interactive "P")
     (require 'embark)
     (if-let ((targets (embark--targets)))
-        (let* ((target
-                (or (nth
-                     (if (or (null arg) (minibufferp))
-                         0
-                       (mod (prefix-numeric-value arg) (length targets)))
-                     targets)))
+        (let* ((target (car targets))
                (type (plist-get target :type))
                (default-action (embark-alt--default-action type))
-               (action (or (command-remapping default-action) default-action)))
+               (action (or (command-remapping default-action) default-action))
+               (prefix-arg current-prefix-arg))
           (unless action
             (user-error "No default action for %s targets" type))
           (when (and arg (minibufferp)) (setq embark--toggle-quit t))
@@ -1681,6 +1679,29 @@ see command `isearch-forward' for more information."
     (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
 
+    ;; Make embark-dwim pass the current prefix arg along to whatever
+    ;; action it selects. This is much more useful to me than using
+    ;; the prefix arg to select a specific target.
+    (defun embark-dwim (&optional arg)
+      (interactive "P")
+      (if-let ((targets (embark--targets)))
+          (let* ((target (car targets))
+                 (type (plist-get target :type))
+                 (default-action (embark--default-action type))
+                 (action (or (command-remapping default-action) default-action))
+                 (prefix-arg current-prefix-arg))
+            (unless action
+              (user-error "No default action for %s targets" type))
+            (when (and arg (minibufferp)) (setq embark--toggle-quit t))
+            (embark--act action
+                         (if (and (eq default-action embark--command)
+                                  (not (memq default-action
+                                             embark-multitarget-actions)))
+                             (embark--orig-target target)
+                           target)
+                         (embark--quit-p action)))
+        (user-error "No target found")))
+    
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
        (1+ (tab-bar--tab-index-by-name name))))
@@ -1735,6 +1756,15 @@ see command `isearch-forward' for more information."
         (kill-new (string-join strs "\n"))))
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
+
+    (defun david-embark-find-definition (identifier &optional arg)
+      (interactive "sSymbol: \nP")
+      (pcase arg
+        ('nil (xref-find-definitions identifier))
+        ('(4) (xref-find-definitions-other-window identifier))
+        (_    (xref-find-definitions-other-frame identifier))))
+    (keymap-set embark-identifier-map "RET" 'david-embark-find-definition)
+    (keymap-set embark-symbol-map "RET" 'david-embark-find-definition)
 
     (with-eval-after-load 'conn-mode
       (keymap-set embark-region-map "RET" #'conn-copy-region)
