@@ -1635,6 +1635,10 @@ see command `isearch-forward' for more information."
     "r" 'embark-tab-rename
     "t" 'embark-tab-detach)
 
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-state-map "h" #'embark-alt-dwim)
+    (keymap-set conn-common-map "." #'embark-act))
+
   (with-eval-after-load 'embark
     (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
           (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
@@ -1706,9 +1710,7 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
 
     (with-eval-after-load 'conn-mode
-      (keymap-set conn-state-map "h" 'embark-alt-dwim)
       (keymap-set embark-region-map "RET" #'conn-copy-region)
-      (keymap-set conn-common-map "." #'embark-act)
 
       (define-keymap
         :keymap embark-region-map
@@ -1778,7 +1780,6 @@ see command `isearch-forward' for more information."
 (elpaca corfu
   (run-with-timer
    0.33 nil (lambda ()
-              (require 'cape)
               (global-corfu-mode 1)
               (corfu-echo-mode 1)))
 
@@ -1811,24 +1812,23 @@ see command `isearch-forward' for more information."
 
     (keymap-set corfu-mode-map "M-SPC" #'corfu-sep-and-start))
 
-  (with-eval-after-load 'cape
-    (with-eval-after-load 'lsp-mode
-      (defun wrap-lsp-capf ()
-        (setq-local completion-at-point-functions
-                    (cl-nsubst
-                     (cape-capf-noninterruptible
-                      (cape-capf-buster #'lsp-completion-at-point))
-                     #'lsp-completion-at-point completion-at-point-functions)))
-      (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
+  (with-eval-after-load 'lsp-mode
+    (defun wrap-lsp-capf ()
+      (setq-local completion-at-point-functions
+                  (cl-nsubst
+                   (cape-capf-noninterruptible
+                    (cape-capf-buster #'lsp-completion-at-point))
+                   #'lsp-completion-at-point completion-at-point-functions)))
+    (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
 
-    (with-eval-after-load 'eglot
-      (defun wrap-eglot-capf ()
-        (setq-local completion-at-point-functions
-                    (cl-nsubst
-                     (cape-capf-noninterruptible
-                      (cape-capf-buster #'eglot-completion-at-point))
-                     #'eglot-completion-at-point completion-at-point-functions)))
-      (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf))))
+  (with-eval-after-load 'eglot
+    (defun wrap-eglot-capf ()
+      (setq-local completion-at-point-functions
+                  (cl-nsubst
+                   (cape-capf-noninterruptible
+                    (cape-capf-buster #'eglot-completion-at-point))
+                   #'eglot-completion-at-point completion-at-point-functions)))
+    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
 ;;;; kind-icons
 
@@ -2144,11 +2144,7 @@ see command `isearch-forward' for more information."
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window
                                         (mode . minibuffer-mode))
-        vertico-multiform-commands `((consult-completion-in-region posframe)
-                                     (tempel-insert posframe)
-                                     (tempel-complete posframe))
-        vertico-multiform-categories '((lsp-capf posframe)
-                                       (t buffer)))
+        vertico-multiform-categories '((t buffer)))
 
   (face-spec-set 'vertico-current
                  '((t :inherit region)))
@@ -2257,6 +2253,7 @@ see command `isearch-forward' for more information."
       (overlay-put vertico--count-ov 'before-string "")))
   (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
 
+  ;; Refocus the minibuffer if vertico-repeat is called with a minibuffer open.
   (defun vertico-repeat-ad (&rest _)
     (when (> (minibuffer-depth) 0)
       (select-window
@@ -2266,8 +2263,14 @@ see command `isearch-forward' for more information."
                        (eq major-mode 'minibuffer-mode))))
            (minibuffer-selected-window)
          (minibuffer-window)))
+      (message "Focused minibuffer")
       t))
   (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
+
+  (defun vertico-focus-selected-window ()
+    (interactive)
+    (select-window (minibuffer-selected-window))
+    (message "Focused other window"))
 
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
@@ -2278,6 +2281,7 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap vertico-map
+    "<f1>" 'vertico-focus-selected-window
     "M-i" 'vertico-insert
     "RET" 'vertico-directory-enter
     "DEL" 'vertico-directory-delete-char
@@ -2300,11 +2304,6 @@ see command `isearch-forward' for more information."
                   (if (consult--tofu-p (aref cand (1- (length cand))))
                       (substring cand 0 -1)
                     cand))))))
-
-;;;;; vertico-posframe
-
-(elpaca vertico-posframe
-  (setq vertico-posframe-poshandler #'posframe-poshandler-point-bottom-left-corner))
 
 ;;;; marginalia
 
@@ -2342,6 +2341,9 @@ see command `isearch-forward' for more information."
 
   (defvar marginalia-align-column 40)
 
+  ;; Try to align to a specific column and if candidate is too long align
+  ;; on multiple of marginalia--cand-width-step. This prevents very long
+  ;; candidates from pushing all annotations almost entirely out of view.
   (defun marginalia--align-column (cands)
     "Align annotations of CANDS according to `marginalia-align'."
     (cl-loop
@@ -2379,17 +2381,14 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-i" 'tempel-insert)
-  (keymap-global-set "M-+" 'tempel-complete)
-  (keymap-global-set "M-*" 'tempel-insert)
+  (keymap-global-set "M-i" 'tempel-complete)
 
   (with-eval-after-load 'tempel
     (setq tempel-path "/home/dave/.emacs.d/templates/*.eld")
 
     (defun conn-tempel-insert-ad (fn &rest args)
       (apply fn args)
-      (when tempel--active
-        (emacs-state)))
+      (when tempel--active (emacs-state)))
     (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
 
 ;;;;; tempel-collection
