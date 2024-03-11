@@ -245,7 +245,8 @@
 
 (progn
   (require 'dictionary)
-  (setq dictionary-server "localhost"))
+  (setq dictionary-server "localhost")
+  (keymap-global-set "C-c d" #'dictionary-lookup-definition))
 
 ;;;; isearch
 
