@@ -203,14 +203,17 @@
 
 ;;;; outline-minor-mode
 
-(with-eval-after-load 'outline
-  (defun narrow-to-heading ()
-    (interactive)
-    (save-mark-and-excursion
-      (outline-mark-subtree)
-      ;; Must be called interactively if we want zones.el to add it.
-      (funcall-interactively #'narrow-to-region (region-beginning) (region-end))))
-  (keymap-set outline-minor-mode-map "C-x n h" #'narrow-to-heading))
+(progn
+  (add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
+
+  (with-eval-after-load 'outline
+    (defun narrow-to-heading ()
+      (interactive)
+      (save-mark-and-excursion
+        (outline-mark-subtree)
+        ;; Must be called interactively if we want zones.el to add it.
+        (funcall-interactively #'narrow-to-region (region-beginning) (region-end))))
+    (keymap-set outline-minor-mode-map "C-x n h" #'narrow-to-heading)))
 
 ;;;; line numbers
 
