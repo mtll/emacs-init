@@ -489,9 +489,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-(elpaca benchmark-init
-  (require 'benchmark-init)
-  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+;; (elpaca benchmark-init
+;;   (require 'benchmark-init)
+;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -1246,7 +1246,7 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-set conn-state-map "H" 'conn-expand-region)
+  (keymap-set conn-state-map "h" 'conn-expand-region)
   (keymap-global-set "M-," 'conn-expand-region)
   (define-keymap
     :keymap dot-state-map
@@ -1656,11 +1656,11 @@ see command `isearch-forward' for more information."
     (interactive)
     (backward-page)
     (recenter 0 t))
-  
+
   (defvar-keymap embark-page-map
-    "RET" 'david-forward-page
-    "M-RET" 'david-backward-page
-    "n" 'narrow-to-page
+    "n" 'david-forward-page
+    "p" 'david-backward-page
+    "o" 'narrow-to-page
     "m" 'mark-page)
 
   (defvar-keymap embark-tab-bar-map
@@ -1669,12 +1669,16 @@ see command `isearch-forward' for more information."
     "t" 'embark-tab-detach)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-state-map "h" #'embark-alt-dwim)
-    (keymap-set conn-common-map "." #'embark-act))
+    (keymap-set conn-state-map "e" #'embark-dwim)
+    ;; (keymap-set conn-state-map "M-TAB" #'embark-alt-dwim)
+    (keymap-set conn-state-map "TAB" #'embark-act))
 
   (with-eval-after-load 'embark
     (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
           (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
+
+    (cl-pushnew 'david-forward-page embark-repeat-actions)
+    (cl-pushnew 'david-backward-page embark-repeat-actions)
 
     (set-keymap-parent embark-consult-location-map embark-general-map)
     (set-keymap-parent embark-consult-grep-map embark-general-map)
@@ -1710,7 +1714,7 @@ see command `isearch-forward' for more information."
                            target)
                          (embark--quit-p action)))
         (user-error "No target found")))
-    
+
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
        (1+ (tab-bar--tab-index-by-name name))))
