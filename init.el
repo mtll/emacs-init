@@ -2073,12 +2073,7 @@ see command `isearch-forward' for more information."
     "Return alist of outline headings and positions."
     (consult--forbid-minibuffer)
     (let* ((line (line-number-at-pos (point-min) consult-line-numbers-widen))
-           (heading-regexp (concat "^\\(?:" page-delimiter "\\)"))
-           (heading-alist (bound-and-true-p outline-heading-alist))
-           (level-fun (or (bound-and-true-p outline-level)
-                          (lambda () ;; as in the default from outline.el
-                            (or (cdr (assoc (match-string 0) heading-alist))
-                                (- (match-end 0) (match-beginning 0))))))
+           (page-regexp (concat "^\\(?:" page-delimiter "\\)"))
            (buffer (current-buffer))
            candidates)
       (save-excursion
@@ -2086,45 +2081,33 @@ see command `isearch-forward' for more information."
         (while (save-excursion
                  (if-let (fun (bound-and-true-p outline-search-function))
                      (funcall fun)
-                   (re-search-forward heading-regexp nil t)))
+                   (re-search-forward page-regexp nil t)))
           (cl-incf line (consult--count-lines (match-beginning 0)))
           (push (consult--location-candidate
                  (save-excursion
                    (forward-line)
                    (consult--buffer-substring (pos-bol) (pos-eol) 'fontify))
-                 (cons buffer (point)) (1- line) (1- line)
-                 'consult--outline-level (funcall level-fun))
+                 (cons buffer (point)) (1- line) (1- line))
                 candidates)
           (goto-char (1+ (pos-eol)))))
       (unless candidates
-        (user-error "No headings"))
+        (user-error "No pages"))
       (nreverse candidates)))
 
-  (defun consult-page (&optional level)
+  (defun consult-page ()
     "Jump to a page."
-    (interactive
-     (list (and current-prefix-arg (prefix-numeric-value current-prefix-arg))))
+    (interactive)
     (let* ((candidates (consult--slow-operation
                            "Collecting headings..."
-                         (consult--page-candidates)))
-           (min-level (- (cl-loop for cand in candidates minimize
-                                  (get-text-property 0 'consult--outline-level cand))
-                         ?1))
-           (narrow-pred (lambda (cand)
-                          (<= (get-text-property 0 'consult--outline-level cand)
-                              (+ consult--narrow min-level))))
-           (narrow-keys (mapcar (lambda (c) (cons c (format "Level %c" c)))
-                                (number-sequence ?1 ?9)))
-           (narrow-init (and level (max ?1 (min ?9 (+ level ?0))))))
+                         (consult--page-candidates))))
       (consult--read
        candidates
-       :prompt "Go to heading: "
+       :prompt "Go to page: "
        :annotate (consult--line-prefix)
        :category 'consult-location
        :sort nil
        :require-match t
        :lookup #'consult--line-match
-       :narrow `(:predicate ,narrow-pred :keys ,narrow-keys :initial ,narrow-init)
        :history '(:input consult--line-history)
        :add-history (thing-at-point 'symbol)
        :state (consult--location-state candidates))))
