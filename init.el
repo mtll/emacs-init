@@ -199,6 +199,31 @@
 
   (find-function-setup-keys))
 
+;;;; line numbers
+
+(progn
+  (setq display-line-numbers-type 'relative
+        display-line-numbers-current-absolute nil)
+
+  (add-hook 'prog-mode-hook #'display-line-numbers-mode)
+  (add-hook 'text-mode-hook #'display-line-numbers-mode)
+
+  (defun line-numbers-in-selected-window-configuration-change ()
+    (walk-windows
+     (lambda (win)
+       (when (buffer-local-value 'display-line-numbers-mode (window-buffer win))
+         (setf (buffer-local-value 'display-line-numbers (window-buffer win))
+               (and (or (eq win (selected-window))
+                        (eq minibuffer--original-buffer (window-buffer win)))
+                    display-line-numbers-type))))
+     -1))
+  (add-hook 'window-configuration-change-hook
+            #'line-numbers-in-selected-window-configuration-change)
+
+  (defun line-numbers-in-selected-selection-change (frame)
+    (with-selected-frame frame (line-numbers-in-selected-window-configuration-change)))
+  (add-hook 'window-selection-change-functions #'line-numbers-in-selected-selection-change))
+
 ;;;; dictionary
 
 (progn
@@ -461,9 +486,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-;; (elpaca benchmark-init
-;;   (require 'benchmark-init)
-;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+(elpaca benchmark-init
+  (require 'benchmark-init)
+  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -1113,6 +1138,13 @@ see command `isearch-forward' for more information."
     "/" 'zz-replace-string-zones
     "%" 'zz-map-query-replace-regexp-zones))
 
+;;;; info+
+
+;; (elpaca (info+ :host github
+;;                   :repo "emacsmirror/info-plus"
+;;                   :main "info+.el")
+;;   (run-with-timer 1 nil (lambda () (require 'info+))))
+
 ;;;; isearch+
 
 (elpaca (isearch+ :host github
@@ -1192,17 +1224,10 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap global-map
-    "C-S-j" 'backward-page
-    "C-S-l" 'forward-page
     "C-c b" 'conn-buffer-map
     "C-c a" 'conn-misc-edit-map
     "C-c v" 'conn-toggle-mark-command
     "M-n" 'conn-embark-region)
-
-  (define-keymap
-    :keymap page-navigation-repeat-map
-    "j" 'backward-page
-    "l" 'forward-page)
 
   (define-keymap
     :keymap conn-misc-edit-map
@@ -1676,11 +1701,12 @@ see command `isearch-forward' for more information."
           (tab-bar-close-tab))))
 
     (defun embark-looking-at-page-target-finder ()
-      (when (or (save-excursion
-                  (beginning-of-line)
-                  (looking-at page-delimiter))
-                (eobp)
-                (bobp))
+      (when (and (or (save-excursion
+                       (beginning-of-line)
+                       (looking-at page-delimiter))
+                     (eobp)
+                     (bobp))
+                 (not (window-minibuffer-p (selected-window))))
         (let ((bounds (bounds-of-thing-at-point 'page)))
           (cons 'page (cons
                        (buffer-substring (car bounds) (cdr bounds))
