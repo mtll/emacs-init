@@ -205,7 +205,7 @@
 
 (progn
   (require 'display-line-numbers)
-  (setq display-line-numbers-type 'relative
+  (setq display-line-numbers-type 'visual
         display-line-numbers-current-absolute nil)
 
   (add-hook 'prog-mode-hook #'display-line-numbers-mode)
