@@ -1581,7 +1581,7 @@ see command `isearch-forward' for more information."
                             embark-highlight-indicator
                             embark-isearch-highlight-indicator)
         embark-prompter 'embark-keymap-prompter
-        embark-cycle-key "."
+        embark-cycle-key "TAB"
         embark-help-key "?"
         embark-confirm-act-all nil)
 
@@ -1798,7 +1798,6 @@ see command `isearch-forward' for more information."
         "j" 'conn-join-lines
         "o" 'embark-isearch-forward
         "u" 'embark-isearch-backward
-        "TAB" 'indent-region
         "M-RET" 'indent-region
         "RET" 'copy-region-as-kill))
 
