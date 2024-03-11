@@ -202,6 +202,7 @@
 ;;;; line numbers
 
 (progn
+  (require 'display-line-numbers)
   (setq display-line-numbers-type 'relative
         display-line-numbers-current-absolute nil)
 
@@ -213,8 +214,8 @@
      (lambda (win)
        (when (buffer-local-value 'display-line-numbers-mode (window-buffer win))
          (setf (buffer-local-value 'display-line-numbers (window-buffer win))
-               (and (or (eq win (selected-window))
-                        (eq minibuffer--original-buffer (window-buffer win)))
+               (and (eq (window-buffer win)
+                        (window-buffer (selected-window)))
                     display-line-numbers-type))))
      -1))
   (add-hook 'window-configuration-change-hook
@@ -1984,6 +1985,7 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap search-map
+    "p" 'consult-page
     "K" 'consult-kmacro
     "n" 'consult-ripgrep-n
     "w" 'consult-man
@@ -2066,6 +2068,66 @@ see command `isearch-forward' for more information."
   (defun consult-ripgrep-n (&optional dir initial)
     (interactive "P")
     (consult--grep "Ripgrep N" #'consult--ripgrep-n-make-builder dir initial))
+
+  (defun consult--page-candidates ()
+    "Return alist of outline headings and positions."
+    (consult--forbid-minibuffer)
+    (let* ((line (line-number-at-pos (point-min) consult-line-numbers-widen))
+           (heading-regexp (concat "^\\(?:" page-delimiter "\\)"))
+           (heading-alist (bound-and-true-p outline-heading-alist))
+           (level-fun (or (bound-and-true-p outline-level)
+                          (lambda () ;; as in the default from outline.el
+                            (or (cdr (assoc (match-string 0) heading-alist))
+                                (- (match-end 0) (match-beginning 0))))))
+           (buffer (current-buffer))
+           candidates)
+      (save-excursion
+        (goto-char (point-min))
+        (while (save-excursion
+                 (if-let (fun (bound-and-true-p outline-search-function))
+                     (funcall fun)
+                   (re-search-forward heading-regexp nil t)))
+          (cl-incf line (consult--count-lines (match-beginning 0)))
+          (push (consult--location-candidate
+                 (save-excursion
+                   (forward-line)
+                   (consult--buffer-substring (pos-bol) (pos-eol) 'fontify))
+                 (cons buffer (point)) (1- line) (1- line)
+                 'consult--outline-level (funcall level-fun))
+                candidates)
+          (goto-char (1+ (pos-eol)))))
+      (unless candidates
+        (user-error "No headings"))
+      (nreverse candidates)))
+
+  (defun consult-page (&optional level)
+    "Jump to a page."
+    (interactive
+     (list (and current-prefix-arg (prefix-numeric-value current-prefix-arg))))
+    (let* ((candidates (consult--slow-operation
+                           "Collecting headings..."
+                         (consult--page-candidates)))
+           (min-level (- (cl-loop for cand in candidates minimize
+                                  (get-text-property 0 'consult--outline-level cand))
+                         ?1))
+           (narrow-pred (lambda (cand)
+                          (<= (get-text-property 0 'consult--outline-level cand)
+                              (+ consult--narrow min-level))))
+           (narrow-keys (mapcar (lambda (c) (cons c (format "Level %c" c)))
+                                (number-sequence ?1 ?9)))
+           (narrow-init (and level (max ?1 (min ?9 (+ level ?0))))))
+      (consult--read
+       candidates
+       :prompt "Go to heading: "
+       :annotate (consult--line-prefix)
+       :category 'consult-location
+       :sort nil
+       :require-match t
+       :lookup #'consult--line-match
+       :narrow `(:predicate ,narrow-pred :keys ,narrow-keys :initial ,narrow-init)
+       :history '(:input consult--line-history)
+       :add-history (thing-at-point 'symbol)
+       :state (consult--location-state candidates))))
 
   (with-eval-after-load 'projectile
     (setq consult-project-function (lambda (_) (projectile-project-root))))
@@ -2435,6 +2497,7 @@ see command `isearch-forward' for more information."
 ;;;; page-break-lines
 
 (elpaca page-break-lines
+  (setq page-break-lines-max-width 20)
   (global-page-break-lines-mode)
   (with-eval-after-load 'diminish
     (diminish 'page-break-lines-mode)))
