@@ -625,17 +625,16 @@ see command `isearch-forward' for more information."
 
   (defun slime-setup-embark ()
     (require 'embark)
-    (setq-local
-     embark-expression-map (define-keymap
-                             :parent embark-expression-map
-                             "RET" 'slime-interactive-eval)
-     embark-defun-map (define-keymap
-                        :parent embark-defun-map
-                        "RET" 'slime-eval-defun)
-     embark-identifier-map (define-keymap
-                             :parent embark-identifier-map
-                             "RET" 'slime-edit-definition
-                             "M-RET" 'slime-hyperdoc-lookup)))
+    (setq-local embark-expression-map (define-keymap
+                                        :parent embark-expression-map
+                                        "RET" 'slime-interactive-eval)
+                embark-defun-map (define-keymap
+                                   :parent embark-defun-map
+                                   "RET" 'slime-eval-defun)
+                embark-identifier-map (define-keymap
+                                        :parent embark-identifier-map
+                                        "RET" 'slime-edit-definition
+                                        "M-RET" 'slime-hyperdoc-lookup)))
   (add-hook 'slime-mode-hook #'slime-setup-embark)
   (add-hook 'slime-repl-mode-hook #'slime-setup-embark)
 
@@ -1648,9 +1647,19 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-location-map)
   (defvar-keymap embark-consult-grep-map)
 
+  (defun david-forward-page ()
+    (interactive)
+    (forward-page)
+    (recenter 0 t))
+
+  (defun david-backward-page ()
+    (interactive)
+    (backward-page)
+    (recenter 0 t))
+  
   (defvar-keymap embark-page-map
-    "RET" 'forward-page
-    "M-RET" 'backward-page
+    "RET" 'david-forward-page
+    "M-RET" 'david-backward-page
     "n" 'narrow-to-page
     "m" 'mark-page)
 
@@ -2510,7 +2519,7 @@ see command `isearch-forward' for more information."
 ;;;; page-break-lines
 
 (elpaca page-break-lines
-  (setq page-break-lines-max-width 20)
+  (setq page-break-lines-max-width 72)
   (global-page-break-lines-mode)
   (with-eval-after-load 'diminish
     (diminish 'page-break-lines-mode)))
