@@ -61,7 +61,6 @@
       pulse-iterations 16
       xref-history-storage 'xref-window-local-history
       xref-prompt-for-identifier nil
-      view-read-only t
       set-mark-command-repeat-pop t
       read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
@@ -133,9 +132,9 @@
 (keymap-global-set "M-F"           'other-frame-prefix)
 (keymap-global-set "C-S-w"         'delete-region)
 (keymap-global-set "C-S-o"         'other-window)
+(keymap-global-set "<f2>"          'other-window)
 (put 'other-window 'repeat-map nil)
 
-(keymap-set text-mode-map "M-TAB" #'completion-at-point)
 (keymap-set help-map "M-k" #'describe-keymap)
 
 (define-keymap
@@ -197,6 +196,29 @@
     'split-window-vertically))
 
 (find-function-setup-keys)
+
+(defun david-dwim-page ()
+  (interactive)
+  (if (eolp)
+      (forward-page)
+    (backward-page)
+    (beginning-of-line))
+  (recenter 0 t))
+
+(defun david-forward-page ()
+  (interactive)
+  (forward-page)
+  (recenter 0 t))
+
+(defun david-backward-page ()
+  (interactive)
+  (backward-page)
+  (recenter 0 t))
+
+
+;;;; view-mode
+
+(setq view-read-only t)
 
 
 ;;;; outline-minor-mode
@@ -1275,13 +1297,16 @@ see command `isearch-forward' for more information."
 
   (set-default-conn-state '("COMMIT_EDITMSG.*") 'emacs-state)
   (put 'emacs-state :conn-ephemeral-marks t)
-  (add-hook 'view-mode-on-hook 'emacs-state)
-  (add-hook 'view-mode-off-hook 'conn-pop-state)
 
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
 
   (keymap-set conn-buffer-map "D" 'toggle-window-dedicated)
+
+  (define-keymap
+    :keymap view-state-map
+    "i" 'david-backward-page
+    "k" 'david-forward-page)
 
   (define-keymap
     :keymap global-map
@@ -1716,24 +1741,6 @@ see command `isearch-forward' for more information."
 
   (defvar-keymap embark-consult-location-map)
   (defvar-keymap embark-consult-grep-map)
-
-  (defun david-dwim-page ()
-    (interactive)
-    (if (eolp)
-        (forward-page)
-      (backward-page)
-      (beginning-of-line))
-    (recenter 0 t))
-
-  (defun david-forward-page ()
-    (interactive)
-    (forward-page)
-    (recenter 0 t))
-  
-  (defun david-backward-page ()
-    (interactive)
-    (backward-page)
-    (recenter 0 t))
 
   (defvar-keymap embark-page-map
     "RET" 'david-dwim-page
