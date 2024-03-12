@@ -1305,8 +1305,8 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap view-state-map
-    "i" 'david-backward-page
-    "k" 'david-forward-page)
+    "<remap> <backward-page>" 'david-backward-page
+    "<remap> <forward-page>" 'david-forward-page)
 
   (define-keymap
     :keymap global-map
