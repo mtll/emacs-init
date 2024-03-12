@@ -48,7 +48,8 @@
 
 ;;;; emacs
 
-(setq fill-column 72
+(setq scroll-preserve-screen-position t
+      fill-column 72
       use-short-answers t
       y-or-n-p-use-read-key t
       xref-search-program 'ripgrep
@@ -464,7 +465,7 @@ see command `isearch-forward' for more information."
 (keymap-global-set "C-c L" 'outline-minor-mode)
 (with-eval-after-load 'outline
   (with-eval-after-load 'diminish
-    (diminish 'outline-minor-mode)))
+    (diminish 'outline-minor-mode " OL")))
 
 
 ;;;; dired
@@ -1198,10 +1199,10 @@ see command `isearch-forward' for more information."
 
 ;;;; info+
 
-;; (elpaca (info+ :host github
-;;                   :repo "emacsmirror/info-plus"
-;;                   :main "info+.el")
-;;   (run-with-timer 1 nil (lambda () (require 'info+))))
+(elpaca (info+ :host github
+                  :repo "emacsmirror/info-plus"
+                  :main "info+.el")
+  (run-with-timer 1 nil (lambda () (require 'info+))))
 
 
 ;;;; isearch+
@@ -1716,17 +1717,26 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-location-map)
   (defvar-keymap embark-consult-grep-map)
 
+  (defun david-dwim-page ()
+    (interactive)
+    (if (eolp)
+        (forward-page)
+      (backward-page)
+      (beginning-of-line))
+    (recenter 0 t))
+
   (defun david-forward-page ()
     (interactive)
     (forward-page)
     (recenter 0 t))
-
+  
   (defun david-backward-page ()
     (interactive)
     (backward-page)
     (recenter 0 t))
 
   (defvar-keymap embark-page-map
+    "RET" 'david-dwim-page
     "n" 'david-forward-page
     "p" 'david-backward-page
     "o" 'narrow-to-page
