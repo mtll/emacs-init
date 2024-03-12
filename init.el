@@ -1685,8 +1685,10 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-state-map "e" #'embark-dwim)
-    ;; (keymap-set conn-state-map "M-TAB" #'embark-alt-dwim)
-    (keymap-set conn-state-map "TAB" #'embark-act))
+    (keymap-set conn-state-map "M-TAB" #'embark-alt-dwim)
+    (keymap-set conn-state-map "M-<tab>" #'embark-alt-dwim)
+    (keymap-set conn-state-map "TAB" #'embark-act)
+    (keymap-set conn-state-map "<tab>" #'embark-act))
 
   (with-eval-after-load 'embark
     (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
@@ -1785,12 +1787,13 @@ see command `isearch-forward' for more information."
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
 
-    (defun david-embark-find-definition (identifier &optional arg)
-      (interactive "sSymbol: \nP")
-      (pcase arg
-        ('nil (xref-find-definitions identifier))
-        ('(4) (xref-find-definitions-other-window identifier))
-        (_    (xref-find-definitions-other-frame identifier))))
+    (defun david-embark-find-definition (_)
+      (let ((arg current-prefix-arg)
+            current-prefix-arg)
+        (pcase arg
+          ('nil (call-interactively #'xref-find-definitions))
+          ('(4) (call-interactively #'xref-find-definitions-other-window))
+          (_    (call-interactively #'xref-find-definitions-other-frame)))))
     (keymap-set embark-identifier-map "RET" 'david-embark-find-definition)
     (keymap-set embark-symbol-map "RET" 'david-embark-find-definition)
 
@@ -1979,21 +1982,25 @@ see command `isearch-forward' for more information."
 (elpaca orderless
   (setq orderless-affix-dispatch-alist '((?^ . orderless-not)
                                          (?, . orderless-regexp)
+                                         (?\= . orderless-literal)
                                          (?! . orderless-without-literal)
-                                         (?@ . orderless-annotation)
                                          (?. . orderless-initialism)
-                                         (?/ . orderless-flex))
+                                         ;; (?/ . orderless-flex)
+                                         )
         completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal)
-        orderless-style-dispatchers '(flex-first-if-completing
-                                      orderless-kwd-dispatch
-                                      orderless-affix-dispatch)
+        orderless-style-dispatchers '(orderless-kwd-dispatch
+                                      orderless-affix-dispatch
+                                      flex-first)
         completion-category-overrides '((file (styles basic partial-completion)))
         orderless-component-separator #'orderless-escapable-split-on-space)
 
   (defun flex-first-if-completing (pattern index _total)
     (when (and (= index 0) completion-in-region-mode)
       `(orderless-flex . ,pattern)))
+
+  (defun flex-first (pattern index _total)
+    (when (= index 0) `(orderless-flex . ,pattern)))
 
   (defun orderless-toggle-smart-case ()
     (interactive)
@@ -2761,3 +2768,14 @@ see command `isearch-forward' for more information."
    (lambda ()
      (global-diff-hl-mode 1)
      (add-hook 'dired-mode-hook #'diff-hl-dired-mode))))
+
+;;;; teco
+
+;; (elpaca teco)
+
+;;;; dumb-jump
+
+(elpaca dumb-jump
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  (with-eval-after-load 'xref
+    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)))
