@@ -2,365 +2,366 @@
 
 ;;; Elpaca
 
-(progn
-  ;; (setq elpaca-core-date
-  ;;       (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
-  (defvar elpaca-installer-version 0.7)
-  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                                :ref nil :depth 1
-                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                                :build (:not elpaca--activate-package)))
-  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-         (build (expand-file-name "elpaca/" elpaca-builds-directory))
-         (order (cdr elpaca-order))
-         (default-directory repo))
-    (add-to-list 'load-path (if (file-exists-p build) build repo))
-    (unless (file-exists-p repo)
-      (make-directory repo t)
-      (when (< emacs-major-version 28) (require 'subr-x))
-      (condition-case-unless-debug err
-          (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                   ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                   ,@(when-let ((depth (plist-get order :depth)))
-                                                       (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                   ,(plist-get order :repo) ,repo))))
-                   ((zerop (call-process "git" nil buffer t "checkout"
-                                         (or (plist-get order :ref) "--"))))
-                   (emacs (concat invocation-directory invocation-name))
-                   ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                         "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                   ((require 'elpaca))
-                   ((elpaca-generate-autoloads "elpaca" repo)))
-              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-            (error "%s" (with-current-buffer buffer (buffer-string))))
-        ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-    (unless (require 'elpaca-autoloads nil t)
-      (require 'elpaca)
-      (elpaca-generate-autoloads "elpaca" repo)
-      (load "./elpaca-autoloads")))
-  (add-hook 'after-init-hook #'elpaca-process-queues)
-  (elpaca `(,@elpaca-order)))
+;; (setq elpaca-core-date
+;;       (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
+(defvar elpaca-installer-version 0.7)
+(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                              :ref nil :depth 1
+                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                              :build (:not elpaca--activate-package)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+       (build (expand-file-name "elpaca/" elpaca-builds-directory))
+       (order (cdr elpaca-order))
+       (default-directory repo))
+  (add-to-list 'load-path (if (file-exists-p build) build repo))
+  (unless (file-exists-p repo)
+    (make-directory repo t)
+    (when (< emacs-major-version 28) (require 'subr-x))
+    (condition-case-unless-debug err
+        (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                 ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                 ,@(when-let ((depth (plist-get order :depth)))
+                                                     (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                 ,(plist-get order :repo) ,repo))))
+                 ((zerop (call-process "git" nil buffer t "checkout"
+                                       (or (plist-get order :ref) "--"))))
+                 (emacs (concat invocation-directory invocation-name))
+                 ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                       "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                 ((require 'elpaca))
+                 ((elpaca-generate-autoloads "elpaca" repo)))
+            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+          (error "%s" (with-current-buffer buffer (buffer-string))))
+      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+  (unless (require 'elpaca-autoloads nil t)
+    (require 'elpaca)
+    (elpaca-generate-autoloads "elpaca" repo)
+    (load "./elpaca-autoloads")))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
 
 
 ;;; Built-in
 
 ;;;; emacs
 
-(progn
-  (setq fill-column 72
-        use-short-answers t
-        y-or-n-p-use-read-key t
-        xref-search-program 'ripgrep
-        read-process-output-max (* 1024 1024)
-        scroll-error-top-bottom t
-        browse-url-browser-function 'browse-url-generic
-        browse-url-generic-program "firefox"
-        delete-by-moving-to-trash t
-        pulse-iterations 16
-        xref-history-storage 'xref-window-local-history
-        xref-prompt-for-identifier nil
-        view-read-only t
-        set-mark-command-repeat-pop t
-        read-file-name-completion-ignore-case t
-        read-buffer-completion-ignore-case t
-        translate-upper-case-key-bindings nil
-        show-paren-context-when-offscreen 'child-frame
-        sentence-end-double-space nil
-        tab-always-indent 'complete
-        read-minibuffer-restore-windows nil
-        dired-listing-switches "-alFh --dired --group-directories-first"
-        isearch-lazy-count t
-        isearch-yank-on-move 'shift
-        enable-recursive-minibuffers t
-        ediff-split-window-function #'ediff-split-fn
-        uniquify-buffer-name-style 'post-forward
-        uniquify-separator " | "
-        uniquify-after-kill-buffer-p t
-        uniquify-ignore-buffers-re "^\\*"
-        global-mark-ring-max 32
-        mark-ring-max 32
-        undo-limit 8000000
-        undo-strong-limit 16000000
-        undo-outer-limit 32000000
-        read-process-output-max (ash 1 18)
-        mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
-                                         ((meta))
-                                         ((control meta) . global-text-scale)
-                                         ((control) . text-scale))
-        mouse-wheel-progressive-speed nil
-        register-separator ?+
-        history-delete-duplicates t
-        disabled-command-function nil
-        switch-to-buffer-obey-display-actions t
-        resize-mini-windows 'grow-only
-        minibuffer-prompt-properties '(read-only t
-                                                 cursor-intangible t
-                                                 face minibuffer-prompt)
-        exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
-        edebug-inhibit-emacs-lisp-mode-bindings t
-        bidi-inhibit-bpa t)
+(setq fill-column 72
+      use-short-answers t
+      y-or-n-p-use-read-key t
+      xref-search-program 'ripgrep
+      read-process-output-max (* 1024 1024)
+      scroll-error-top-bottom t
+      browse-url-browser-function 'browse-url-generic
+      browse-url-generic-program "firefox"
+      delete-by-moving-to-trash t
+      pulse-iterations 16
+      xref-history-storage 'xref-window-local-history
+      xref-prompt-for-identifier nil
+      view-read-only t
+      set-mark-command-repeat-pop t
+      read-file-name-completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      translate-upper-case-key-bindings nil
+      show-paren-context-when-offscreen 'child-frame
+      sentence-end-double-space nil
+      tab-always-indent 'complete
+      read-minibuffer-restore-windows nil
+      dired-listing-switches "-alFh --dired --group-directories-first"
+      enable-recursive-minibuffers t
+      ediff-split-window-function #'ediff-split-fn
+      uniquify-buffer-name-style 'post-forward
+      uniquify-separator " | "
+      uniquify-after-kill-buffer-p t
+      uniquify-ignore-buffers-re "^\\*"
+      global-mark-ring-max 32
+      mark-ring-max 32
+      undo-limit 8000000
+      undo-strong-limit 16000000
+      undo-outer-limit 32000000
+      read-process-output-max (ash 1 18)
+      mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
+                                       ((meta))
+                                       ((control meta) . global-text-scale)
+                                       ((control) . text-scale))
+      mouse-wheel-progressive-speed nil
+      register-separator ?+
+      history-delete-duplicates t
+      disabled-command-function nil
+      switch-to-buffer-obey-display-actions t
+      resize-mini-windows 'grow-only
+      minibuffer-prompt-properties '(read-only t
+                                               cursor-intangible t
+                                               face minibuffer-prompt)
+      exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
+      edebug-inhibit-emacs-lisp-mode-bindings t
+      bidi-inhibit-bpa t)
 
-  (setq-default indent-tabs-mode nil)
+(setq-default indent-tabs-mode nil)
 
-  (minibuffer-depth-indicate-mode 1)
-  (global-goto-address-mode 1)
-  (show-paren-mode 1)
-  (delete-selection-mode 1)
-  (column-number-mode 1)
-  (line-number-mode 1)
-  (electric-pair-mode 1)
-  (undelete-frame-mode 1)
-  (context-menu-mode 1)
+(minibuffer-depth-indicate-mode 1)
+(global-goto-address-mode 1)
+(show-paren-mode 1)
+(delete-selection-mode 1)
+(column-number-mode 1)
+(line-number-mode 1)
+(electric-pair-mode 1)
+(undelete-frame-mode 1)
+(context-menu-mode 1)
 
-  (define-key global-map [remap yank] 'yank-in-context)
+(define-key global-map [remap yank] 'yank-in-context)
 
-  (keymap-global-unset "C-x C-c")
-  (keymap-global-unset "C-z")
-  (keymap-global-unset "C-x C-z")
+(keymap-global-unset "C-x C-c")
+(keymap-global-unset "C-z")
+(keymap-global-unset "C-x C-z")
 
-  (keymap-global-set "S-<backspace>" 'cycle-spacing)
-  (keymap-global-set "C-|"           'indent-relative)
-  (keymap-global-set "M-N"           'tab-bar-switch-to-next-tab)
-  (keymap-global-set "M-P"           'tab-bar-switch-to-prev-tab)
-  (keymap-global-set "C-:"           'read-only-mode)
-  (keymap-global-set "C-c e"         'eshell)
-  (keymap-global-set "C-x C-b"       'ibuffer)
-  (keymap-global-set "C-o"           goto-map)
-  (keymap-global-set "M-o"           'open-line)
-  (keymap-global-set "M-;"           'comment-line)
-  (keymap-global-set "C-c c"         'compile)
-  (keymap-global-set "M-W"           'other-window-prefix)
-  (keymap-global-set "M-F"           'other-frame-prefix)
-  (keymap-global-set "C-S-w"         'delete-region)
-  (keymap-global-set "C-S-o"         'other-window)
-  (put 'other-window 'repeat-map nil)
+(keymap-global-set "S-<backspace>" 'cycle-spacing)
+(keymap-global-set "C-|"           'indent-relative)
+(keymap-global-set "M-N"           'tab-bar-switch-to-next-tab)
+(keymap-global-set "M-P"           'tab-bar-switch-to-prev-tab)
+(keymap-global-set "C-:"           'read-only-mode)
+(keymap-global-set "C-c e"         'eshell)
+(keymap-global-set "C-x C-b"       'ibuffer)
+(keymap-global-set "C-o"           goto-map)
+(keymap-global-set "M-o"           'open-line)
+(keymap-global-set "M-;"           'comment-line)
+(keymap-global-set "C-c c"         'compile)
+(keymap-global-set "M-W"           'other-window-prefix)
+(keymap-global-set "M-F"           'other-frame-prefix)
+(keymap-global-set "C-S-w"         'delete-region)
+(keymap-global-set "C-S-o"         'other-window)
+(put 'other-window 'repeat-map nil)
 
-  (keymap-set text-mode-map "M-TAB" #'completion-at-point)
-  (keymap-set help-map "M-k" #'describe-keymap)
+(keymap-set text-mode-map "M-TAB" #'completion-at-point)
+(keymap-set help-map "M-k" #'describe-keymap)
 
-  (define-keymap
-    :keymap goto-map
-    "," 'xref-go-back
-    "." 'xref-go-forward)
+(define-keymap
+  :keymap goto-map
+  "," 'xref-go-back
+  "." 'xref-go-forward)
 
-  (defvar-keymap xref-go-back-repeat-map
-    :repeat t
-    "," 'xref-go-back
-    "." 'xref-go-forward)
+(defvar-keymap xref-go-back-repeat-map
+  :repeat t
+  "," 'xref-go-back
+  "." 'xref-go-forward)
 
-  (define-keymap
-    :keymap ctl-x-map
-    "s"   'save-buffer
-    "C-s" 'save-some-buffers
-    "f"   'find-file
-    "C-f" 'set-fill-column)
+(define-keymap
+  :keymap ctl-x-map
+  "s"   'save-buffer
+  "C-s" 'save-some-buffers
+  "f"   'find-file
+  "C-f" 'set-fill-column)
 
-  (define-keymap
-    :keymap window-prefix-map
-    "t" 'tab-detach
-    "f" 'tear-off-window)
+(define-keymap
+  :keymap window-prefix-map
+  "t" 'tab-detach
+  "f" 'tear-off-window)
 
-  (define-keymap
-    :keymap emacs-lisp-mode-map
-    "C-c C-z" 'eval-buffer
-    "C-c C-m" 'emacs-lisp-macroexpand
-    "C-c C-e" 'eval-print-last-sexp
-    "C-c C-f" 'find-function
-    "C-c C-l" 'pp-eval-last-sexp
-    "C-c C-r" 'eval-region)
+(define-keymap
+  :keymap emacs-lisp-mode-map
+  "C-c C-z" 'eval-buffer
+  "C-c C-m" 'emacs-lisp-macroexpand
+  "C-c C-e" 'eval-print-last-sexp
+  "C-c C-f" 'find-function
+  "C-c C-l" 'pp-eval-last-sexp
+  "C-c C-r" 'eval-region)
 
-  (defun kill-frame-and-buffer ()
-    (interactive)
-    (when-let ((buf (window-buffer (frame-root-window))))
-      (kill-buffer buf))
-    (delete-frame))
-  (keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
+(defun kill-frame-and-buffer ()
+  (interactive)
+  (when-let ((buf (window-buffer (frame-root-window))))
+    (kill-buffer buf))
+  (delete-frame))
+(keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
 
-  (defun disable-minibuffer-max-height (fn &rest args)
-    (let ((max-mini-window-height 1.0))
-      (apply fn args)))
+(defun disable-minibuffer-max-height (fn &rest args)
+  (let ((max-mini-window-height 1.0))
+    (apply fn args)))
 
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                   crm-separator)
-                  (car args))
-          (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+(advice-add #'completing-read-multiple :filter-args #'crm-indicator)
 
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
-  (defun ediff-split-fn ()
-    (if (> (frame-width) 150)
-        'split-window-horizontally
-      'split-window-vertically))
+(defun ediff-split-fn ()
+  (if (> (frame-width) 150)
+      'split-window-horizontally
+    'split-window-vertically))
 
-  (find-function-setup-keys))
+(find-function-setup-keys)
 
+
 ;;;; outline-minor-mode
 
-(progn
-  (add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
+(add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
 
-  (with-eval-after-load 'outline
-    (defun narrow-to-heading ()
-      (interactive)
-      (save-mark-and-excursion
-        (outline-mark-subtree)
-        ;; Must be called interactively if we want zones.el to add it.
-        (funcall-interactively #'narrow-to-region (region-beginning) (region-end))))
-    (keymap-set outline-minor-mode-map "C-x n h" #'narrow-to-heading)))
+(with-eval-after-load 'outline
+  (defun narrow-to-heading ()
+    (interactive)
+    (save-mark-and-excursion
+      (outline-mark-subtree)
+      ;; Must be called interactively if we want zones.el to add it.
+      (funcall-interactively #'narrow-to-region (region-beginning) (region-end))))
+  (keymap-set outline-minor-mode-map "C-x n h" #'narrow-to-heading))
 
+
 ;;;; line numbers
 
-(progn
-  (require 'display-line-numbers)
-  (setq display-line-numbers-type 'visual
-        display-line-numbers-current-absolute nil)
+(require 'display-line-numbers)
+(setq display-line-numbers-type 'visual
+      display-line-numbers-current-absolute nil)
 
-  (add-hook 'prog-mode-hook #'display-line-numbers-mode)
-  (add-hook 'text-mode-hook #'display-line-numbers-mode)
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(add-hook 'text-mode-hook #'display-line-numbers-mode)
 
-  (defun line-numbers-in-selected-window-configuration-change ()
-    (walk-windows
-     (lambda (win)
-       (when (buffer-local-value 'display-line-numbers-mode (window-buffer win))
-         (setf (buffer-local-value 'display-line-numbers (window-buffer win))
-               (and (eq (window-buffer win)
-                        (window-buffer (selected-window)))
-                    display-line-numbers-type))))
-     -1))
-  (add-hook 'window-configuration-change-hook
-            #'line-numbers-in-selected-window-configuration-change)
+(defun line-numbers-in-selected-window-configuration-change ()
+  (walk-windows
+   (lambda (win)
+     (when (buffer-local-value 'display-line-numbers-mode (window-buffer win))
+       (setf (buffer-local-value 'display-line-numbers (window-buffer win))
+             (and (eq (window-buffer win)
+                      (window-buffer (selected-window)))
+                  display-line-numbers-type))))
+   -1))
+(add-hook 'window-configuration-change-hook
+          #'line-numbers-in-selected-window-configuration-change)
 
-  (defun line-numbers-in-selected-selection-change (frame)
-    (with-selected-frame frame (line-numbers-in-selected-window-configuration-change)))
-  (add-hook 'window-selection-change-functions #'line-numbers-in-selected-selection-change))
+(defun line-numbers-in-selected-selection-change (frame)
+  (with-selected-frame frame (line-numbers-in-selected-window-configuration-change)))
+(add-hook 'window-selection-change-functions #'line-numbers-in-selected-selection-change)
 
+
 ;;;; dictionary
 
-(progn
-  (require 'dictionary)
-  (setq dictionary-server "localhost")
-  (keymap-global-set "C-c d" #'dictionary-lookup-definition))
+(require 'dictionary)
+(setq dictionary-server "localhost")
+(keymap-global-set "C-c d" #'dictionary-lookup-definition)
 
+
 ;;;; isearch
 
-(progn
-  (defun isearch-kill-region (&optional arg)
-    (interactive "P")
-    (isearch-done)
-    (if arg
-        (delete-region (region-beginning) (region-end))
-      (kill-region (region-beginning) (region-end))))
-  (keymap-set isearch-mode-map "C-w" 'isearch-kill-region)
+(setq isearch-lazy-count t)
 
-  (defun isearch-escapable-split-on-char (string char)
-    "Split STRING on CHAR, which can be escaped with backslash."
-    (let ((quoted (concat "\\" char)))
-      (mapcar
-       (lambda (piece) (replace-regexp-in-string (string 0) char piece))
-       (split-string (replace-regexp-in-string
-                      (concat "\\\\\\" (substring quoted 0 (1- (length quoted)))
-                              "\\|\\\\" quoted)
-                      (lambda (x) (if (equal x quoted) (string 0) x))
-                      string 'fixedcase 'literal)
-                     (concat quoted "+")))))
+(defun isearch-kill-region (&optional arg)
+  (interactive "P")
+  (isearch-done)
+  (if arg
+      (delete-region (region-beginning) (region-end))
+    (kill-region (region-beginning) (region-end))))
+(keymap-set isearch-mode-map "C-w" 'isearch-kill-region)
 
-  (defun isearch-wildcards-compile (string &optional lax)
-    (string-join
-     (mapcar (lambda (string)
-               (string-join
-                (mapcar (lambda (string)
-                          (string-join
-                           (mapcar (lambda (string)
-                                     (regexp-quote string))
-                                   (isearch-escapable-split-on-char string "*"))
-                           ".+?"))
-                        (isearch-escapable-split-on-char string "-"))
-                "[^ \t\n\r\v\f]+"))
-             (isearch-escapable-split-on-char string " "))
-     search-whitespace-regexp))
+(defun isearch-escapable-split-on-char (string char)
+  "Split STRING on CHAR, which can be escaped with backslash."
+  (let ((quoted (concat "\\" char)))
+    (mapcar
+     (lambda (piece) (replace-regexp-in-string (string 0) char piece))
+     (split-string (replace-regexp-in-string
+                    (concat "\\\\\\" (substring quoted 0 (1- (length quoted)))
+                            "\\|\\\\" quoted)
+                    (lambda (x) (if (equal x quoted) (string 0) x))
+                    string 'fixedcase 'literal)
+                   (concat quoted "+")))))
 
-  (isearch-define-mode-toggle wildcards "*" isearch-wildcards-compile "\
+(defun isearch-wildcards-compile (string &optional lax)
+  (string-join
+   (mapcar (lambda (string)
+             (string-join
+              (mapcar (lambda (string)
+                        (string-join
+                         (mapcar (lambda (string)
+                                   (regexp-quote string))
+                                 (isearch-escapable-split-on-char string "*"))
+                         ".+?"))
+                      (isearch-escapable-split-on-char string "-"))
+              "[^ \t\n\r\v\f]+"))
+           (isearch-escapable-split-on-char string " "))
+   search-whitespace-regexp))
+
+(isearch-define-mode-toggle wildcards "*" isearch-wildcards-compile "\
 Turning on wildcards turns off regexp mode.")
-  (put 'isearch-wildcards-compile 'isearch-message-prefix
-       (propertize "Wildcard " 'face 'minibuffer-prompt))
+(put 'isearch-wildcards-compile 'isearch-message-prefix
+     (propertize "Wildcard " 'face 'minibuffer-prompt))
 
-  (with-eval-after-load 'isearch+
-    (defun isearch-forward-wildcard (&optional arg no-recursive-edit)
-      "Do incremental search forward.
+(with-eval-after-load 'isearch+
+  (defun isearch-forward-wildcard (&optional arg no-recursive-edit)
+    "Do incremental search forward.
 See command `isearch-forward' for more information."
-      (interactive "P\np")
-      (let ((numarg  (prefix-numeric-value arg)))
-        (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-               (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-              ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-               (call-interactively #'multi-isearch-buffers))
-              (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
-                               #'isearch-wildcards-compile)))))
-    (define-key global-map [remap isearch-forward] 'isearch-forward-wildcard)
+    (interactive "P\np")
+    (let ((numarg  (prefix-numeric-value arg)))
+      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+             (call-interactively #'multi-isearch-buffers))
+            (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
+                             #'isearch-wildcards-compile)))))
+  (define-key global-map [remap isearch-forward] 'isearch-forward-wildcard)
 
-    (defun isearch-backward-wildcard (&optional arg no-recursive-edit)
-      "do incremental search backward.
+  (defun isearch-backward-wildcard (&optional arg no-recursive-edit)
+    "do incremental search backward.
 see command `isearch-forward' for more information."
-      (interactive "p\np")
-      (let ((numarg  (prefix-numeric-value arg)))
-        (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-               (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-              ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-               (call-interactively #'multi-isearch-buffers))
-              (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
-                               #'isearch-wildcards-compile)))))
-    (define-key global-map [remap isearch-backward] 'isearch-backward-wildcard))
+    (interactive "p\np")
+    (let ((numarg  (prefix-numeric-value arg)))
+      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+             (call-interactively #'multi-isearch-buffers))
+            (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
+                             #'isearch-wildcards-compile)))))
+  (define-key global-map [remap isearch-backward] 'isearch-backward-wildcard))
 
-  (defun isearch-repeat-direction ()
-    (interactive)
-    (if isearch-forward
-        (isearch-repeat-forward)
-      (isearch-repeat-backward)))
-  (keymap-set isearch-mode-map "TAB" 'isearch-repeat-direction)
+(defun isearch-repeat-direction ()
+  (interactive)
+  (if isearch-forward
+      (isearch-repeat-forward)
+    (isearch-repeat-backward)))
+(keymap-set isearch-mode-map "TAB" 'isearch-repeat-direction)
+(keymap-set isearch-mode-map "<tab>" 'isearch-repeat-direction)
 
-  (defun isearch-change-direction ()
-    (interactive)
-    (if isearch-forward
-        (isearch-repeat-backward)
-      (isearch-repeat-forward)))
-  (keymap-set isearch-mode-map "M-TAB" 'isearch-change-direction))
+(defun isearch-change-direction ()
+  (interactive)
+  (if isearch-forward
+      (isearch-repeat-backward)
+    (isearch-repeat-forward)))
+(keymap-set isearch-mode-map "M-TAB" 'isearch-change-direction)
+(keymap-set isearch-mode-map "M-<tab>" 'isearch-change-direction)
 
+
 ;;;; tab-bar-mode
 
-(progn
-  (setq tab-bar-show nil
-        tab-bar-tab-name-function 'tab-bar-tab-name-all)
+(setq tab-bar-show nil
+      tab-bar-tab-name-function 'tab-bar-tab-name-all)
 
-  (tab-bar-mode 1)
-  (tab-bar-history-mode 1)
+(tab-bar-mode 1)
+(tab-bar-history-mode 1)
 
-  (with-eval-after-load 'conn-mode
-    (defvar-keymap tab-bar-history-mode-repeat-map
-      :repeat t
-      "/" 'tab-bar-history-forward
-      "?" 'tab-bar-history-back)
+(with-eval-after-load 'conn-mode
+  (defvar-keymap tab-bar-history-mode-repeat-map
+    :repeat t
+    "/" 'tab-bar-history-forward
+    "?" 'tab-bar-history-back)
 
-    (define-keymap
-      :keymap tab-bar-history-mode-map
-      "C-x 4 /" 'tab-bar-history-forward
-      "C-x 4 ?" 'tab-bar-history-back)))
+  (define-keymap
+    :keymap tab-bar-history-mode-map
+    "C-x 4 /" 'tab-bar-history-forward
+    "C-x 4 ?" 'tab-bar-history-back))
 
+
 ;;;; diary / calendar
 
-(progn
-  (keymap-global-set "<f5>" #'calendar)
-  (setq diary-entry-marker 'highlight
-        calendar-holiday-marker 'match)
-  (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
-  (add-hook 'list-diary-entries-hook 'sort-diary-entries t))
+(keymap-global-set "<f5>" #'calendar)
+(setq diary-entry-marker 'highlight
+      calendar-holiday-marker 'match)
+(add-hook 'calendar-today-visible-hook 'calendar-mark-today)
+(add-hook 'list-diary-entries-hook 'sort-diary-entries t)
 
+
 ;;;; cc-mode
 
 (with-eval-after-load 'cc-mode
@@ -378,60 +379,63 @@ see command `isearch-forward' for more information."
 
   (setq c-hanging-semi&comma-criteria 'set-from-style))
 
+
 ;;;; doc-view
 
 (setq doc-view-resolution 196)
 
+
 ;;;; ispell
 
-(progn
-  (if (executable-find "hunspell")
-      (setq ispell-program-name "hunspell")
-    (setq ispell-program-name "aspell"))
+(if (executable-find "hunspell")
+    (setq ispell-program-name "hunspell")
+  (setq ispell-program-name "aspell"))
 
-  (setq ispell-dictionary "american"))
+(setq ispell-dictionary "american")
 
+
 ;;;; savehist
 
-(progn
-  (with-eval-after-load 'no-littering
-    (require 'savehist)
+(with-eval-after-load 'no-littering
+  (require 'savehist)
 
-    (setq savehist-additional-variables '(projectile-project-command-history
-                                          search-ring
-                                          regexp-search-ring
-                                          register-alist)
-          savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
+  (setq savehist-additional-variables '(projectile-project-command-history
+                                        search-ring
+                                        regexp-search-ring
+                                        register-alist)
+        savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
 
-    (savehist-mode 1)))
+  (savehist-mode 1))
 
+
 ;;;; repeat
 
-(progn
-  (setq repeat-check-key t
-        repeat-exit-timeout nil
-        repeat-echo-function 'repeat-echo-message
-        repeat-keep-prefix nil
-        repeat-on-final-keystroke t)
+(setq repeat-check-key t
+      repeat-exit-timeout nil
+      repeat-echo-function 'repeat-echo-message
+      repeat-keep-prefix nil
+      repeat-on-final-keystroke t)
 
-  (repeat-mode 1)
+(repeat-mode 1)
 
-  (keymap-global-set "C-x c" 'repeat))
+(keymap-global-set "C-x c" 'repeat)
 
+
 ;;;; autorevert
 
-(progn
-  (setq auto-revert-interval .01)
-  (global-auto-revert-mode 1)
-  (with-eval-after-load 'diminish
-    (diminish 'auto-revert-mode)))
+(setq auto-revert-interval .01)
+(global-auto-revert-mode 1)
+(with-eval-after-load 'diminish
+  (diminish 'auto-revert-mode))
 
+
 ;;;; face-remap
 
 (with-eval-after-load 'face-remap
   (with-eval-after-load 'diminish
     (diminish 'buffer-face-mode)))
 
+
 ;;;; recentf
 
 (with-eval-after-load 'no-littering
@@ -454,14 +458,15 @@ see command `isearch-forward' for more information."
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
 
+
 ;;;; outline
 
-(progn
-  (keymap-global-set "C-c L" 'outline-minor-mode)
-  (with-eval-after-load 'outline
-    (with-eval-after-load 'diminish
-      (diminish 'outline-minor-mode))))
+(keymap-global-set "C-c L" 'outline-minor-mode)
+(with-eval-after-load 'outline
+  (with-eval-after-load 'diminish
+    (diminish 'outline-minor-mode)))
 
+
 ;;;; dired
 
 (with-eval-after-load 'dired
@@ -474,13 +479,13 @@ see command `isearch-forward' for more information."
     "/" 'other-window-prefix
     "?" 'other-frame-prefix))
 
+
 ;;;; eldoc
 
-(progn
-  (with-eval-after-load 'diminish
-    (diminish 'eldoc-mode))
+(with-eval-after-load 'diminish
+  (diminish 'eldoc-mode))
 
-  (setq eldoc-echo-area-prefer-doc-buffer t))
+(setq eldoc-echo-area-prefer-doc-buffer t)
 
 
 ;;; Packages
@@ -489,19 +494,23 @@ see command `isearch-forward' for more information."
 
 (elpaca treesit-auto)
 
+
 ;;;; persist
 
 (elpaca (persist :host github :repo "emacs-straight/persist"))
 
+
 ;;;; Compat
 
 (elpaca compat)
 
+
 ;;;; Diminish
 
 (elpaca diminish
   (diminish 'visual-line-mode))
 
+
 ;;;; benchmark-init
 
 ;; (elpaca benchmark-init
@@ -511,6 +520,7 @@ see command `isearch-forward' for more information."
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
 
+
 ;;;; narrow-indirect
 
 (elpaca (narrow-indirect :host github :repo "emacsmirror/narrow-indirect")
@@ -531,6 +541,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
     (keymap-set embark-page-map "N" 'ni-narrow-to-page-indirect-other-window)))
 
+
 ;;;; paredit
 
 (elpaca (paredit :host github :repo "emacsmirror/paredit")
@@ -609,6 +620,7 @@ see command `isearch-forward' for more information."
       (conn-add-thing-movement-command 'sexp 'paredit-forward-up)
       (conn-add-thing-movement-command 'sexp 'paredit-backward-up))))
 
+
 ;;;; slime
 
 (elpaca slime
@@ -664,6 +676,7 @@ see command `isearch-forward' for more information."
         (apply slime-eval args)))
     (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading)))
 
+
 ;;;; bqn-mode
 
 (elpaca (bqn-mode :host github :repo "museoa/bqn-mode")
@@ -671,27 +684,33 @@ see command `isearch-forward' for more information."
     (require 'bqn-keymap-mode)
     (require 'bqn-glyph-mode)))
 
+
 ;;;; cider
 
 (elpaca cider)
 
+
 ;;;; lua-mode
 
 (elpaca lua-mode)
 
+
 ;;;; go-mode
 
 (elpaca go-mode)
 
+
 ;;;; rustic
 
 (elpaca rustic
   (setq rustic-lsp-client 'lsp-mode))
 
+
 ;;;; erlang
 
 (elpaca erlang)
 
+
 ;;;; elixir-mode
 
 (elpaca elixir-mode)
@@ -702,6 +721,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'elixir-mode
     (require 'inf-elixir)))
 
+
 ;;;; lsp-mode
 
 (elpaca lsp-mode
@@ -764,10 +784,12 @@ see command `isearch-forward' for more information."
 
 (elpaca lsp-ui)
 
+
 ;;;; dap-mode
 
 (elpaca dap-mode)
 
+
 ;;;; j-mode
 
 (elpaca j-mode
@@ -775,19 +797,23 @@ see command `isearch-forward' for more information."
         (locate-file "j9.4/jconsole.sh" exec-path
                      nil #'file-executable-p)))
 
+
 ;;;; cmake-mode
 
 (elpaca cmake-mode)
 
+
 ;;;; zig-mode
 
 (elpaca zig-mode
   (setq zig-format-on-save nil))
 
+
 ;;;; ess
 
 (elpaca ess)
 
+
 ;;;; pdf-tools
 
 (elpaca pdf-tools
@@ -814,6 +840,7 @@ see command `isearch-forward' for more information."
 
 (elpaca hide-mode-line)
 
+
 ;;;; tex
 
 (elpaca (auctex :pre-build (("./autogen.sh")
@@ -821,6 +848,7 @@ see command `isearch-forward' for more information."
                              "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
                             ("make"))))
 
+
 ;;;; cdlatex
 
 (elpaca cdlatex
@@ -918,12 +946,14 @@ see command `isearch-forward' for more information."
           ( ?'  ("\\prime"))
           ( ?.  ("\\cdot")))))
 
+
 ;;;; math-delimiters
 
 (elpaca (math-delimiters :host github :repo "oantolin/math-delimiters")
   (with-eval-after-load 'org
     (keymap-set org-mode-map "S-SPC" 'math-delimiters-insert)))
 
+
 ;;;; org
 
 (elpaca org
@@ -978,6 +1008,7 @@ see command `isearch-forward' for more information."
 
     (org-link-set-parameters "mathematica" :follow #'mathematica-nb-jump)))
 
+
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
@@ -985,6 +1016,7 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'dtrt-indent-mode))))
 
+
 ;;;; exec-path-from-shell
 
 ;; (elpaca exec-path-from-shell
@@ -992,42 +1024,43 @@ see command `isearch-forward' for more information."
 ;;     (require 'exec-path-from-shell)
 ;;     (exec-path-from-shell-initialize)))
 
+
 ;;;; modus-themes
 
-(progn
-  (when (< emacs-major-version 30)
-    (elpaca modus-themes
-      (run-with-timer 0.33 nil (lambda () (require 'modus-themes)))
+(when (< emacs-major-version 30)
+  (elpaca modus-themes
+    (run-with-timer 0.33 nil (lambda () (require 'modus-themes)))
 
-      (with-eval-after-load 'modus-themes
-        (setq modus-themes-common-palette-overrides
-              (seq-concatenate
-               'list
-               `((bg-main "#f8f8f8")
-                 (cursor "#000000")
-                 (bg-region "#e1e1e1")
-                 (fg-region unspecified)
-                 (fg-completion-match-0 "#323c32")
-                 (bg-completion-match-0 "#caf1c9")
-                 (fg-completion-match-1 "#38333c")
-                 (bg-completion-match-1 "#e3cff1")
-                 (fg-completion-match-2 "#3c3333")
-                 (bg-completion-match-2 "#f1cccc")
-                 (fg-completion-match-3 "#343b3c")
-                 (bg-completion-match-3 "#d1eff1")
-                 (bg-search-lazy bg-magenta-subtle)
-                 (bg-search-current bg-yellow-intense))
-               modus-themes-preset-overrides-warmer))
+    (with-eval-after-load 'modus-themes
+      (setq modus-themes-common-palette-overrides
+            (seq-concatenate
+             'list
+             `((bg-main "#f8f8f8")
+               (cursor "#000000")
+               (bg-region "#e1e1e1")
+               (fg-region unspecified)
+               (fg-completion-match-0 "#323c32")
+               (bg-completion-match-0 "#caf1c9")
+               (fg-completion-match-1 "#38333c")
+               (bg-completion-match-1 "#e3cff1")
+               (fg-completion-match-2 "#3c3333")
+               (bg-completion-match-2 "#f1cccc")
+               (fg-completion-match-3 "#343b3c")
+               (bg-completion-match-3 "#d1eff1")
+               (bg-search-lazy bg-magenta-subtle)
+               (bg-search-current bg-yellow-intense))
+             modus-themes-preset-overrides-warmer))
 
-        (load-theme 'modus-operandi-tinted t))))
+      (load-theme 'modus-operandi-tinted t))))
 
-  (with-eval-after-load 'hi-lock
-    (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                                  "modus-themes-subtle-red"
-                                  "modus-themes-subtle-green"
-                                  "modus-themes-subtle-blue"
-                                  "modus-themes-subtle-yellow"))))
+(with-eval-after-load 'hi-lock
+  (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                                "modus-themes-subtle-red"
+                                "modus-themes-subtle-green"
+                                "modus-themes-subtle-blue"
+                                "modus-themes-subtle-yellow")))
 
+
 ;;;; no-littering
 
 (elpaca no-littering
@@ -1040,6 +1073,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'no-littering
     (no-littering-theme-backups)))
 
+
 ;;;; crux
 
 (elpaca crux
@@ -1061,6 +1095,7 @@ see command `isearch-forward' for more information."
       "RET" 'crux-cleanup-buffer-or-region
       "@"   'crux-insert-date)))
 
+
 ;;;; transpose-frame
 
 (elpaca transpose-frame
@@ -1086,6 +1121,7 @@ see command `isearch-forward' for more information."
               flip-frame
               transpose-frame)))))
 
+
 ;;;; popper
 
 (elpaca popper
@@ -1111,11 +1147,13 @@ see command `isearch-forward' for more information."
   (popper-mode 1)
   (popper-echo-mode 1))
 
+
 ;;;; posframe
 
 (when window-system
   (elpaca posframe))
 
+
 ;;;; ace-window
 
 (elpaca ace-window
@@ -1135,11 +1173,13 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn-mode
     (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
 
+
 ;;;; expand-region
 
 (elpaca expand-region
   (keymap-global-set "C-t" 'er/expand-region))
 
+
 ;;;; zones
 
 (elpaca zones
@@ -1155,6 +1195,7 @@ see command `isearch-forward' for more information."
     "/" 'zz-replace-string-zones
     "%" 'zz-map-query-replace-regexp-zones))
 
+
 ;;;; info+
 
 ;; (elpaca (info+ :host github
@@ -1162,6 +1203,7 @@ see command `isearch-forward' for more information."
 ;;                   :main "info+.el")
 ;;   (run-with-timer 1 nil (lambda () (require 'info+))))
 
+
 ;;;; isearch+
 
 (elpaca (isearch+ :host github
@@ -1194,12 +1236,13 @@ see command `isearch-forward' for more information."
     (keymap-set isearchp-filter-map "a" 'isearchp-add-filter-predicate)
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
-;;;; isearch-prop
+;;;;; isearch-prop
 
 (elpaca (isearch-prop :host github :repo "emacsmirror/isearch-prop")
   (with-eval-after-load 'isearch+
     (require 'isearch-prop)))
 
+
 ;;;; conn-mode
 
 (elpaca (conn-mode :host codeberg
@@ -1327,6 +1370,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'consult
     (require 'conn-consult)))
 
+
 ;;;; ialign
 
 (elpaca ialign
@@ -1336,6 +1380,7 @@ see command `isearch-forward' for more information."
 
     (keymap-set embark-region-map "a" 'embark-ialign)))
 
+
 ;;;; bookmark+
 
 (elpaca (bookmark+ :host github
@@ -1382,12 +1427,14 @@ see command `isearch-forward' for more information."
                              :follow #'bookmark-jump
                              :store #'bmkp-org-bookmark-store-link-1)))
 
+
 ;;;; dired+
 
 (elpaca (dired+ :host github
                 :repo "emacsmirror/dired-plus"
                 :main "dired+.el"))
 
+
 ;;;; visual-regexp
 
 (elpaca visual-regexp
@@ -1400,6 +1447,7 @@ see command `isearch-forward' for more information."
       "R" 'vr/query-replace
       "r" 'vr/replace)))
 
+
 ;;;; avy
 
 (elpaca avy
@@ -1428,13 +1476,13 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap goto-map
-    "u" 'avy-goto-char-timer
-    "L" 'avy-goto-word-or-subword-1
-    "C-l" 'avy-goto-word-or-subword-1
-    "J" 'avy-goto-word-or-subword-1
-    "C-j" 'avy-goto-word-or-subword-1
-    "j" 'avy-goto-word-1-above
-    "l" 'avy-goto-word-1-below
+    "j" 'avy-goto-char-timer
+    "O" 'avy-goto-word-or-subword-1
+    "C-o" 'avy-goto-word-or-subword-1
+    "U" 'avy-goto-word-or-subword-1
+    "C-u" 'avy-goto-word-or-subword-1
+    "u" 'avy-goto-word-1-above
+    "o" 'avy-goto-word-1-below
     "M" 'avy-goto-symbol-1
     "C-m" 'avy-goto-symbol-1
     "N" 'avy-goto-symbol-1
@@ -1443,7 +1491,7 @@ see command `isearch-forward' for more information."
     "n" 'avy-goto-symbol-1-above
     "K" 'avy-goto-line
     "C-k" 'avy-goto-line
-    "o" 'avy-goto-end-of-line
+    "l" 'avy-goto-end-of-line
     "k" 'avy-goto-line-below
     "i" 'avy-goto-line-above
     "z" 'avy-resume
@@ -1512,6 +1560,7 @@ see command `isearch-forward' for more information."
       (message "Avy line insertion style set to: %s" avy-line-insert-style))
     (put 'david-avy-toggle-insertion-style 'repeat-map goto-map)))
 
+
 ;;;; helpful
 
 (elpaca helpful
@@ -1527,6 +1576,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
 
+
 ;;;; all-the-icons
 
 (elpaca all-the-icons)
@@ -1538,17 +1588,20 @@ see command `isearch-forward' for more information."
     (diminish 'all-the-icons-dired-mode))
   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
+
 ;;;; magit
 
 (elpaca magit
   (with-eval-after-load 'conn-mode
     (conn-hide-mark-cursor 'magit-status-mode)))
 
+
 ;;;; flycheck
 
 ;; (elpaca flycheck
 ;;   (setq lsp-diagnostics-flycheck-default-level 'warning))
 
+
 ;;;; cape
 
 (elpaca cape
@@ -1577,6 +1630,7 @@ see command `isearch-forward' for more information."
                             #'cape-dict
                             :company-doc-buffer #'dictionary-doc-lookup)))))
 
+
 ;;;; embark
 
 (elpaca embark
@@ -1585,7 +1639,7 @@ see command `isearch-forward' for more information."
                             embark-highlight-indicator
                             embark-isearch-highlight-indicator)
         embark-prompter 'embark-keymap-prompter
-        embark-cycle-key "TAB"
+        embark-cycle-key "<tab>"
         embark-help-key "?"
         embark-confirm-act-all nil)
 
@@ -1685,8 +1739,9 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn-mode
     (keymap-set conn-state-map "e" #'embark-dwim)
-    (keymap-set conn-state-map "M-TAB" #'embark-alt-dwim)
-    (keymap-set conn-state-map "M-<tab>" #'embark-alt-dwim)
+    (keymap-set conn-state-map "M-TAB" #'indent-for-tab-command)
+    (keymap-set conn-state-map "H" #'embark-alt-dwim)
+    (keymap-set conn-state-map "M-<tab>" #'indent-for-tab-command)
     (keymap-set conn-state-map "TAB" #'embark-act)
     (keymap-set conn-state-map "<tab>" #'embark-act))
 
@@ -1862,6 +1917,7 @@ see command `isearch-forward' for more information."
       "h L" 'consult-line-multi
       "h r" 'consult-ripgrep)))
 
+
 ;;;; corfu
 
 (elpaca corfu
@@ -1917,7 +1973,7 @@ see command `isearch-forward' for more information."
                    #'eglot-completion-at-point completion-at-point-functions)))
     (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
-;;;; kind-icons
+;;;;; kind-icons
 
 (elpaca kind-icon
   (setq kind-icon-use-icons nil
@@ -1926,6 +1982,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'corfu
     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)))
 
+
 ;;;; bicycle
 
 (elpaca bicycle
@@ -1940,30 +1997,36 @@ see command `isearch-forward' for more information."
       "C-<tab>" 'bicycle-cycle
       "<backtab>" 'bicycle-cycle-global)))
 
+
 ;;;; outline-minor-faces
 
 (elpaca outline-minor-faces
   (with-eval-after-load 'outline
     (add-hook 'outline-minor-mode-hook #'outline-minor-faces-mode)))
 
+
 ;;;; keycast
 
 (elpaca keycast)
 
+
 ;;;; gif-screencase
 
 (elpaca gif-screencast
   (with-eval-after-load 'conn-mode
     (keymap-global-set "M-<f2>" 'gif-screencast-start-or-stop)))
 
+
 ;;;; wgrep
 
 (elpaca wgrep)
 
+
 ;;;; lazytab
 
 (elpaca (lazytab :host github :repo "karthink/lazytab"))
 
+
 ;;;; separedit
 
 (elpaca separedit
@@ -1973,40 +2036,62 @@ see command `isearch-forward' for more information."
   (keymap-set minibuffer-local-map "C-c '" 'separedit)
   (keymap-set help-mode-map "C-c '" 'separedit))
 
+
 ;;;; package-link-flymake
 
 (elpaca package-lint)
 
+
 ;;;; orderless
 
 (elpaca orderless
-  (setq orderless-affix-dispatch-alist '((?^ . orderless-not)
-                                         (?, . orderless-regexp)
-                                         (?\= . orderless-literal)
+  (setq orderless-affix-dispatch-alist '((?\= . orderless-literal)
                                          (?! . orderless-without-literal)
-                                         (?. . orderless-initialism)
-                                         ;; (?/ . orderless-flex)
-                                         )
+                                         (?, . orderless-initialism))
         completion-styles '(orderless basic)
-        orderless-matching-styles '(orderless-literal)
+        orderless-matching-styles '(orderless-literal
+                                    orderless-regexp)
         orderless-style-dispatchers '(orderless-kwd-dispatch
                                       orderless-affix-dispatch
-                                      flex-first)
-        completion-category-overrides '((file (styles basic partial-completion)))
-        orderless-component-separator #'orderless-escapable-split-on-space)
+                                      flex-first-if-completing)
+        completion-category-overrides '((file (styles basic
+                                                      partial-completion
+                                                      orderless+flex))
+                                        (lsp-capf (styles orderless+flex)))
+        orderless-component-separator #'orderless-escapable-split-on-space
+        orderless-smart-case t
+        read-file-name-completion-ignore-case nil
+        read-buffer-completion-ignore-case nil)
 
   (defun flex-first-if-completing (pattern index _total)
     (when (and (= index 0) completion-in-region-mode)
       `(orderless-flex . ,pattern)))
 
+  (defun orderless-toggle-smart-case ()
+    (interactive)
+    (cond (orderless-smart-case
+           (setq-local orderless-smart-case (not orderless-smart-case)))
+          ((null completion-ignore-case)
+           (setq-local completion-ignore-case t))
+          (t
+           (setq-local orderless-smart-case t
+                       completion-ignore-case nil)))
+    (message "ignore-case: %s" (if orderless-smart-case
+                                   "smart"
+                                 completion-ignore-case)))
+  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
+
   (defun flex-first (pattern index _total)
     (when (= index 0) `(orderless-flex . ,pattern)))
 
-  (defun orderless-toggle-smart-case ()
-    (interactive)
-    (setq-local orderless-smart-case (not orderless-smart-case))
-    (message "smart-case: %s" orderless-smart-case))
-  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case))
+  (with-eval-after-load 'orderless
+    (orderless-define-completion-style orderless+flex
+      (orderless-matching-styles '(orderless-literal
+                                   orderless-initialism
+                                   orderless-regexp))
+      (orderless-style-dispatchers '(orderless-kwd-dispatch
+                                     orderless-affix-dispatch
+                                     flex-first)))))
 
 ;;;;; orderless-set-operations
 
@@ -2015,6 +2100,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'orderless
     (oso-mode 1)))
 
+
 ;;;; consult
 
 (elpaca consult
@@ -2271,6 +2357,7 @@ see command `isearch-forward' for more information."
 ;; (elpaca consult-projectile
 ;;   (keymap-global-set "C-c j" 'consult-projectile))
 
+
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
@@ -2440,6 +2527,7 @@ see command `isearch-forward' for more information."
                       (substring cand 0 -1)
                     cand))))))
 
+
 ;;;; marginalia
 
 (elpaca marginalia
@@ -2513,6 +2601,7 @@ see command `isearch-forward' for more information."
        (list cand "" ann))))
   (advice-add 'marginalia--align :override 'marginalia--align-column))
 
+
 ;;;; tempel
 
 (elpaca tempel
@@ -2530,6 +2619,7 @@ see command `isearch-forward' for more information."
 
 (elpaca tempel-collection)
 
+
 ;;;; vundo
 
 (elpaca vundo
@@ -2537,10 +2627,12 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'vundo
     (setq vundo-glyph-alist vundo-unicode-symbols)))
 
+
 ;;;; htmlize
 
 (elpaca htmlize)
 
+
 ;;;; page-break-lines
 
 (elpaca page-break-lines
@@ -2549,6 +2641,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'diminish
     (diminish 'page-break-lines-mode)))
 
+
 ;;;; sage-shell-mode
 
 (elpaca sage-shell-mode
@@ -2556,33 +2649,40 @@ see command `isearch-forward' for more information."
     (setq sage-shell:input-history-cache-file "~/.emacs.d/.sage_shell_input_history")
     (add-hook 'sage-shell-after-prompt-hook #'sage-shell-view-mode)))
 
+
 ;;;; tuareg
 
 (elpaca tuareg)
 
+
 ;;;; rfc-mode
 
 (elpaca rfc-mode)
 
+
 ;;;; heex-ts-mode
 
 (elpaca heex-ts-mode)
 
+
 ;;;; polymode
 
 (elpaca polymode)
 
+
 ;;;; adaptive-wrap
 
 (elpaca adaptive-wrap
   (setq adaptive-wrap-extra-indent 2)
   (add-hook 'text-mode-hook 'adaptive-wrap-prefix-mode))
 
+
 ;;;; visual-fill-column
 
 (elpaca visual-fill-column
   (add-hook 'text-mode-hook 'visual-fill-column-mode))
 
+
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
@@ -2746,6 +2846,7 @@ see command `isearch-forward' for more information."
     (setf (alist-get 'consult-denote-heading embark-keymap-alist)
           (list 'embark-consult-denote-heading-map))))
 
+
 ;;;; tab bookmark
 
 (elpaca (tab-bookmark :host github
@@ -2760,6 +2861,7 @@ see command `isearch-forward' for more information."
     "v k" 'tab-bookmark-push
     "v i" 'tab-bookmark-pop))
 
+
 ;;;; diff-hl
 
 (elpaca diff-hl
@@ -2769,13 +2871,14 @@ see command `isearch-forward' for more information."
      (global-diff-hl-mode 1)
      (add-hook 'dired-mode-hook #'diff-hl-dired-mode))))
 
+
 ;;;; teco
 
 ;; (elpaca teco)
 
+
 ;;;; dumb-jump
 
 (elpaca dumb-jump
-  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
   (with-eval-after-load 'xref
     (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)))
