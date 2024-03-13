@@ -237,7 +237,8 @@
 ;;;; line numbers
 
 (require 'display-line-numbers)
-(setq display-line-numbers-type 'visual
+(setq display-line-numbers-width 2
+      display-line-numbers-type 'visual
       display-line-numbers-current-absolute nil)
 
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
