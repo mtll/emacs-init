@@ -640,13 +640,14 @@ see command `isearch-forward' for more information."
          "M-DEL"         'paredit-backward-kill-word
          "DEL"           'paredit-backward-delete))
 
-      (define-conn-mode-map
-       '(conn-state dot-state) 'paredit-mode
-       (define-keymap
-         "m" 'paredit-forward
-         "n" 'paredit-backward
-         "O" 'paredit-forward-up
-         "U" 'paredit-backward-up))
+      (defvar conn-paredit-mode-map
+        (define-conn-mode-map
+         '(conn-state dot-state) 'paredit-mode
+         (define-keymap
+           "<remap> <forward-sexp>" 'paredit-forward
+           "<remap> <backward-sexp>" 'paredit-backward
+           "<remap> <forward-sentence>" 'paredit-forward-up
+           "<remap> <backward-sentence>" 'paredit-backward-up)))
 
       (conn-add-thing-movement-command 'sexp 'paredit-forward)
       (conn-add-thing-movement-command 'sexp 'paredit-backward)
@@ -1344,6 +1345,19 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
+
+  ;; (define-keymap
+  ;;   :keymap conn-common-map
+  ;;   "K" 'conn-end-of-inner-line
+  ;;   "M" 'forward-line
+  ;;   "I" 'conn-backward-line
+  ;;   "L" 'forward-paragraph
+  ;;   "N" 'backward-paragraph
+  ;;   "m" 'next-line
+  ;;   "l" 'forward-char
+  ;;   "n" 'backward-char
+  ;;   "j" 'backward-sexp
+  ;;   "k" 'forward-sexp)
 
   (conn-hide-mark-cursor 'emacs-state)
   (conn-hide-mark-cursor 'conn-state)
@@ -2959,6 +2973,8 @@ see command `isearch-forward' for more information."
 ;;;; hyperbole
 
 (elpaca hyperbole
+  (hyperbole-mode 1)
+
   (setq ;; Remove hkey actions I want embark to handle instead.
    hkey-alist '(
                 ;; Company completion mode
@@ -3156,13 +3172,14 @@ see command `isearch-forward' for more information."
                 ;; Todotxt
                 ((eq major-mode 'todotxt-mode)
                  . ((smart-todotxt) . (smart-todotxt-assist))))
-   hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory)))
+   hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
+   action-key-default-function #'embark-dwim
+   assist-key-default-function #'embark-alt-dwim)
 
-  (with-eval-after-load 'embark
-    (setq action-key-default-function #'embark-dwim
-          assist-key-default-function #'embark-alt-dwim))
+  ;; don't try to handle displaying temp buffers
+  (setq temp-buffer-show-function nil)
+  (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
 
-  (hyperbole-mode 1)
   (keymap-set hyperbole-mode-map "C-," 'action-key)
   (keymap-set hyperbole-mode-map "C-." 'assist-key)
   (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-frames-mode)
