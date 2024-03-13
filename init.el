@@ -1278,8 +1278,8 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'isearch+
     (keymap-unset isearch-mode-map "C-t")
-    (keymap-set isearch-mode-map "C-:" 'isearchp-property-forward)
-    (keymap-set isearch-mode-map "C-;" isearchp-filter-map)
+    (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
+    (keymap-set isearch-mode-map "C-o" isearchp-filter-map)
     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
@@ -1287,7 +1287,7 @@ see command `isearch-forward' for more information."
     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
     (keymap-set isearch-mode-map "M-o" 'isearchp-toggles-map)
-    (keymap-set isearchp-filter-map "a" 'isearchp-add-filter-predicate)
+    (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
 ;;;;; isearch-prop
