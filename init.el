@@ -1229,6 +1229,15 @@ see command `isearch-forward' for more information."
       (make-izone-register :izones)
       (set-register register)))
 
+  (with-eval-after-load 'isearch+
+    (defun isearch-in-zone-p (beg end)
+      (catch 'res
+        (pcase-dolist (`(,_ ,zbeg ,zend) (symbol-value zz-izones-var))
+          (when (and (<= zbeg beg) (<= end zend)) (throw 'res t)))))
+    (cl-pushnew '("[zone]" isearch-in-zone-p "[ZZ]")
+                isearchp-current-filter-preds-alist
+                :test #'equal))
+
   (define-keymap
     :keymap narrow-map
     "q" #'zz-delete-zone
