@@ -1093,14 +1093,13 @@ see command `isearch-forward' for more information."
 ;;;; no-littering
 
 (elpaca no-littering
-  (run-with-timer 1 nil (lambda () (require 'no-littering)))
+  (require 'no-littering)
 
   (setq backup-by-copying t
         auto-save-file-name-transforms
         `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
 
-  (with-eval-after-load 'no-littering
-    (no-littering-theme-backups)))
+  (no-littering-theme-backups))
 
 
 ;;;; crux
