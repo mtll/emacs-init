@@ -198,7 +198,7 @@
 
 (defun david-dwim-page ()
   (interactive)
-  (if (eolp)
+  (if (or (bobp) (and (eolp) (not (eobp))))
       (forward-page)
     (backward-page)
     (beginning-of-line))
