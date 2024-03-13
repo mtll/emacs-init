@@ -91,7 +91,6 @@
       history-delete-duplicates t
       disabled-command-function nil
       switch-to-buffer-obey-display-actions t
-      resize-mini-windows 'grow-only
       minibuffer-prompt-properties '(read-only t
                                                cursor-intangible t
                                                face minibuffer-prompt)
@@ -2404,7 +2403,8 @@ see command `isearch-forward' for more information."
 ;;;; vertico
 
 (elpaca (vertico :files (:defaults "extensions/*"))
-  (setq vertico-preselect 'first
+  (setq resize-mini-windows t
+        vertico-preselect 'first
         vertico-buffer-hide-prompt nil
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window
