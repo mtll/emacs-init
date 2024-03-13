@@ -2178,6 +2178,8 @@ see command `isearch-forward' for more information."
   (define-key global-map [remap Info-search] 'consult-info)
   (define-key global-map [remap bookmark-jump] 'consult-bookmark)
   (define-key global-map [remap yank-pop] 'consult-yank-pop)
+  (keymap-global-set "<remap> <yank-from-kill-ring>" #'consult-yank-pop)
+  (keymap-global-set "<remap> <jump-to-register>" #'consult-register-load)
   (keymap-global-set "C-x k" 'kill-this-buffer)
   (keymap-global-set "M-X" 'consult-mode-command)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
@@ -2356,11 +2358,6 @@ see command `isearch-forward' for more information."
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
     (keymap-set conn-buffer-map "u" 'consult-project-buffer)
     (keymap-set conn-buffer-map "b" 'ibuffer)
-
-    (define-keymap
-      :keymap conn-state-map
-      "Y" 'consult-yank-pop
-      "p" 'consult-register-load)
 
     (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
 
