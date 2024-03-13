@@ -300,9 +300,9 @@
                         (string-join
                          (mapcar (lambda (string)
                                    (regexp-quote string))
-                                 (isearch-escapable-split-on-char string "*"))
+                                 (isearch-escapable-split-on-char string ","))
                          ".+?"))
-                      (isearch-escapable-split-on-char string "-"))
+                      (isearch-escapable-split-on-char string "&"))
               "[^ \t\n\r\v\f]+"))
            (isearch-escapable-split-on-char string " "))
    search-whitespace-regexp))
@@ -562,7 +562,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
     (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
-    (keymap-set embark-page-map "N" 'ni-narrow-to-page-indirect-other-window)))
+    (keymap-set embark-page-map "o" 'ni-narrow-to-page-indirect-other-window)))
 
 
 ;;;; paredit
@@ -1206,25 +1206,45 @@ see command `isearch-forward' for more information."
 ;;;; zones
 
 (elpaca zones
-  (defun david-zz-widen ()
-    (interactive)
+  (cl-defstruct (izone-register)
+    (izones nil :read-only t))
+
+  (cl-defmethod register-val-jump-to ((val izone-register) _arg)
+    (set zz-izones-var (izone-register-izones val)))
+
+  (cl-defmethod register-val-describe ((val izone-register) _arg)
+    (let ((izones (izone-register-izones val)))
+      (princ (format "%s izones in %s\n"
+                     (length izones)
+                     (marker-buffer (cadar izones))))))
+
+  (defun izones-to-register (register)
+    (interactive (list (register-read-with-preview "izones to register: ")))
     (require 'zones)
-    (zz-narrow '(4)))
+    (thread-last
+      (symbol-value zz-izones-var)
+      (copy-sequence)
+      (make-izone-register :izones)
+      (set-register register)))
 
   (define-keymap
     :keymap narrow-map
-    "w" 'david-zz-widen
-    "*" 'zz-replace-regexp-zones
-    "/" 'zz-replace-string-zones
-    "%" 'zz-map-query-replace-regexp-zones))
+    "q" #'zz-delete-zone
+    "*" #'zz-replace-regexp-zones
+    "/" #'zz-replace-string-zones
+    "%" #'zz-map-query-replace-regexp-zones
+    "j" #'izones-to-register)
+
+  (with-eval-after-load 'bookmark+
+    (keymap-global-set "C-x r z" 'bmkp-set-izones-bookmark)))
 
 
 ;;;; info+
 
-(elpaca (info+ :host github
-                  :repo "emacsmirror/info-plus"
-                  :main "info+.el")
-  (run-with-timer 1 nil (lambda () (require 'info+))))
+;; (elpaca (info+ :host github
+;;                   :repo "emacsmirror/info-plus"
+;;                   :main "info+.el")
+;;   (run-with-timer 1 nil (lambda () (require 'info+))))
 
 
 ;;;; isearch+
@@ -1273,14 +1293,14 @@ see command `isearch-forward' for more information."
                    :files (:defaults "extensions/*"))
   (setq conn-lighter nil
         conn-state-buffer-colors t
-        conn-modes '((not special-mode)
+        conn-modes '(eshell-mode
+                     grep-mode
+                     occur-mode
+                     (not special-mode)
                      (not minibuffer-mode)
                      (not dired-mode)
                      (not compilation-mode)
                      (not slime-xref-mode)
-                     eshell-mode
-                     grep-mode
-                     occur-mode
                      t)
         conn-open-line-keys "M-o"
         conn-delete-region-keys "C-S-w"
@@ -1295,7 +1315,13 @@ see command `isearch-forward' for more information."
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
 
-  (set-default-conn-state '("COMMIT_EDITMSG.*") 'emacs-state)
+  (set-default-conn-state '(fundamental-mode
+                            "^\\*Pp Eval Output\\*")
+                          'view-state)
+
+  (set-default-conn-state '("COMMIT_EDITMSG.*"
+                            "^\\*Echo.*")
+                          'emacs-state)
   (put 'emacs-state :conn-ephemeral-marks t)
 
   (conn-add-mark-trail-command 'forward-whitespace)
@@ -1746,7 +1772,7 @@ see command `isearch-forward' for more information."
     "RET" 'david-dwim-page
     "n" 'david-forward-page
     "p" 'david-backward-page
-    "o" 'narrow-to-page
+    "u" 'narrow-to-page
     "m" 'mark-page)
 
   (defvar-keymap embark-tab-bar-map
