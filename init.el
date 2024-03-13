@@ -1228,7 +1228,6 @@ see command `isearch-forward' for more information."
     (require 'zones)
     (thread-last
       (symbol-value zz-izones-var)
-      (copy-sequence)
       (make-izone-register :izones)
       (set-register register)))
 
@@ -1249,8 +1248,20 @@ see command `isearch-forward' for more information."
     "%" #'zz-map-query-replace-regexp-zones
     "j" #'izones-to-register)
 
+  (with-eval-after-load 'isearch+
+    (define-keymap
+      :keymap narrow-map
+      "b" #'isearchp-zones-forward
+      "B" #'isearchp-zones-backward))
+
   (with-eval-after-load 'bookmark+
-    (keymap-global-set "C-x r z" 'bmkp-set-izones-bookmark)))
+    (keymap-global-set "C-x r z" 'bmkp-set-izones-bookmark))
+
+  (with-eval-after-load 'embark
+    (keymap-set embark-region-map "z" #'zz-add-zone))
+
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-misc-edit-map "w" #'zz-narrow-repeat)))
 
 
 ;;;; info+
@@ -1266,9 +1277,10 @@ see command `isearch-forward' for more information."
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
-  (run-with-timer 1 nil (lambda () (require 'isearch+)))
+  (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
 
-  (setq isearchp-lazy-dim-filter-failures-flag nil
+  (setq isearchp-dimming-color "#cddfcc"
+        isearchp-lazy-dim-filter-failures-flag nil
         isearchp-restrict-to-region-flag nil
         isearchp-deactivate-region-flag nil
         isearchp-initiate-edit-commands nil
@@ -1328,6 +1340,10 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
+
+  (conn-hide-mark-cursor 'emacs-state)
+  (conn-hide-mark-cursor 'conn-state)
+  (conn-hide-mark-cursor 'dot-state)
 
   (set-default-conn-state '(fundamental-mode
                             "^\\*Pp Eval Output\\*")
@@ -1452,10 +1468,9 @@ see command `isearch-forward' for more information."
 (elpaca (bookmark+ :host github
                    :repo "emacsmirror/bookmark-plus"
                    :main "bookmark+.el")
-  (run-with-timer 1 nil (lambda () (require 'bookmark+)))
+  (run-with-timer 0.5 nil (lambda () (require 'bookmark+)))
 
   (setq bmkp-bookmark-map-prefix-keys '("x")
-        bookmark-default-file (expand-file-name "~/.emacs.d/var/bmkp/current-bookmark.el")
         bmkp-last-as-first-bookmark-file nil
         bmkp-prompt-for-tags-flag t
         bookmark-version-control t
@@ -1504,7 +1519,7 @@ see command `isearch-forward' for more information."
 ;;;; visual-regexp
 
 (elpaca visual-regexp
-  (keymap-global-set "C-M-%" #'vr/query-replace)
+  (keymap-global-set "<remap> <query-replace-regexp>" #'vr/query-replace)
   (keymap-global-set "C-M-!" #'vr/replace)
 
   (with-eval-after-load 'conn-mode
