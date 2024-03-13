@@ -237,11 +237,15 @@
 ;;;; line numbers
 
 (require 'display-line-numbers)
+
+(face-spec-set 'line-number-current-line '((t :background "#ccdee3")))
+
+(setq-default display-line-numbers-width 2)
 (setq display-line-numbers-width-start nil
       display-line-numbers-grow-only nil
-      display-line-numbers-width 2
       display-line-numbers-type 'visual
-      display-line-numbers-current-absolute nil)
+      display-line-numbers-current-absolute nil
+      display-line-numbers-major-tick 0)
 
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
 (add-hook 'text-mode-hook #'display-line-numbers-mode)
