@@ -3011,7 +3011,7 @@ see command `isearch-forward' for more information."
   (hyperbole-mode 1)
 
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
-  (setq temp-buffer-show-function nil)
+  ;; (setq temp-buffer-show-function nil)
 
   (setq hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
         action-key-default-function #'embark-dwim
@@ -3200,8 +3200,8 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn-mode
     (define-keymap
-      :keymap (conn-set-mode-map 'conn-state 'hyperbole-mode)
+      :keymap (conn-set-mode-map '(conn-state view-state)
+                                 'hyperbole-mode)
       "e" #'action-key
       "h" #'assist-key
-      "H" #'hyperbole
-      "z" #'hycontrol-windows-mode)))
+      "H" #'hyperbole)))
