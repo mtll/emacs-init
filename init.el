@@ -1630,9 +1630,12 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'hyperbole
       (defun avy-action-action-key (pt)
         (unwind-protect
-            (save-excursion
-              (goto-char pt)
-              (action-key))
+            (let ((newpt (save-excursion
+                           (goto-char pt)
+                           (action-key)
+                           (point))))
+              (unless (eq newpt pt)
+                (goto-char newpt)))
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
@@ -1640,9 +1643,12 @@ see command `isearch-forward' for more information."
 
       (defun avy-action-assist-key (pt)
         (unwind-protect
-            (save-excursion
-              (goto-char pt)
-              (assist-key))
+            (let ((newpt (save-excursion
+                           (goto-char pt)
+                           (assist-key)
+                           (point))))
+              (unless (eq newpt pt)
+                (goto-char newpt)))
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
