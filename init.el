@@ -1773,8 +1773,8 @@ see command `isearch-forward' for more information."
 
   ;; (keymap-global-set "C-." 'embark-dwim)
   ;; (keymap-global-set "C-," 'embark-alt-dwim)
-  (keymap-global-set "M-." 'embark-act)
-  (keymap-set minibuffer-mode-map "C-M-." 'embark-export)
+  (keymap-global-set "M-," 'embark-act)
+  (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
   (defun embark-act-persist ()
     (interactive)
