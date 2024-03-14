@@ -1961,16 +1961,6 @@ see command `isearch-forward' for more information."
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
 
-    (defun david-embark-find-definition (_)
-      (let ((arg current-prefix-arg)
-            current-prefix-arg)
-        (pcase arg
-          ('nil (call-interactively #'xref-find-definitions))
-          ('(4) (call-interactively #'xref-find-definitions-other-window))
-          (_    (call-interactively #'xref-find-definitions-other-frame)))))
-    (keymap-set embark-identifier-map "RET" 'david-embark-find-definition)
-    (keymap-set embark-symbol-map "RET" 'david-embark-find-definition)
-
     (with-eval-after-load 'conn-mode
       (keymap-set embark-region-map "RET" #'conn-copy-region)
 
