@@ -2975,3 +2975,205 @@ see command `isearch-forward' for more information."
 
 (elpaca jinx
   (keymap-global-set "<remap> <ispell-word>" #'jinx-correct))
+
+
+;;;; hyperbole
+
+(elpaca hyperbole
+  (hyperbole-mode 1)
+
+  (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
+  (setq temp-buffer-show-function nil)
+
+  (setq hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
+        action-key-default-function #'embark-dwim
+        assist-key-default-function #'embark-alt-dwim
+        ;; Remove items I want embark to handle instead.
+        hkey-alist '(;; Company completion mode
+                     ((and (boundp 'company-active-map)
+                           (memq company-active-map (current-minor-mode-maps)))
+                      . ((smart-company-to-definition) . (smart-company-help)))
+                     ;;
+                     ;; Treemacs hierarchical file manager
+                     ((eq major-mode 'treemacs-mode)
+                      . ((smart-treemacs) . (smart-treemacs)))
+                     ;;
+                     ;; dired-sidebar-mode
+                     ((eq major-mode 'dired-sidebar-mode)
+                      . ((smart-dired-sidebar) . (smart-dired-sidebar)))
+                     ;;
+                     ((and (eq major-mode 'ert-results-mode)
+                           (featurep 'ert-results)
+                           (setq hkey-value (ert-results-filter-status-p)))
+                      . ((smart-ert-results hkey-value) . (smart-ert-results-assist hkey-value)))
+                     ;;
+                     ;;
+                     ;; Handle Emacs push buttons in buffers
+                     ((and (fboundp 'button-at) (button-at (point)))
+                      . ((smart-push-button nil (mouse-event-p last-command-event))
+                         . (smart-push-button-help nil (mouse-event-p last-command-event))))
+                     ;;
+                     ;; Handle any Org mode-specific contexts but give priority to Hyperbole
+                     ;; buttons prior to cycling Org headlines
+                     ((and (not (hyperb:stack-frame '(smart-org)))
+                           (let ((hrule:action #'actype:identity))
+                             (smart-org)))
+                      . ((smart-org) . (smart-org)))
+                     ;;
+                     ;; If in an xref buffer on a listing of matching identifier lines, go to
+                     ;; the source line referenced by the current entry.
+                     ((and (fboundp 'xref--item-at-point) (xref--item-at-point))
+                      . ((xref-goto-xref) . (xref-show-location-at-point)))
+                     ;;
+                     ;; The Smart Menu system is an attractive in-buffer menu system
+                     ;; that works on any display system that supports Emacs.  It
+                     ;; predates Emacs' menu systems; it is a part of InfoDock.
+                     ;; It is not included with Hyperbole but is compatible with the
+                     ;; Smart Keys.
+                     ;;
+                     ;; This selects or gives help for a menu item.
+                     ((eq major-mode 'smart-menu-mode)
+                      . ((smart-menu-select) . (smart-menu-help)))
+                     ;;
+                     ((derived-mode-p 'dired-mode)
+                      . ((smart-dired) . (smart-dired-assist)))
+                     ;;
+                     ((string-prefix-p "magit-" (symbol-name major-mode))
+                      . ((smart-magit) . (smart-magit-assist)))
+                     ;;
+                     ;; If on a Hyperbole button, perform action or give help.
+                     ((hbut:at-p)
+                      . ((hui:hbut-act 'hbut:current) . (hui:hbut-help 'hbut:current)))
+                     ;;
+                     ;; View minor mode
+                     ((if (boundp 'view-minor-mode) view-minor-mode)
+                      . ((cond ((last-line-p)
+                                (view-quit))
+                               ((pos-visible-in-window-p (point-max))
+                                (goto-char (point-max)))
+                               (t (scroll-up)))
+                         . (scroll-down)))
+                     ;;
+                     ;; View major mode
+                     ((eq major-mode 'view-mode) .
+                      ((View-scroll-lines-forward) . (View-scroll-lines-backward)))
+                     ;;
+                     ((eq major-mode 'occur-mode)
+                      . ((occur-mode-goto-occurrence) . (occur-mode-goto-occurrence)))
+                     ;;
+                     ((eq major-mode 'moccur-mode)
+                      . ((moccur-mode-goto-occurrence) . (moccur-mode-goto-occurrence)))
+                     ((eq major-mode 'amoccur-mode)
+                      . ((amoccur-mode-goto-occurrence) . (amoccur-mode-goto-occurrence)))
+                     ;;
+                     ((eq major-mode 'kotl-mode)
+                      . ((kotl-mode:action-key) . (kotl-mode:assist-key)))
+                     ;;
+                     ;; If in the flymake linter list of issues buffer, jump to or show issue at point
+                     ((eq major-mode 'flymake-diagnostics-buffer-mode)
+                      . ((flymake-goto-diagnostic (point)) . (flymake-show-diagnostic (point) t)))
+                     ;;
+                     ;; Handle widgets in Custom-mode
+                     ((eq major-mode 'Custom-mode)
+                      . ((smart-custom) . (smart-custom-assist)))
+                     ;;
+                     ;; Emacs bookmarks menu (bookmark.el)
+                     ((eq major-mode 'bookmark-bmenu-mode)
+                      . ((bookmark-jump (bookmark-bmenu-bookmark) (hpath:display-buffer-function))
+                         .
+                         ;; Below we want the Assist Key to show what the Action Key does.
+                         (hkey-help)))
+                     ;;
+                     ;; Pages directory listing mode (page-ext.el)
+                     ((eq major-mode 'pages-directory-mode)
+                      . ((pages-directory-goto) . (pages-directory-goto)))
+                     ;;
+                     ;; Imenu listing in GNU Emacs
+                     ((smart-imenu-item-at-p)
+                      . ((smart-imenu-display-item-where (car hkey-value) (cdr hkey-value)) .
+                         (imenu-choose-buffer-index)))
+                     ;;
+                     ((eq major-mode 'calendar-mode)
+                      . ((smart-calendar) . (smart-calendar-assist)))
+                     ;;
+                     ;; Part of InfoDock
+                     ((eq major-mode 'unix-apropos-mode)
+                      . ((smart-apropos) . (smart-apropos-assist)))
+                     ;;
+                     ((eq major-mode 'outline-mode)
+                      . ((smart-outline) . (smart-outline-assist)))
+                     ;;
+                     ((eq major-mode 'Info-mode)
+                      . ((smart-info) .  (smart-info-assist)))
+                     ;;
+                     ((if (boundp 'hmail:reader)
+                          (or (eq major-mode hmail:reader)
+                              (eq major-mode hmail:lister)))
+                      . ((smart-hmail) . (smart-hmail-assist)))
+                     ;;
+                     ((eq major-mode 'gnus-group-mode)
+                      (smart-gnus-group) . (smart-gnus-group-assist))
+                     ;;
+                     ((eq major-mode 'gnus-summary-mode)
+                      . ((smart-gnus-summary) . (smart-gnus-summary-assist)))
+                     ;;
+                     ((eq major-mode 'gnus-article-mode)
+                      . ((smart-gnus-article) . (smart-gnus-article-assist)))
+                     ;;
+                     ((eq major-mode 'Buffer-menu-mode)
+                      . ((smart-buffer-menu) . (smart-buffer-menu-assist)))
+                     ;;
+                     ((eq major-mode 'ibuffer-mode)
+                      . ((smart-ibuffer-menu) . (smart-ibuffer-menu-assist)))
+                     ;;
+                     ((eq major-mode 'tar-mode)
+                      . ((smart-tar) . (smart-tar-assist)))
+                     ;;
+                     ;; Follow references in man pages.
+                     ((setq hkey-value (smart-man-entry-ref))
+                      . ((smart-man-display hkey-value) . (smart-man-display hkey-value)))
+                     ;;
+                     ((eq major-mode 'w3-mode)
+                      . ((w3-follow-link) . (w3-goto-last-buffer)))
+                     ;;
+                     ((eq major-mode 'hyrolo-mode)
+                      . ((smart-hyrolo) . (smart-hyrolo-assist)))
+                     ;;
+                     ((eq major-mode 'image-dired-thumbnail-mode)
+                      . ((smart-image-dired-thumbnail) . (smart-image-dired-thumbnail-assist)))
+                     ;;
+                     ;; Gomoku game
+                     ((eq major-mode 'gomoku-mode)
+                      . ((gomoku-human-plays) . (gomoku-human-takes-back)))
+                     ;;
+                     ;; Todotxt
+                     ((eq major-mode 'todotxt-mode)
+                      . ((smart-todotxt) . (smart-todotxt-assist)))))
+
+  (defib gh-issue-link ()
+    "Link to a github issue."
+    (when (org-in-regexp "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)")
+      (ibut:label-set (match-string 0))
+      (hact 'www-url (concat "https://github.com/"
+                             (match-string 1)
+                             "/issues/"
+                             (match-string 2)))))
+
+  (defib gnu-bug-link ()
+    "Link to a gnu bug."
+    (when (org-in-regexp "bug#\\([0-9]*\\)")
+      (ibut:label-set (match-string 0))
+      (hact 'www-url (concat "https://debbugs.gnu.org/cgi/bugreport.cgi?bug="
+                             (match-string 1)))))
+
+  (keymap-global-set "C-." 'action-key)
+  (keymap-global-set "C-," 'assist-key)
+  (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-frames-mode)
+
+  (with-eval-after-load 'conn-mode
+    (define-keymap
+      :keymap (conn-set-mode-map 'conn-state 'hyperbole-mode)
+      "e" #'action-key
+      "h" #'assist-key
+      "H" #'hyperbole
+      "z" #'hycontrol-windows-mode)))
