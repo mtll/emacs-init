@@ -377,13 +377,13 @@ see command `isearch-forward' for more information."
 (with-eval-after-load 'conn-mode
   (defvar-keymap tab-bar-history-mode-repeat-map
     :repeat t
-    "/" 'tab-bar-history-forward
-    "?" 'tab-bar-history-back)
+    "?" 'tab-bar-history-forward
+    "/" 'tab-bar-history-back)
 
   (define-keymap
     :keymap tab-bar-history-mode-map
-    "C-x 4 /" 'tab-bar-history-forward
-    "C-x 4 ?" 'tab-bar-history-back))
+    "C-x 4 ?" 'tab-bar-history-forward
+    "C-x 4 /" 'tab-bar-history-back))
 
 
 ;;;; diary / calendar
