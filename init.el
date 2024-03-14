@@ -1554,7 +1554,7 @@ see command `isearch-forward' for more information."
 (elpaca avy
   (setq avy-single-candidate-jump nil
         avy-timeout-seconds 0.45
-        avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?o ?p ?q ?r ?s ?u ?v ?x)
+        avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?n ?o ?p ?q ?r ?s ?u ?v ?x)
         avy-line-insert-style 'below)
 
   (setq avy-dispatch-alist '((?w  .  avy-action-kill-move)
@@ -1563,7 +1563,6 @@ see command `isearch-forward' for more information."
                              (?c  .  avy-action-copy)
                              (?y  .  avy-action-yank)
                              (?Y  .  avy-action-yank-line)
-                             (?$  .  avy-action-ispell)
                              (?\\ .  avy-action-zap-to-char)))
 
   (with-eval-after-load 'ace-window
@@ -1586,9 +1585,6 @@ see command `isearch-forward' for more information."
     "Y" 'david-avy-toggle-insertion-style
     "C-y" 'david-avy-toggle-insertion-style
     "i" 'avy-goto-char-in-line)
-
-  (with-eval-after-load 'conn-mode
-    (setf (alist-get ?n avy-dispatch-alist) #'avy-action-transpose))
 
   (with-eval-after-load 'avy
     (defun avy-enable-single-candidate-jump (fn &rest args)
