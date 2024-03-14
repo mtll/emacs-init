@@ -1400,6 +1400,14 @@ see command `isearch-forward' for more information."
 
 (with-eval-after-load 'conn-mode
   (keymap-global-set "M-," 'conn-expand-region)
+
+  (defvar-keymap conn-set-mark-repeat-map
+    "," 'conn-expand-region)
+  (put 'conn-set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
+  (put 'conn-set-mark-command 'repeat-check-key 'no)
+  (put 'set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
+  (put 'set-mark-command 'repeat-check-key 'no)
+
   (define-keymap
     :keymap dot-state-map
     "e" 'conn-expand-dots
