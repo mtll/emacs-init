@@ -1416,7 +1416,7 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-global-set "M-," 'conn-expand-region)
+  (keymap-global-set "M-." 'conn-expand-region)
 
   (defvar-keymap conn-set-mark-repeat-map
     "," 'conn-expand-region)
