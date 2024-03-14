@@ -1085,12 +1085,11 @@ see command `isearch-forward' for more information."
 
       (load-theme 'modus-operandi-tinted t))))
 
-(with-eval-after-load 'hi-lock
-  (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                                "modus-themes-subtle-red"
-                                "modus-themes-subtle-green"
-                                "modus-themes-subtle-blue"
-                                "modus-themes-subtle-yellow")))
+(setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                              "modus-themes-subtle-red"
+                              "modus-themes-subtle-green"
+                              "modus-themes-subtle-blue"
+                              "modus-themes-subtle-yellow"))
 
 
 ;;;; no-littering
