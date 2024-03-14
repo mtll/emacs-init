@@ -1902,14 +1902,14 @@ see command `isearch-forward' for more information."
           (cons 'page (cons
                        (buffer-substring (car bounds) (cdr bounds))
                        bounds)))))
-    (add-to-list 'embark-target-finders #'embark-looking-at-page-target-finder)
+    (add-hook 'embark-target-finders #'embark-looking-at-page-target-finder 80)
 
     (defun embark-page-target-finder ()
       (when-let ((bounds (bounds-of-thing-at-point 'page)))
         (cons 'page (cons
                      (buffer-substring (car bounds) (cdr bounds))
                      bounds))))
-    (add-to-list 'embark-target-finders #'embark-page-target-finder t)
+    (add-hook 'embark-target-finders #'embark-page-target-finder 90)
 
     (defun embark-consult-kill-lines (cands)
       (let (strs)
@@ -1960,7 +1960,7 @@ see command `isearch-forward' for more information."
         :keymap embark-bookmark-map
         "M-RET" 'embark-bookmark-link)
 
-      (add-to-list 'embark-target-finders 'embark-org-target-link)))
+      (add-hook 'embark-target-finders 'embark-org-target-link -85)))
 
   (with-eval-after-load 'vertico
     (define-keymap
