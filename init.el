@@ -1663,28 +1663,7 @@ see command `isearch-forward' for more information."
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
-      (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark)
-
-      ;; (defun avy-action-embark-dwim (pt)
-      ;;   (unwind-protect
-      ;;       (save-excursion
-      ;;         (goto-char pt)
-      ;;         (embark-dwim))
-      ;;     (select-window
-      ;;      (cdr (ring-ref avy-ring 0))))
-      ;;   t)
-      ;; (setf (alist-get ?h avy-dispatch-alist) #'avy-action-embark-dwim)
-
-      ;; (defun avy-action-embark-alt-dwim (pt)
-      ;;   (unwind-protect
-      ;;       (save-excursion
-      ;;         (goto-char pt)
-      ;;         (embark-alt-dwim))
-      ;;     (select-window
-      ;;      (cdr (ring-ref avy-ring 0))))
-      ;;   t)
-      ;; (setf (alist-get ?H avy-dispatch-alist) #'avy-action-embark-alt-dwim)
-      )
+      (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark))
 
     (defun david-avy-toggle-insertion-style ()
       (interactive)
