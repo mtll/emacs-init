@@ -1627,6 +1627,27 @@ see command `isearch-forward' for more information."
                  (t (regexp-quote isearch-string)))))
             (isearch-done)))))
 
+    (with-eval-after-load 'hyperbole
+      (defun avy-action-action-key (pt)
+        (unwind-protect
+            (save-excursion
+              (goto-char pt)
+              (action-key))
+          (select-window
+           (cdr (ring-ref avy-ring 0))))
+        t)
+      (setf (alist-get ?e avy-dispatch-alist) #'avy-action-action-key)
+
+      (defun avy-action-assist-key (pt)
+        (unwind-protect
+            (save-excursion
+              (goto-char pt)
+              (assist-key))
+          (select-window
+           (cdr (ring-ref avy-ring 0))))
+        t)
+      (setf (alist-get ?h avy-dispatch-alist) #'avy-action-assist-key))
+
     (with-eval-after-load 'embark
       (defun avy-action-embark (pt)
         (unwind-protect
@@ -1636,27 +1657,28 @@ see command `isearch-forward' for more information."
           (select-window
            (cdr (ring-ref avy-ring 0))))
         t)
-      (setf (alist-get ?e avy-dispatch-alist) #'avy-action-embark)
+      (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark)
 
-      (defun avy-action-embark-dwim (pt)
-        (unwind-protect
-            (save-excursion
-              (goto-char pt)
-              (embark-dwim))
-          (select-window
-           (cdr (ring-ref avy-ring 0))))
-        t)
-      (setf (alist-get ?h avy-dispatch-alist) #'avy-action-embark-dwim)
+      ;; (defun avy-action-embark-dwim (pt)
+      ;;   (unwind-protect
+      ;;       (save-excursion
+      ;;         (goto-char pt)
+      ;;         (embark-dwim))
+      ;;     (select-window
+      ;;      (cdr (ring-ref avy-ring 0))))
+      ;;   t)
+      ;; (setf (alist-get ?h avy-dispatch-alist) #'avy-action-embark-dwim)
 
-      (defun avy-action-embark-alt-dwim (pt)
-        (unwind-protect
-            (save-excursion
-              (goto-char pt)
-              (embark-alt-dwim))
-          (select-window
-           (cdr (ring-ref avy-ring 0))))
-        t)
-      (setf (alist-get ?H avy-dispatch-alist) #'avy-action-embark-alt-dwim))
+      ;; (defun avy-action-embark-alt-dwim (pt)
+      ;;   (unwind-protect
+      ;;       (save-excursion
+      ;;         (goto-char pt)
+      ;;         (embark-alt-dwim))
+      ;;     (select-window
+      ;;      (cdr (ring-ref avy-ring 0))))
+      ;;   t)
+      ;; (setf (alist-get ?H avy-dispatch-alist) #'avy-action-embark-alt-dwim)
+      )
 
     (defun david-avy-toggle-insertion-style ()
       (interactive)
