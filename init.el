@@ -167,6 +167,23 @@
   "C-c C-l" 'pp-eval-last-sexp
   "C-c C-r" 'eval-region)
 
+(defun david-quit-other-window-for-scrolling ()
+  (interactive)
+  (with-selected-window (other-window-for-scrolling)
+    (quit-window)))
+(keymap-global-set "C-`" 'david-quit-other-window-for-scrolling)
+(keymap-global-set "C-M-S-u" 'david-quit-other-window-for-scrolling)
+(keymap-global-set "C-M-S-i" #'scroll-other-window-down)
+(keymap-global-set "C-M-S-k" #'scroll-other-window)
+(keymap-global-set "C-M-S-." #'end-of-buffer-other-window)
+(keymap-global-set "C-M-S-," #'beginning-of-buffer-other-window)
+
+(defun david-select-other-window-for-scrolling ()
+  (interactive)
+  (when-let ((win (other-window-for-scrolling)))
+    (select-window win)))
+(keymap-global-set "C-M-S-o" #'david-select-other-window-for-scrolling)
+
 (defun kill-frame-and-buffer ()
   (interactive)
   (when-let ((buf (window-buffer (frame-root-window))))
