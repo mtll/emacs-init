@@ -1399,7 +1399,6 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-set conn-state-map "H" 'conn-expand-region)
   (keymap-global-set "M-," 'conn-expand-region)
   (define-keymap
     :keymap dot-state-map
