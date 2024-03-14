@@ -1888,6 +1888,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
+    (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
 
     ;; Make embark-dwim pass the current prefix arg along to whatever
     ;; action it selects. This is much more useful to me than using
