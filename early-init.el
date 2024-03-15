@@ -19,7 +19,7 @@
                                   (garbage-collect))))
               (add-hook 'focus-out-hook 'garbage-collect))))
 
-(fringe-mode '(10 . 8))
+(fringe-mode '(8 . 8))
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (blink-cursor-mode -1)

@@ -96,7 +96,9 @@
                                                face minibuffer-prompt)
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
       edebug-inhibit-emacs-lisp-mode-bindings t
-      bidi-inhibit-bpa t)
+      bidi-inhibit-bpa t
+      show-paren-when-point-in-periphery t
+      show-paren-highlight-openparen nil)
 
 (setq-default indent-tabs-mode nil)
 
@@ -110,62 +112,62 @@
 (undelete-frame-mode 1)
 (context-menu-mode 1)
 
-(define-key global-map [remap yank] 'yank-in-context)
+(define-key global-map [remap yank] #'yank-in-context)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-z")
 (keymap-global-unset "C-x C-z")
 
-(keymap-global-set "S-<backspace>" 'cycle-spacing)
-(keymap-global-set "C-|"           'indent-relative)
-(keymap-global-set "M-N"           'tab-bar-switch-to-next-tab)
-(keymap-global-set "M-P"           'tab-bar-switch-to-prev-tab)
-(keymap-global-set "C-:"           'read-only-mode)
-(keymap-global-set "C-c e"         'eshell)
-(keymap-global-set "C-x C-b"       'ibuffer)
+(keymap-global-set "S-<backspace>" #'cycle-spacing)
+(keymap-global-set "C-|"           #'indent-relative)
+(keymap-global-set "M-N"           #'tab-bar-switch-to-next-tab)
+(keymap-global-set "M-P"           #'tab-bar-switch-to-prev-tab)
+(keymap-global-set "C-:"           #'read-only-mode)
+(keymap-global-set "C-c e"         #'eshell)
+(keymap-global-set "C-x C-b"       #'ibuffer)
 (keymap-global-set "C-o"           goto-map)
-(keymap-global-set "M-o"           'open-line)
-(keymap-global-set "M-;"           'comment-line)
-(keymap-global-set "C-c c"         'compile)
-(keymap-global-set "M-W"           'other-window-prefix)
-(keymap-global-set "M-F"           'other-frame-prefix)
-(keymap-global-set "C-S-w"         'delete-region)
-(keymap-global-set "C-S-o"         'other-window)
-(keymap-global-set "<f2>"          'other-window)
+(keymap-global-set "M-o"           #'open-line)
+(keymap-global-set "M-;"           #'comment-line)
+(keymap-global-set "C-c c"         #'compile)
+(keymap-global-set "M-W"           #'other-window-prefix)
+(keymap-global-set "M-F"           #'other-frame-prefix)
+(keymap-global-set "C-S-w"         #'delete-region)
+(keymap-global-set "C-S-o"         #'other-window)
+(keymap-global-set "<f2>"          #'other-window)
 (put 'other-window 'repeat-map nil)
 
 (keymap-set help-map "M-k" #'describe-keymap)
 
 (define-keymap
   :keymap goto-map
-  "," 'xref-go-back
-  "." 'xref-go-forward)
+  "," #'xref-go-back
+  "." #'xref-go-forward)
 
 (defvar-keymap xref-go-back-repeat-map
   :repeat t
-  "," 'xref-go-back
-  "." 'xref-go-forward)
+  "," #'xref-go-back
+  "." #'xref-go-forward)
 
 (define-keymap
   :keymap ctl-x-map
-  "s"   'save-buffer
-  "C-s" 'save-some-buffers
-  "f"   'find-file
-  "C-f" 'set-fill-column)
+  "s"   #'save-buffer
+  "C-s" #'save-some-buffers
+  "f"   #'find-file
+  "C-f" #'set-fill-column)
 
 (define-keymap
   :keymap window-prefix-map
-  "t" 'tab-detach
-  "f" 'tear-off-window)
+  "t" #'tab-detach
+  "f" #'tear-off-window)
 
 (define-keymap
   :keymap emacs-lisp-mode-map
-  "C-c C-z" 'eval-buffer
-  "C-c C-m" 'emacs-lisp-macroexpand
-  "C-c C-e" 'eval-print-last-sexp
-  "C-c C-f" 'find-function
-  "C-c C-l" 'pp-eval-last-sexp
-  "C-c C-r" 'eval-region)
+  "C-c C-z" #'eval-buffer
+  "C-c C-m" #'emacs-lisp-macroexpand
+  "C-c C-e" #'eval-print-last-sexp
+  "C-c C-f" #'find-function
+  "C-c C-l" #'pp-eval-last-sexp
+  "C-c C-r" #'eval-region)
 
 (defun david-quit-other-window-for-scrolling ()
   (interactive)
@@ -213,24 +215,6 @@
 
 (find-function-setup-keys)
 
-(defun david-dwim-page ()
-  (interactive)
-  (if (or (bobp) (and (eolp) (not (eobp))))
-      (forward-page)
-    (backward-page)
-    (beginning-of-line))
-  (recenter 0 t))
-
-(defun david-forward-page ()
-  (interactive)
-  (forward-page)
-  (recenter 0 t))
-
-(defun david-backward-page ()
-  (interactive)
-  (backward-page)
-  (recenter 0 t))
-
 
 ;;;; view-mode
 
@@ -267,25 +251,6 @@
       display-line-numbers-type 'visual
       display-line-numbers-current-absolute nil
       display-line-numbers-major-tick 0)
-
-(add-hook 'prog-mode-hook #'display-line-numbers-mode)
-(add-hook 'text-mode-hook #'display-line-numbers-mode)
-
-(defun line-numbers-in-selected-window-configuration-change ()
-  (walk-windows
-   (lambda (win)
-     (when (buffer-local-value 'display-line-numbers-mode (window-buffer win))
-       (setf (buffer-local-value 'display-line-numbers (window-buffer win))
-             (and (eq (window-buffer win)
-                      (window-buffer (selected-window)))
-                  display-line-numbers-type))))
-   -1))
-(add-hook 'window-configuration-change-hook
-          #'line-numbers-in-selected-window-configuration-change)
-
-(defun line-numbers-in-selected-selection-change (frame)
-  (with-selected-frame frame (line-numbers-in-selected-window-configuration-change)))
-(add-hook 'window-selection-change-functions #'line-numbers-in-selected-selection-change)
 
 
 ;;;; dictionary
@@ -1171,28 +1136,28 @@ see command `isearch-forward' for more information."
 
 ;;;; popper
 
-(elpaca popper
-  (setq popper-display-function 'display-buffer-reuse-window
-        popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
-        popper-reference-buffers '("\\*Messages\\*"
-                                   "\\*Warnings\\*"
-                                   "Output\\*$"
-                                   "\\*Async Shell Command\\*"
-                                   "\\*sly-macroexpansion"
-                                   "\\*sly-description\\*"
-                                   "\\*projectile-files-errors\\*"
-                                   help-mode
-                                   helpful-mode
-                                   compilation-mode))
+;; (elpaca popper
+;;   (setq popper-display-function 'display-buffer-reuse-window
+;;         popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
+;;         popper-reference-buffers '("\\*Messages\\*"
+;;                                    "\\*Warnings\\*"
+;;                                    "Output\\*$"
+;;                                    "\\*Async Shell Command\\*"
+;;                                    "\\*sly-macroexpansion"
+;;                                    "\\*sly-description\\*"
+;;                                    "\\*projectile-files-errors\\*"
+;;                                    help-mode
+;;                                    helpful-mode
+;;                                    compilation-mode))
 
-  (define-keymap
-    :keymap global-map
-    "C-`"   'popper-toggle
-    "M-`"   'popper-cycle
-    "C-M-`" 'popper-toggle-type)
+;;   (define-keymap
+;;     :keymap global-map
+;;     "C-`"   'popper-toggle
+;;     "M-`"   'popper-cycle
+;;     "C-M-`" 'popper-toggle-type)
 
-  (popper-mode 1)
-  (popper-echo-mode 1))
+;;   (popper-mode 1)
+;;   (popper-echo-mode 1))
 
 
 ;;;; posframe
@@ -1354,6 +1319,14 @@ see command `isearch-forward' for more information."
         dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
+  (setopt conn-mark-idle-timer 0.066)
+
+  (with-eval-after-load 'modus-themes
+    (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
+                                              :background nil))))
+
+  (add-hook 'conn-local-mode-hook #'display-line-numbers-mode)
+  (add-hook 'view-mode-hook #'emacs-state)
 
   (defun conn-exit-completion ()
     (completion-in-region-mode -1))
@@ -1361,23 +1334,6 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
-
-  ;; (define-keymap
-  ;;   :keymap conn-common-map
-  ;;   "K" 'conn-end-of-inner-line
-  ;;   "M" 'forward-line
-  ;;   "I" 'conn-backward-line
-  ;;   "L" 'forward-paragraph
-  ;;   "N" 'backward-paragraph
-  ;;   "m" 'next-line
-  ;;   "l" 'forward-char
-  ;;   "n" 'backward-char
-  ;;   "j" 'backward-sexp
-  ;;   "k" 'forward-sexp)
-
-  (conn-hide-mark-cursor 'emacs-state)
-  (conn-hide-mark-cursor 'conn-state)
-  (conn-hide-mark-cursor 'dot-state)
 
   (set-default-conn-state '("COMMIT_EDITMSG.*"
                             "^\\*Echo.*")
@@ -1416,7 +1372,7 @@ see command `isearch-forward' for more information."
 ;;;;; conn-expand-region
 
 (with-eval-after-load 'conn-mode
-  (keymap-global-set "M-." 'conn-expand-region)
+  (keymap-set conn-mode-map "M-," 'conn-expand-region)
 
   (defvar-keymap conn-set-mark-repeat-map
     "," 'conn-expand-region)
@@ -1452,7 +1408,12 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap conn-state-map
     "r" 'conn-embark-region
-    "e" 'embark-dwim)
+    "e" 'embark-dwim
+    "h" #'embark-alt-dwim
+    "M-TAB" #'indent-for-tab-command
+    "M-<tab>" #'indent-for-tab-command
+    "TAB" #'embark-act
+    "<tab>" #'embark-act)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
@@ -1464,12 +1425,18 @@ see command `isearch-forward' for more information."
 
     (define-keymap
       :keymap embark-region-map
+      "j" 'conn-join-lines
+      "o" 'embark-isearch-forward
+      "u" 'embark-isearch-backward
+      "M-RET" 'indent-region
+      "RET" 'copy-region-as-kill
       "," 'indent-rigidly
       "r" 'conn-replace-region-substring
       "D" 'conn-dot-region
       "g" 'conn-duplicate-region
       "G" 'conn-duplicate-and-comment-region)
 
+    (keymap-set embark-region-map "RET" #'conn-copy-region)
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
@@ -1758,7 +1725,7 @@ see command `isearch-forward' for more information."
 
   ;; (keymap-global-set "C-." 'embark-dwim)
   ;; (keymap-global-set "C-," 'embark-alt-dwim)
-  (keymap-global-set "M-," 'embark-act)
+  (keymap-global-set "M-." 'embark-act)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
   (defun embark-act-persist ()
@@ -1829,9 +1796,10 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-grep-map)
 
   (defvar-keymap embark-page-map
-    "RET" 'david-dwim-page
-    "n" 'david-forward-page
-    "p" 'david-backward-page
+    "RET" 'forward-page
+    "M-RET" 'backward-page
+    "n" 'forward-page
+    "p" 'backward-page
     "u" 'narrow-to-page
     "m" 'mark-page)
 
@@ -1839,14 +1807,6 @@ see command `isearch-forward' for more information."
     "d" 'embark-tab-delete
     "r" 'embark-tab-rename
     "t" 'embark-tab-detach)
-
-  (with-eval-after-load 'conn-mode
-    (keymap-set conn-state-map "e" #'embark-dwim)
-    (keymap-set conn-state-map "M-TAB" #'indent-for-tab-command)
-    (keymap-set conn-state-map "h" #'embark-alt-dwim)
-    (keymap-set conn-state-map "M-<tab>" #'indent-for-tab-command)
-    (keymap-set conn-state-map "TAB" #'embark-act)
-    (keymap-set conn-state-map "<tab>" #'embark-act))
 
   (with-eval-after-load 'embark
     (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
@@ -1946,17 +1906,6 @@ see command `isearch-forward' for more information."
         (kill-new (string-join strs "\n"))))
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
-
-    (with-eval-after-load 'conn-mode
-      (keymap-set embark-region-map "RET" #'conn-copy-region)
-
-      (define-keymap
-        :keymap embark-region-map
-        "j" 'conn-join-lines
-        "o" 'embark-isearch-forward
-        "u" 'embark-isearch-backward
-        "M-RET" 'indent-region
-        "RET" 'copy-region-as-kill))
 
     (with-eval-after-load 'org
       (defun embark-bookmark-link (cand)
@@ -2424,9 +2373,9 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-lsp
   (with-eval-after-load 'lsp-mode
-    (keymap-set lsp-mode-map "M-s m" 'consult-lsp-symbols)
-    (keymap-set lsp-mode-map "M-s d" 'consult-lsp-diagnostics)
-    (keymap-set lsp-mode-map "M-s M" 'consult-lsp-file-symbols)))
+    (keymap-set lsp-mode-map "M-s m" #'consult-lsp-symbols)
+    (keymap-set lsp-mode-map "M-s d" #'consult-lsp-diagnostics)
+    (keymap-set lsp-mode-map "M-s M" #'consult-lsp-file-symbols)))
 
 ;;;;; consult-extras
 
@@ -2596,20 +2545,20 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap vertico-map
-    "<f1>" 'vertico-focus-selected-window
-    "M-i" 'vertico-insert
-    "RET" 'vertico-directory-enter
-    "DEL" 'vertico-directory-delete-char
-    "C-<backspace>" 'vertico-directory-delete-word
-    "C-DEL" 'vertico-directory-delete-word
-    "M-<backspace>" 'vertico-directory-up
-    "M-DEL" 'vertico-directory-up
-    "M-RET" 'vertico-exit-input
-    "C-M-j" 'vertico-exit-input
-    "C-M-<return>" 'vertico-exit-input
-    "C-j" 'vertico-quick-jump
-    "C-S-j" 'vertico-quick-exit
-    "C-w" 'david-vertico-copy-or-kill)
+    "<f1>" #'vertico-focus-selected-window
+    "M-i" #'vertico-insert
+    "RET" #'vertico-directory-enter
+    "DEL" #'vertico-directory-delete-char
+    "C-<backspace>" #'vertico-directory-delete-word
+    "C-DEL" #'vertico-directory-delete-word
+    "M-<backspace>" #'vertico-directory-up
+    "M-DEL" #'vertico-directory-up
+    "M-RET" #'vertico-exit-input
+    "C-M-j" #'vertico-exit-input
+    "C-M-<return>" #'vertico-exit-input
+    "C-j" #'vertico-quick-jump
+    "C-S-j" #'vertico-quick-exit
+    "C-w" #'david-vertico-copy-or-kill)
 
   (defun david-vertico-copy-or-kill (beg end)
     (interactive (list (region-beginning) (region-end)))
@@ -2776,16 +2725,16 @@ see command `isearch-forward' for more information."
     (require 'denote-org-extras)
     (denote-rename-buffer-mode 1))
 
-  (keymap-global-set "C-c n e" 'denote-org-extras-extract-org-subtree)
-  (keymap-global-set "C-c n d" 'denote-dired-directory)
-  (keymap-global-set "C-c n n" 'denote)
-  (keymap-global-set "C-c n s" 'denote-signature)
-  (keymap-global-set "C-c n a" 'denote-keywords-add)
-  (keymap-global-set "C-c n r" 'denote-keywords-remove)
-  (keymap-global-set "C-c n w" 'denote-rename-file)
-  (keymap-global-set "C-c n b" 'denote-backlinks)
-  (keymap-global-set "C-c n B" 'denote-find-backlink)
-  (keymap-global-set "C-c n l" 'denote-find-link)
+  (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
+  (keymap-global-set "C-c n d" #'denote-dired-directory)
+  (keymap-global-set "C-c n n" #'denote)
+  (keymap-global-set "C-c n s" #'denote-signature)
+  (keymap-global-set "C-c n a" #'denote-keywords-add)
+  (keymap-global-set "C-c n r" #'denote-keywords-remove)
+  (keymap-global-set "C-c n w" #'denote-rename-file)
+  (keymap-global-set "C-c n b" #'denote-backlinks)
+  (keymap-global-set "C-c n B" #'denote-find-backlink)
+  (keymap-global-set "C-c n l" #'denote-find-link)
 
   (defun denote-dired-directory ()
     (interactive)
@@ -2944,13 +2893,13 @@ see command `isearch-forward' for more information."
                       :repo "minad/tab-bookmark")
   (define-keymap
     :keymap bookmark-map
-    "v b" 'tab-bookmark
-    "v r" 'tab-bookmark-rename
-    "v s" 'tab-bookmark-save
-    "v o" 'tab-bookmark-open
-    "v d" 'tab-bookmark-delete
-    "v k" 'tab-bookmark-push
-    "v i" 'tab-bookmark-pop))
+    "v b" #'tab-bookmark
+    "v r" #'tab-bookmark-rename
+    "v s" #'tab-bookmark-save
+    "v o" #'tab-bookmark-open
+    "v d" #'tab-bookmark-delete
+    "v k" #'tab-bookmark-push
+    "v i" #'tab-bookmark-pop))
 
 
 ;;;; diff-hl
@@ -2985,6 +2934,9 @@ see command `isearch-forward' for more information."
 
 (elpaca hyperbole
   (hyperbole-mode 1)
+
+  (with-eval-after-load 'diminish
+    (diminish 'hyperbole-mode))
 
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
   ;; (setq temp-buffer-show-function nil)
