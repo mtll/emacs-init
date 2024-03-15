@@ -1341,9 +1341,9 @@ see command `isearch-forward' for more information."
   (keymap-set conn-buffer-map "D" 'toggle-window-dedicated)
 
   (define-keymap
-    :keymap view-state-map
-    "<remap> <backward-page>" 'david-backward-page
-    "<remap> <forward-page>" 'david-forward-page)
+    :keymap conn-mode-map
+    "<remap> <forward-char>" 'conn-goto-char-forward
+    "<remap> <backward-char>" 'conn-goto-char-backward)
 
   (define-keymap
     :keymap global-map
@@ -1806,9 +1806,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
           (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
-
-    (cl-pushnew 'david-forward-page embark-repeat-actions)
-    (cl-pushnew 'david-backward-page embark-repeat-actions)
 
     (set-keymap-parent embark-consult-location-map embark-general-map)
     (set-keymap-parent embark-consult-grep-map embark-general-map)
