@@ -66,7 +66,7 @@
       read-buffer-completion-ignore-case t
       translate-upper-case-key-bindings nil
       show-paren-context-when-offscreen 'child-frame
-      sentence-end-double-space nil
+      sentence-end-double-space t
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
       dired-listing-switches "-alFh --dired --group-directories-first"
@@ -125,8 +125,6 @@
 (keymap-global-set "C-:"           #'read-only-mode)
 (keymap-global-set "C-c e"         #'eshell)
 (keymap-global-set "C-x C-b"       #'ibuffer)
-(keymap-global-set "C-o"           goto-map)
-(keymap-global-set "M-o"           #'open-line)
 (keymap-global-set "M-;"           #'comment-line)
 (keymap-global-set "C-c c"         #'compile)
 (keymap-global-set "M-W"           #'other-window-prefix)
@@ -528,9 +526,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-;; (elpaca benchmark-init
-;;   (require 'benchmark-init)
-;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+(elpaca benchmark-init
+  (require 'benchmark-init)
+  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -616,18 +614,13 @@ see command `isearch-forward' for more information."
 
     (with-eval-after-load 'conn-mode
       (define-keymap
-        :keymap (conn-set-mode-map 'conn-state 'paredit-mode)
-        "C-<backspace>" 'paredit-backward-kill-word
-        "M-DEL"         'paredit-backward-kill-word
-        "DEL"           'paredit-backward-delete)
-
-      (defvar conn-paredit-mode-map
-        (define-keymap
-          :keymap (conn-set-mode-map '(conn-state dot-state) 'paredit-mode)
-          "<remap> <forward-sexp>" 'paredit-forward
-          "<remap> <backward-sexp>" 'paredit-backward
-          "<remap> <forward-sentence>" 'paredit-forward-up
-          "<remap> <backward-sentence>" 'paredit-backward-up))
+        :keymap (conn-set-mode-map '(conn-state dot-state) 'paredit-mode)
+        "<remap> <backward-kill-word>" 'paredit-backward-kill-word
+        "<remap> <backward-delete>" 'paredit-backward-delete
+        "<remap> <forward-sexp>" 'paredit-forward
+        "<remap> <backward-sexp>" 'paredit-backward
+        "<remap> <forward-sentence>" 'paredit-forward-up
+        "<remap> <backward-sentence>" 'paredit-backward-up)
 
       (conn-add-thing-movement-command 'sexp 'paredit-forward)
       (conn-add-thing-movement-command 'sexp 'paredit-backward)
@@ -1325,7 +1318,7 @@ see command `isearch-forward' for more information."
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
                                               :background nil))))
 
-  (add-hook 'conn-local-mode-hook #'display-line-numbers-mode)
+  ;; (add-hook 'conn-local-mode-hook #'display-line-numbers-mode)
   (add-hook 'view-mode-hook #'emacs-state)
 
   (defun conn-exit-completion ()
@@ -1334,6 +1327,8 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
+
+  (conn-hide-mark-cursor 'view-state)
 
   (set-default-conn-state '("COMMIT_EDITMSG.*"
                             "^\\*Echo.*")
