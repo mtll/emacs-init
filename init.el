@@ -3125,6 +3125,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-." 'action-key)
   (keymap-global-set "C-," 'assist-key)
   (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-frames-mode)
+  (keymap-unset hyperbole-mode-map "C-c RET")
 
   (with-eval-after-load 'conn-mode
     (define-keymap
