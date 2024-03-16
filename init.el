@@ -1333,7 +1333,6 @@ see command `isearch-forward' for more information."
   (set-default-conn-state '("COMMIT_EDITMSG.*"
                             "^\\*Echo.*")
                           'emacs-state)
-  (put 'emacs-state :conn-ephemeral-marks t)
 
   (conn-add-mark-trail-command 'forward-whitespace)
   (conn-add-mark-trail-command 'conn-backward-whitespace)
@@ -1409,6 +1408,8 @@ see command `isearch-forward' for more information."
     "M-<tab>" #'indent-for-tab-command
     "TAB" #'embark-act
     "<tab>" #'embark-act)
+
+  (keymap-set emacs-state-map "M-TAB" 'embark-act)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
@@ -2936,18 +2937,33 @@ see command `isearch-forward' for more information."
 
   (defvar action-key-eol)
   (defvar assist-key-eol)
+  (defvar hyperbole-embark-target-finders)
 
   (setq hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
         action-key-default-function #'action-key-error
         assist-key-default-function #'assist-key-error
         smart-scroll-proportional nil
+        hyperbole-embark-target-finders '(embark--vertico-selected
+                                          embark-target-top-minibuffer-candidate
+                                          embark-target-active-region
+                                          embark-org-target-link
+                                          embark-org-target-element-context
+                                          embark-org-target-agenda-item
+                                          embark-target-collect-candidate
+                                          embark-target-completion-list-candidate
+                                          embark-target-flymake-at-point
+                                          embark-target-smerge-at-point
+                                          embark-target-package-at-point
+                                          embark-target-email-at-point
+                                          embark-target-url-at-point
+                                          embark-target-file-at-point
+                                          embark-target-custom-variable-at-point
+                                          embark-target-identifier-at-point
+                                          embark-target-guess-file-at-point
+                                          embark-target-expression-at-point
+                                          embark-looking-at-page-target-finder)
         ;; Remove items I want embark to handle instead.
         hkey-alist '(;; Company completion mode
-                     ((memq last-command '(action-key-eol assist-key-eol))
-                      . ((progn (funcall action-key-eol-function)
-                                (setq this-command 'action-key-eol))
-                         . (progn (funcall assist-key-eol-function)
-                                  (setq this-command 'assist-key-eol))))
                      ((and (boundp 'company-active-map)
                            (memq company-active-map (current-minor-mode-maps)))
                       . ((smart-company-to-definition) . (smart-company-help)))
@@ -2970,6 +2986,10 @@ see command `isearch-forward' for more information."
                      ((and (fboundp 'button-at) (button-at (point)))
                       . ((smart-push-button nil (mouse-event-p last-command-event))
                          . (smart-push-button-help nil (mouse-event-p last-command-event))))
+                     ;;
+                     ;; Smart end of line
+                     ((smart-eolp)
+                      . ((funcall action-key-eol-function) . (funcall assist-key-eol-function)))
                      ;;
                      ;; Handle any Org mode-specific contexts but give priority to Hyperbole
                      ;; buttons prior to cycling Org headlines
@@ -3106,26 +3126,9 @@ see command `isearch-forward' for more information."
                      ;;
                      ;; Embark-dwim
                      ((setq hkey-value
-                            (let* ((embark-target-finders
-                                    (seq-difference (cl-subst 'embark-looking-at-expression-target
-                                                              'embark-target-expression-at-point
-                                                              embark-target-finders)
-                                                    '(embark-target-text-heading-at-point
-                                                      embark-target-bug-reference-at-point
-                                                      embark-target-sentence-at-point
-                                                      embark-target-paragraph-at-point
-                                                      embark-target-defun-at-point
-                                                      embark-target-prog-heading-at-point
-                                                      embark-page-target-finder))))
+                            (let* ((embark-target-finders hyperbole-embark-target-finders))
                               (car (embark--targets))))
                       . ((embark-smart-action) . (embark-smart-assist)))
-                     ;;
-                     ;; Smart eol
-                     ((smart-eolp)
-                      . ((and (funcall action-key-eol-function)
-                              (setq this-command 'action-key-eol))
-                         . (and (funcall assist-key-eol-function)
-                                (setq this-command 'assist-key-eol))))
                      ;;
                      ;; Outline minor mode
                      ((and (boundp 'outline-minor-mode) outline-minor-mode)
@@ -3134,14 +3137,6 @@ see command `isearch-forward' for more information."
                      ;; Todotxt
                      ((eq major-mode 'todotxt-mode)
                       . ((smart-todotxt) . (smart-todotxt-assist)))))
-
-  (defun embark-looking-at-expression-target ()
-    (pcase (embark-target-expression-at-point)
-      ((and target `(,_ ,_ ,beg . ,end)
-            (guard (or (= (point) beg)
-                       (= (point) end))))
-       target)
-      (_ nil)))
 
   (defun embark-smart-action ()
     (interactive)
@@ -3197,10 +3192,16 @@ see command `isearch-forward' for more information."
       (hact 'www-url (concat "https://debbugs.gnu.org/cgi/bugreport.cgi?bug="
                              (match-string 1)))))
 
-  (keymap-global-set "C-." 'action-key)
-  (keymap-global-set "C-," 'assist-key)
+  (keymap-global-set "C-," 'action-key)
+  (keymap-global-set "C-." 'assist-key)
   (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-frames-mode)
   (keymap-unset hyperbole-mode-map "C-c RET")
+  (keymap-unset hyperbole-mode-map "M-RET")
+  (keymap-unset hyperbole-mode-map "M-<return>")
+
+  (with-eval-after-load 'vertico
+    (keymap-set vertico-map "RET" 'action-key)
+    (keymap-set vertico-map "M-RET" 'assist-key))
 
   (with-eval-after-load 'conn-mode
     (dolist (state '(conn-state view-state))
