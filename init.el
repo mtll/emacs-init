@@ -171,7 +171,6 @@
   (interactive)
   (with-selected-window (other-window-for-scrolling)
     (quit-window)))
-(keymap-global-set "C-`" 'david-quit-other-window-for-scrolling)
 (keymap-global-set "C-M-S-u" 'david-quit-other-window-for-scrolling)
 (keymap-global-set "C-M-S-i" #'scroll-other-window-down)
 (keymap-global-set "C-M-S-k" #'scroll-other-window)
@@ -1129,28 +1128,28 @@ see command `isearch-forward' for more information."
 
 ;;;; popper
 
-;; (elpaca popper
-;;   (setq popper-display-function 'display-buffer-reuse-window
-;;         popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
-;;         popper-reference-buffers '("\\*Messages\\*"
-;;                                    "\\*Warnings\\*"
-;;                                    "Output\\*$"
-;;                                    "\\*Async Shell Command\\*"
-;;                                    "\\*sly-macroexpansion"
-;;                                    "\\*sly-description\\*"
-;;                                    "\\*projectile-files-errors\\*"
-;;                                    help-mode
-;;                                    helpful-mode
-;;                                    compilation-mode))
+(elpaca popper
+  (setq popper-display-function 'display-buffer-reuse-window
+        popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
+        popper-reference-buffers '("\\*Messages\\*"
+                                   "\\*Warnings\\*"
+                                   "Output\\*$"
+                                   "\\*Async Shell Command\\*"
+                                   "\\*sly-macroexpansion"
+                                   "\\*sly-description\\*"
+                                   "\\*projectile-files-errors\\*"
+                                   help-mode
+                                   helpful-mode
+                                   compilation-mode))
 
-;;   (define-keymap
-;;     :keymap global-map
-;;     "C-`"   'popper-toggle
-;;     "M-`"   'popper-cycle
-;;     "C-M-`" 'popper-toggle-type)
+  (define-keymap
+    :keymap global-map
+    "C-`"   'popper-toggle
+    "M-`"   'popper-cycle
+    "C-M-`" 'popper-toggle-type)
 
-;;   (popper-mode 1)
-;;   (popper-echo-mode 1))
+  (popper-mode 1)
+  (popper-echo-mode 1))
 
 
 ;;;; posframe
@@ -2943,6 +2942,7 @@ see command `isearch-forward' for more information."
         action-key-default-function #'action-key-error
         assist-key-default-function #'assist-key-error
         smart-scroll-proportional nil
+        hpath:display-where 'this-window
         hyperbole-embark-target-finders '(embark--vertico-selected
                                           embark-target-top-minibuffer-candidate
                                           embark-target-active-region
@@ -3199,14 +3199,10 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "M-RET")
   (keymap-unset hyperbole-mode-map "M-<return>")
 
-  (with-eval-after-load 'vertico
-    (keymap-set vertico-map "RET" 'action-key)
-    (keymap-set vertico-map "M-RET" 'assist-key))
-
   (with-eval-after-load 'conn-mode
     (dolist (state '(conn-state view-state))
       (define-keymap
         :keymap (conn-get-mode-map state 'hyperbole-mode)
         "e" #'action-key
         "h" #'assist-key
-        "H" #'hyperbole))))
+        "," #'hyperbole))))
