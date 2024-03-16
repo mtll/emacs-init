@@ -582,7 +582,8 @@ see command `isearch-forward' for more information."
     (keymap-unset paredit-mode-map "RET")
     (keymap-unset paredit-mode-map "M-s")
     (keymap-unset paredit-mode-map "M-;")
-    (keymap-set   paredit-mode-map "M-l" 'paredit-splice-sexp)
+
+    (keymap-set paredit-mode-map "M-l" 'paredit-splice-sexp)
     (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
     (keymap-set paredit-mode-map "<remap> <kill-region>" 'paredit-kill-region)
     (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
@@ -1315,7 +1316,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'modus-themes
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
-                                              :background nil))))
+                                              :background unspecified))))
 
   ;; (add-hook 'conn-local-mode-hook #'display-line-numbers-mode)
   (add-hook 'view-mode-hook #'emacs-state)
@@ -2924,6 +2925,7 @@ see command `isearch-forward' for more information."
 ;;;; hyperbole
 
 (elpaca hyperbole
+  (require 'embark)
   (hyperbole-mode 1)
 
   (with-eval-after-load 'diminish
@@ -2932,11 +2934,20 @@ see command `isearch-forward' for more information."
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
   ;; (setq temp-buffer-show-function nil)
 
+  (defvar action-key-eol)
+  (defvar assist-key-eol)
+
   (setq hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
-        action-key-default-function #'embark-dwim
-        assist-key-default-function #'embark-alt-dwim
+        action-key-default-function #'action-key-error
+        assist-key-default-function #'assist-key-error
+        smart-scroll-proportional nil
         ;; Remove items I want embark to handle instead.
         hkey-alist '(;; Company completion mode
+                     ((memq last-command '(action-key-eol assist-key-eol))
+                      . ((progn (funcall action-key-eol-function)
+                                (setq this-command 'action-key-eol))
+                         . (progn (funcall assist-key-eol-function)
+                                  (setq this-command 'assist-key-eol))))
                      ((and (boundp 'company-active-map)
                            (memq company-active-map (current-minor-mode-maps)))
                       . ((smart-company-to-definition) . (smart-company-help)))
@@ -3093,9 +3104,82 @@ see command `isearch-forward' for more information."
                      ((eq major-mode 'gomoku-mode)
                       . ((gomoku-human-plays) . (gomoku-human-takes-back)))
                      ;;
+                     ;; Embark-dwim
+                     ((setq hkey-value
+                            (let* ((embark-target-finders
+                                    (seq-difference (cl-subst 'embark-looking-at-expression-target
+                                                              'embark-target-expression-at-point
+                                                              embark-target-finders)
+                                                    '(embark-target-text-heading-at-point
+                                                      embark-target-bug-reference-at-point
+                                                      embark-target-sentence-at-point
+                                                      embark-target-paragraph-at-point
+                                                      embark-target-defun-at-point
+                                                      embark-target-prog-heading-at-point
+                                                      embark-page-target-finder))))
+                              (car (embark--targets))))
+                      . ((embark-smart-action) . (embark-smart-assist)))
+                     ;;
+                     ;; Smart eol
+                     ((smart-eolp)
+                      . ((and (funcall action-key-eol-function)
+                              (setq this-command 'action-key-eol))
+                         . (and (funcall assist-key-eol-function)
+                                (setq this-command 'assist-key-eol))))
+                     ;;
+                     ;; Outline minor mode
+                     ((and (boundp 'outline-minor-mode) outline-minor-mode)
+                      . ((smart-outline) . (smart-outline-assist)))
+                     ;;
                      ;; Todotxt
                      ((eq major-mode 'todotxt-mode)
                       . ((smart-todotxt) . (smart-todotxt-assist)))))
+
+  (defun embark-looking-at-expression-target ()
+    (pcase (embark-target-expression-at-point)
+      ((and target `(,_ ,_ ,beg . ,end)
+            (guard (or (= (point) beg)
+                       (= (point) end))))
+       target)
+      (_ nil)))
+
+  (defun embark-smart-action ()
+    (interactive)
+    (let* ((target hkey-value)
+           (type (plist-get target :type))
+           (default-action (embark--default-action type))
+           (action (or (command-remapping default-action) default-action)))
+      (unless action
+        (user-error "No default action for %s targets" type))
+      (when (and current-prefix-arg (minibufferp))
+        (setq embark--toggle-quit t))
+      (embark--act action
+                   (if (and (eq default-action embark--command)
+                            (not (memq default-action
+                                       embark-multitarget-actions)))
+                       (embark--orig-target target)
+                     target)
+                   (embark--quit-p action)))
+    (setq hkey-value nil))
+
+  (defun embark-smart-assist ()
+    (interactive)
+    (let* ((target hkey-value)
+           (type (plist-get target :type))
+           (default-action (embark-alt--default-action type))
+           (action (or (command-remapping default-action) default-action)))
+      (unless action
+        (user-error "No default action for %s targets" type))
+      (when (and current-prefix-arg (minibufferp))
+        (setq embark--toggle-quit t))
+      (embark--act action
+                   (if (and (eq default-action embark--command)
+                            (not (memq default-action
+                                       embark-multitarget-actions)))
+                       (embark--orig-target target)
+                     target)
+                   (embark--quit-p action)))
+    (setq hkey-value nil))
 
   (defib gh-issue-link ()
     "Link to a github issue."
