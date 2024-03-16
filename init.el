@@ -613,14 +613,15 @@ see command `isearch-forward' for more information."
       (electric-pair-local-mode -1))
 
     (with-eval-after-load 'conn-mode
-      (define-keymap
-        :keymap (conn-set-mode-map '(conn-state dot-state) 'paredit-mode)
-        "<remap> <backward-kill-word>" 'paredit-backward-kill-word
-        "<remap> <backward-delete>" 'paredit-backward-delete
-        "<remap> <forward-sexp>" 'paredit-forward
-        "<remap> <backward-sexp>" 'paredit-backward
-        "<remap> <forward-sentence>" 'paredit-forward-up
-        "<remap> <backward-sentence>" 'paredit-backward-up)
+      (dolist (state '(conn-state dot-state))
+        (define-keymap
+          :keymap (conn-get-mode-map state 'paredit-mode)
+          "<remap> <backward-kill-word>" 'paredit-backward-kill-word
+          "<remap> <backward-delete>" 'paredit-backward-delete
+          "<remap> <forward-sexp>" 'paredit-forward
+          "<remap> <backward-sexp>" 'paredit-backward
+          "<remap> <forward-sentence>" 'paredit-forward-up
+          "<remap> <backward-sentence>" 'paredit-backward-up))
 
       (conn-add-thing-movement-command 'sexp 'paredit-forward)
       (conn-add-thing-movement-command 'sexp 'paredit-backward)
@@ -732,8 +733,6 @@ see command `isearch-forward' for more information."
 ;;;; lsp-mode
 
 (elpaca lsp-mode
-  (keymap-global-set "C-c s" 'lsp)
-
   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
 
   (setq lsp-keymap-prefix "C-c l"
@@ -751,8 +750,8 @@ see command `isearch-forward' for more information."
                                   "--background-index"
                                   "--clang-tidy"
                                   "--cross-file-rename"
-                                  "--header-insertion=never"))
-  (setq lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
+                                  "--header-insertion=never")
+        lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
 
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
@@ -3120,9 +3119,9 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "C-c RET")
 
   (with-eval-after-load 'conn-mode
-    (define-keymap
-      :keymap (conn-set-mode-map '(conn-state view-state)
-                                 'hyperbole-mode)
-      "e" #'action-key
-      "h" #'assist-key
-      "H" #'hyperbole)))
+    (dolist (state '(conn-state view-state))
+      (define-keymap
+        :keymap (conn-get-mode-map state 'hyperbole-mode)
+        "e" #'action-key
+        "h" #'assist-key
+        "H" #'hyperbole))))
