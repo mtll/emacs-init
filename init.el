@@ -212,6 +212,20 @@
 
 (find-function-setup-keys)
 
+(defun david-forward-page ()
+  (interactive)
+  (when (looking-at page-delimiter)
+    (forward-char))
+  (forward-page)
+  (beginning-of-line))
+
+(defun david-backward-page ()
+  (interactive)
+  (when (looking-at page-delimiter)
+    (forward-char))
+  (backward-page)
+  (beginning-of-line))
+
 
 ;;;; view-mode
 
@@ -1791,8 +1805,8 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-grep-map)
 
   (defvar-keymap embark-page-map
-    "RET" 'forward-page
-    "M-RET" 'backward-page
+    "RET" 'david-forward-page
+    "M-RET" 'david-backward-page
     "n" 'forward-page
     "p" 'backward-page
     "u" 'narrow-to-page
@@ -1875,7 +1889,7 @@ see command `isearch-forward' for more information."
           (cons 'page (cons
                        (buffer-substring (car bounds) (cdr bounds))
                        bounds)))))
-    (add-hook 'embark-target-finders #'embark-looking-at-page-target-finder 80)
+    (add-hook 'embark-target-finders #'embark-looking-at-page-target-finder -80)
 
     (defun embark-page-target-finder ()
       (when-let ((bounds (bounds-of-thing-at-point 'page)))
@@ -2932,7 +2946,6 @@ see command `isearch-forward' for more information."
     (diminish 'hyperbole-mode))
 
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
-  ;; (setq temp-buffer-show-function nil)
 
   (defvar action-key-eol)
   (defvar assist-key-eol)
@@ -2957,6 +2970,7 @@ see command `isearch-forward' for more information."
                                           embark-target-email-at-point
                                           embark-target-url-at-point
                                           embark-target-file-at-point
+                                          embark-target-defun-looking-at
                                           embark-target-custom-variable-at-point
                                           embark-target-identifier-at-point
                                           embark-target-guess-file-at-point
@@ -3137,6 +3151,12 @@ see command `isearch-forward' for more information."
                      ;; Todotxt
                      ((eq major-mode 'todotxt-mode)
                       . ((smart-todotxt) . (smart-todotxt-assist)))))
+
+  (defun embark-target-defun-looking-at ()
+    (pcase (embark-target-defun-at-point)
+      ((and target `(,_ ,_ ,beg . ,end)
+            (guard (= beg (point))))
+       target)))
 
   (defun embark-smart-action ()
     (interactive)
