@@ -1333,8 +1333,8 @@ see command `isearch-forward' for more information."
 (elpaca (conn-mode :host codeberg
                    :repo "crcs/conn-mode"
                    :files (:defaults "extensions/*"))
-  (setq conn-lighter nil
-        conn-state-buffer-colors t
+  (setq conn-state-buffer-colors t
+        conn-lighter ""
         conn-modes '(eshell-mode
                      grep-mode
                      occur-mode
@@ -1349,6 +1349,7 @@ see command `isearch-forward' for more information."
         dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
+
   (setopt conn-mark-idle-timer 0.066)
 
   (with-eval-after-load 'modus-themes
@@ -1397,7 +1398,7 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap conn-misc-edit-map
     "d" 'duplicate-dwim
-    "," 'subword-mode
+    ">" 'subword-mode
     "<" 'global-subword-mode))
 
 ;;;;; conn-expand-region
@@ -1456,20 +1457,6 @@ see command `isearch-forward' for more information."
       "R" 'conn-embark-replace-region
       "~" 'conn-dot-region)
 
-    (define-keymap
-      :keymap embark-region-map
-      "j" 'conn-join-lines
-      "o" 'embark-isearch-forward
-      "u" 'embark-isearch-backward
-      "M-RET" 'indent-region
-      "RET" 'copy-region-as-kill
-      "," 'indent-rigidly
-      "r" 'conn-replace-region-substring
-      "D" 'conn-dot-region
-      "g" 'conn-duplicate-region
-      "G" 'conn-duplicate-and-comment-region)
-
-    (keymap-set embark-region-map "RET" #'conn-copy-region)
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
@@ -1970,6 +1957,7 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap embark-region-map
       "l" 'consult-line
+      "r" 'consult-ripgrep
       "h" nil
       "h o" 'consult-line
       "h f" 'consult-find
@@ -2951,7 +2939,7 @@ see command `isearch-forward' for more information."
 
 (elpaca dumb-jump
   (with-eval-after-load 'xref
-    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)))
+    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate 90)))
 
 
 ;;;; jinx
@@ -2966,16 +2954,12 @@ see command `isearch-forward' for more information."
   (require 'embark)
   (hyperbole-mode 1)
 
-  (with-eval-after-load 'diminish
-    (diminish 'hyperbole-mode))
-
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
 
-  (defvar action-key-eol)
-  (defvar assist-key-eol)
   (defvar hyperbole-embark-target-finders)
 
-  (setq hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
+  (setq hyperbole-mode-lighter " Hy"
+        hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
         action-key-default-function #'action-key-error
         assist-key-default-function #'assist-key-error
         smart-scroll-proportional nil
