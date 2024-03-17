@@ -96,9 +96,7 @@
                                                face minibuffer-prompt)
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
       edebug-inhibit-emacs-lisp-mode-bindings t
-      bidi-inhibit-bpa t
-      show-paren-when-point-in-periphery t
-      show-paren-highlight-openparen nil)
+      bidi-inhibit-bpa t)
 
 (setq-default indent-tabs-mode nil)
 
@@ -167,21 +165,21 @@
   "C-c C-l" #'pp-eval-last-sexp
   "C-c C-r" #'eval-region)
 
-(defun david-quit-other-window-for-scrolling ()
+(defun my/quit-other-window-for-scrolling ()
   (interactive)
   (with-selected-window (other-window-for-scrolling)
     (quit-window)))
-(keymap-global-set "C-M-S-u" 'david-quit-other-window-for-scrolling)
+(keymap-global-set "C-M-S-u" 'my/quit-other-window-for-scrolling)
 (keymap-global-set "C-M-S-i" #'scroll-other-window-down)
 (keymap-global-set "C-M-S-k" #'scroll-other-window)
 (keymap-global-set "C-M-S-." #'end-of-buffer-other-window)
 (keymap-global-set "C-M-S-," #'beginning-of-buffer-other-window)
 
-(defun david-select-other-window-for-scrolling ()
+(defun my/select-other-window-for-scrolling ()
   (interactive)
   (when-let ((win (other-window-for-scrolling)))
     (select-window win)))
-(keymap-global-set "C-M-S-o" #'david-select-other-window-for-scrolling)
+(keymap-global-set "C-M-S-o" #'my/select-other-window-for-scrolling)
 
 (defun kill-frame-and-buffer ()
   (interactive)
@@ -212,14 +210,14 @@
 
 (find-function-setup-keys)
 
-(defun david-forward-page ()
+(defun my/forward-page ()
   (interactive)
   (when (looking-at page-delimiter)
     (forward-char))
   (forward-page)
   (beginning-of-line))
 
-(defun david-backward-page ()
+(defun my/backward-page ()
   (interactive)
   (when (looking-at page-delimiter)
     (forward-char))
@@ -240,6 +238,9 @@
   (keymap-set outline-minor-mode-map "C-c u"
               (make-composed-keymap (list outline-editing-repeat-map
                                           outline-navigation-repeat-map)))
+
+  (pcase-dolist (`(,_ . ,def) (cdr outline-navigation-repeat-map))
+    (put def 'repeat-map nil))
 
   (defun narrow-to-heading ()
     (interactive)
@@ -444,6 +445,35 @@ see command `isearch-forward' for more information."
 
 (repeat-mode 1)
 
+;; Change cursor color when repeating, from:
+;; https://gist.github.com/jdtsmith/a169362879388bc1bdf2bbb977782d4f
+(let ((orig (default-value 'repeat-echo-function))
+      rcol ccol in-repeat)
+  (setq
+   repeat-echo-function
+   (lambda (map)
+     (if orig (funcall orig map))
+     (unless rcol (setq rcol (face-foreground 'error)))
+     (if map
+         (unless in-repeat		; new repeat sequence
+           (setq in-repeat t
+                 ccol (face-background 'cursor))
+           (set-frame-parameter nil 'my/repeat-cursor ccol))
+       (setq in-repeat nil)
+       (set-frame-parameter nil 'my/repeat-cursor nil))
+     (set-cursor-color (if map rcol ccol))))
+  (add-function
+   :after after-focus-change-function
+   (let ((sym 'my/remove-repeat-cursor-color-on-focus-change))
+     (defalias sym
+       (lambda ()
+         (when in-repeat
+           (dolist (frame (frame-list))
+             (when-let ((col (frame-parameter frame 'my/repeat-cursor)))
+               (with-selected-frame frame
+                 (set-cursor-color col)))))))
+     sym)))
+
 (keymap-global-set "C-x c" 'repeat)
 
 
@@ -470,7 +500,7 @@ see command `isearch-forward' for more information."
 
   (recentf-mode 1)
 
-  (defvar david-recentf-autosave
+  (defvar my/recentf-autosave
     (run-with-idle-timer
      4 t (lambda ()
            (when recentf-mode
@@ -539,9 +569,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-(elpaca benchmark-init
-  (require 'benchmark-init)
-  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+;; (elpaca benchmark-init
+;;   (require 'benchmark-init)
+;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -977,7 +1007,9 @@ see command `isearch-forward' for more information."
 ;;;; org
 
 (elpaca org
-  (run-with-idle-timer 4 nil (lambda () (require 'org)))
+  ;; (run-with-idle-timer 1.5 nil (lambda () (require 'org)))
+
+  ;; (setopt org-use-speed-commands t)
 
   (setq org-agenda-include-diary t
         org-src-window-setup 'plain
@@ -1256,14 +1288,6 @@ see command `isearch-forward' for more information."
     (keymap-set conn-misc-edit-map "w" #'zz-narrow-repeat)))
 
 
-;;;; info+
-
-;; (elpaca (info+ :host github
-;;                   :repo "emacsmirror/info-plus"
-;;                   :main "info+.el")
-;;   (run-with-timer 1 nil (lambda () (require 'info+))))
-
-
 ;;;; isearch+
 
 (elpaca (isearch+ :host github
@@ -1415,8 +1439,8 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap conn-state-map
     "r" 'conn-embark-region
-    "e" 'embark-dwim
-    "h" #'embark-alt-dwim
+    ;; "e" 'embark-dwim
+    ;; "h" #'embark-alt-dwim
     "M-TAB" #'indent-for-tab-command
     "M-<tab>" #'indent-for-tab-command
     "TAB" #'embark-act
@@ -1575,8 +1599,8 @@ see command `isearch-forward' for more information."
     "k" 'avy-goto-line
     "l" 'avy-goto-end-of-line
     "z" 'avy-resume
-    "Y" 'david-avy-toggle-insertion-style
-    "C-y" 'david-avy-toggle-insertion-style
+    "Y" 'my/avy-toggle-insertion-style
+    "C-y" 'my/avy-toggle-insertion-style
     "i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'avy
@@ -1641,13 +1665,13 @@ see command `isearch-forward' for more information."
         t)
       (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark))
 
-    (defun david-avy-toggle-insertion-style ()
+    (defun my/avy-toggle-insertion-style ()
       (interactive)
       (if (eq avy-line-insert-style 'above)
           (setq avy-line-insert-style 'below)
         (setq avy-line-insert-style 'above))
       (message "Avy line insertion style set to: %s" avy-line-insert-style))
-    (put 'david-avy-toggle-insertion-style 'repeat-map goto-map)))
+    (put 'my/avy-toggle-insertion-style 'repeat-map goto-map)))
 
 
 ;;;; helpful
@@ -1805,8 +1829,8 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-grep-map)
 
   (defvar-keymap embark-page-map
-    "RET" 'david-forward-page
-    "M-RET" 'david-backward-page
+    "RET" 'my/forward-page
+    "M-RET" 'my/backward-page
     "n" 'forward-page
     "p" 'backward-page
     "u" 'narrow-to-page
@@ -2564,9 +2588,9 @@ see command `isearch-forward' for more information."
     "C-M-<return>" #'vertico-exit-input
     "C-j" #'vertico-quick-jump
     "C-S-j" #'vertico-quick-exit
-    "C-w" #'david-vertico-copy-or-kill)
+    "C-w" #'my/vertico-copy-or-kill)
 
-  (defun david-vertico-copy-or-kill (beg end)
+  (defun my/vertico-copy-or-kill (beg end)
     (interactive (list (region-beginning) (region-end)))
     (if (or (use-region-p) (not transient-mark-mode))
         (call-interactively #'kill-region)
@@ -2593,7 +2617,7 @@ see command `isearch-forward' for more information."
                (name (and (symbolp alias) (symbol-name alias))))
       (format #(" (%s)" 1 5 (face marginalia-function)) name)))
 
-  (defun david-marginalia-annotate-binding (cand)
+  (defun my/marginalia-annotate-binding (cand)
     "Annotate command CAND with keybinding."
     (when-let ((sym (intern-soft cand))
                (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
@@ -2604,7 +2628,7 @@ see command `isearch-forward' for more information."
     Similar to `marginalia-annotate-symbol', but does not show symbol class."
     (when-let (sym (intern-soft cand))
       (concat
-       (david-marginalia-annotate-binding cand)
+       (my/marginalia-annotate-binding cand)
        (marginalia-annotate-alias cand)
        (marginalia--documentation (marginalia--function-doc sym)))))
   (cl-pushnew #'marginalia-annotate-command-with-alias
@@ -3214,15 +3238,19 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-," 'action-key)
   (keymap-global-set "C-." 'assist-key)
-  (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-frames-mode)
+  (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-windows-mode)
   (keymap-unset hyperbole-mode-map "C-c RET")
   (keymap-unset hyperbole-mode-map "M-RET")
   (keymap-unset hyperbole-mode-map "M-<return>")
 
   (with-eval-after-load 'conn-mode
-    (dolist (state '(conn-state view-state))
+    (dolist (state '(conn-state org-tree-edit-state))
       (define-keymap
         :keymap (conn-get-mode-map state 'hyperbole-mode)
         "e" #'action-key
         "h" #'assist-key
-        "," #'hyperbole))))
+        "," #'hyperbole))
+
+    (define-keymap
+      :keymap (conn-get-mode-map 'view-state 'hyperbole-mode)
+      "," #'hyperbole)))
