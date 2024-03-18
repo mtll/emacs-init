@@ -96,7 +96,12 @@
                                                face minibuffer-prompt)
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
       edebug-inhibit-emacs-lisp-mode-bindings t
-      bidi-inhibit-bpa t)
+      bidi-inhibit-bpa t
+      cycle-spacing-actions '(just-one-space
+                              delete-all-space
+                              delete-space-after
+                              delete-space-before
+                              restore))
 
 (setq-default indent-tabs-mode nil)
 
@@ -592,6 +597,9 @@ see command `isearch-forward' for more information."
     "n n" 'ni-narrow-to-region-indirect-other-window
     "n p" 'ni-narrow-to-page-indirect-other-window)
 
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-region-map "N" 'ni-narrow-to-region-indirect-other-window))
+
   (with-eval-after-load 'embark
     (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
     (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
@@ -657,15 +665,14 @@ see command `isearch-forward' for more information."
       (electric-pair-local-mode -1))
 
     (with-eval-after-load 'conn-mode
-      (dolist (state '(conn-state dot-state))
-        (define-keymap
-          :keymap (conn-get-mode-map state 'paredit-mode)
-          "<remap> <backward-kill-word>" 'paredit-backward-kill-word
-          "<remap> <backward-delete>" 'paredit-backward-delete
-          "<remap> <forward-sexp>" 'paredit-forward
-          "<remap> <backward-sexp>" 'paredit-backward
-          "<remap> <forward-sentence>" 'paredit-forward-up
-          "<remap> <backward-sentence>" 'paredit-backward-up))
+      (define-keymap
+        :keymap paredit-mode-map
+        "<remap> <backward-kill-word>" 'paredit-backward-kill-word
+        "<remap> <backward-delete>" 'paredit-backward-delete
+        "<remap> <forward-sexp>" 'paredit-forward
+        "<remap> <backward-sexp>" 'paredit-backward
+        "<remap> <forward-sentence>" 'paredit-forward-up
+        "<remap> <backward-sentence>" 'paredit-backward-up)
 
       (conn-add-thing-movement-command 'sexp 'paredit-forward)
       (conn-add-thing-movement-command 'sexp 'paredit-backward)
@@ -1318,6 +1325,7 @@ see command `isearch-forward' for more information."
     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
     (keymap-set isearch-mode-map "M-o" 'isearchp-toggles-map)
+    (keymap-set isearch-mode-map "C-S-o" 'isearchp-open-recursive-edit)
     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
@@ -1350,7 +1358,8 @@ see command `isearch-forward' for more information."
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
 
-  (setopt conn-mark-idle-timer 0.066)
+  (setopt conn-mark-idle-timer 0.066
+          conn-aux-map-update-delay 0.25)
 
   (with-eval-after-load 'modus-themes
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
@@ -1393,12 +1402,6 @@ see command `isearch-forward' for more information."
     :keymap conn-misc-edit-map
     "d" 'duplicate-dwim
     "," 'subword-mode
-    "<" 'global-subword-mode)
-
-  (define-keymap
-    :keymap conn-misc-edit-map
-    "d" 'duplicate-dwim
-    ">" 'subword-mode
     "<" 'global-subword-mode))
 
 ;;;;; conn-expand-region
@@ -1435,11 +1438,9 @@ see command `isearch-forward' for more information."
 ;;;;; conn-embark
 
 (with-eval-after-load 'conn-mode
-  (setq prefix-help-command 'conn-complete-keys)
-
   (define-keymap
     :keymap conn-state-map
-    "r" 'conn-embark-region
+    ;; "r" 'conn-embark-region
     ;; "e" 'embark-dwim
     ;; "h" #'embark-alt-dwim
     "M-TAB" #'indent-for-tab-command
@@ -1450,7 +1451,7 @@ see command `isearch-forward' for more information."
   (keymap-set emacs-state-map "M-TAB" 'embark-act)
 
   (with-eval-after-load 'embark
-    (require 'conn-embark)
+    (conn-complete-keys-prefix-help-command-mode 1)
 
     (define-keymap
       :keymap embark-general-map
@@ -1461,10 +1462,6 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
 
-    (setq conn-complete-keys-prefix-help-command t)
-
-    (conn-complete-keys-mode 1)
-
     (with-eval-after-load 'consult
       (keymap-set embark-consult-location-map "D" 'conn-dot-consult-location-candidate)
       (keymap-set embark-consult-grep-map "D" 'conn-dot-consult-grep-candidate))))
@@ -1472,14 +1469,15 @@ see command `isearch-forward' for more information."
 ;;;;; conn-consult
 
 (with-eval-after-load 'conn-mode
-  (keymap-set search-map "t" 'conn-consult-thing)
-  (with-eval-after-load 'consult
-    (require 'conn-consult)))
+  (require 'conn-consult))
 
 
 ;;;; ialign
 
 (elpaca ialign
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-region-map "a" 'ialign))
+
   (with-eval-after-load 'embark
     (defun embark-ialign (_reg)
       (ialign (region-beginning) (region-end)))
@@ -2183,10 +2181,10 @@ see command `isearch-forward' for more information."
                                  consult--source-project-buffer-hidden
                                  consult--source-project-recent-file-hidden))
 
-  (define-key global-map [remap Info-search] 'consult-info)
-  (define-key global-map [remap bookmark-jump] 'consult-bookmark)
-  (define-key global-map [remap yank-pop] 'consult-yank-pop)
-  (keymap-global-set "<remap> <yank-from-kill-ring>" #'consult-yank-pop)
+  (keymap-global-set "<remap> <Info-search>" #'consult-info)
+  (keymap-global-set "<remap> <bookmark-jump>" #'consult-bookmark)
+  (keymap-global-set "<remap> <yank-pop>" #'consult-yank-pop)
+  (keymap-global-set "<remap> <yank-from-kill-ring>" #'consult-yank-from-kill-ring)
   (keymap-global-set "<remap> <jump-to-register>" #'consult-register-load)
   (keymap-global-set "C-x k" 'kill-this-buffer)
   (keymap-global-set "M-X" 'consult-mode-command)
@@ -2201,7 +2199,7 @@ see command `isearch-forward' for more information."
     :keymap search-map
     "p" 'consult-page
     "K" 'consult-kmacro
-    "n" 'consult-ripgrep-n
+    "N" 'consult-ripgrep-n
     "w" 'consult-man
     "e" 'consult-isearch-history
     "o" 'consult-outline
@@ -2939,7 +2937,7 @@ see command `isearch-forward' for more information."
 
 (elpaca dumb-jump
   (with-eval-after-load 'xref
-    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate 90)))
+    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)))
 
 
 ;;;; jinx
