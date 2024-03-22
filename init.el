@@ -1243,6 +1243,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-region-map "z" #'zz-add-zone))
 
   (with-eval-after-load 'conn-mode
+    (keymap-set conn-state-map "X" 'zz-narrow)
     (keymap-set conn-misc-edit-map "w" #'zz-narrow-repeat)))
 
 
@@ -1299,8 +1300,8 @@ see command `isearch-forward' for more information."
         conn-state-cursor-type 'box
         emacs-state-cursor-type 'box)
 
-  (setopt conn-mark-idle-timer 0.066
-          conn-aux-map-update-delay 0)
+  (setopt conn-mark-idle-timer 0.05
+          conn-aux-map-update-delay 0.05)
 
   (with-eval-after-load 'modus-themes
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
@@ -1327,11 +1328,7 @@ see command `isearch-forward' for more information."
     "C-c v" 'conn-toggle-mark-command
     "M-n" 'conn-embark-region)
 
-  (define-keymap
-    :keymap conn-misc-edit-map
-    "d" 'duplicate-dwim
-    "," 'subword-mode
-    "<" 'global-subword-mode)
+  (keymap-global-set "C-x ," 'global-subword-mode)
 
   (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
   (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-toggle-dot)
@@ -1356,10 +1353,6 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
 
-    (with-eval-after-load 'consult
-      (keymap-set embark-consult-location-map "D" 'conn-dot-consult-location-candidate)
-      (keymap-set embark-consult-grep-map "D" 'conn-dot-consult-grep-candidate))
-
     (keymap-set conn-mode-map "M-," 'conn-expand-region)
 
     (defvar-keymap conn-set-mark-repeat-map
@@ -1368,12 +1361,7 @@ see command `isearch-forward' for more information."
     (put 'conn-set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
     (put 'conn-set-mark-command 'repeat-check-key 'no)
     (put 'set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
-    (put 'set-mark-command 'repeat-check-key 'no)
-
-    (define-keymap
-      :keymap dot-state-map
-      "e" 'conn-expand-dots
-      "a" 'conn-contract-dots))
+    (put 'set-mark-command 'repeat-check-key 'no))
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
@@ -2030,6 +2018,7 @@ see command `isearch-forward' for more information."
 ;;;; orderless
 
 (elpaca orderless
+  (require 'orderless)
   (setq orderless-affix-dispatch-alist '((?\= . orderless-literal)
                                          (?! . orderless-without-literal)
                                          (?, . orderless-initialism))
@@ -2069,14 +2058,13 @@ see command `isearch-forward' for more information."
   (defun flex-first (pattern index _total)
     (when (= index 0) `(orderless-flex . ,pattern)))
 
-  (with-eval-after-load 'orderless
-    (orderless-define-completion-style orderless+flex
-      (orderless-matching-styles '(orderless-literal
-                                   orderless-initialism
-                                   orderless-regexp))
-      (orderless-style-dispatchers '(orderless-kwd-dispatch
-                                     orderless-affix-dispatch
-                                     flex-first)))))
+  (orderless-define-completion-style orderless+flex
+    (orderless-matching-styles '(orderless-literal
+                                 orderless-initialism
+                                 orderless-regexp))
+    (orderless-style-dispatchers '(orderless-kwd-dispatch
+                                   orderless-affix-dispatch
+                                   flex-first))))
 
 ;;;;; orderless-set-operations
 
@@ -2111,10 +2099,10 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <yank-pop>" #'consult-yank-pop)
   (keymap-global-set "<remap> <yank-from-kill-ring>" #'consult-yank-from-kill-ring)
   (keymap-global-set "<remap> <jump-to-register>" #'consult-register-load)
+  (keymap-global-set "<remap> <switch-to-buffer>" 'consult-buffer)
   (keymap-global-set "C-x k" 'kill-this-buffer)
   (keymap-global-set "M-X" 'consult-mode-command)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
-  (keymap-global-set "C-x b" 'consult-buffer)
   (keymap-global-set "C-h i" 'consult-info)
   (keymap-global-set "C-h TAB" 'info)
 
@@ -3156,7 +3144,7 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "C-c RET" t)
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
-  (keymap-unset hyperbole-mode-map "M-w" t)
+  (keymap-set hyperbole-mode-map "M-w" nil)
 
   (with-eval-after-load 'conn-mode
     (dolist (state '(conn-state org-tree-edit-state))
