@@ -276,7 +276,7 @@
 
 (require 'dictionary)
 (setq dictionary-server "localhost")
-(keymap-global-set "C-c d" #'dictionary-lookup-definition)
+(keymap-global-set "C-c t d" #'dictionary-lookup-definition)
 
 
 ;;;; isearch
@@ -1289,8 +1289,8 @@ see command `isearch-forward' for more information."
 
 ;;;; conn-mode
 
-(elpaca (conn-mode :host codeberg
-                   :repo "crcs/conn-mode"
+(elpaca (conn-mode :host github
+                   :repo "mtll/conn-mode"
                    :files (:defaults "extensions/*"))
   (setq conn-state-buffer-colors t
         conn-lighter ""
@@ -1300,7 +1300,7 @@ see command `isearch-forward' for more information."
         emacs-state-cursor-type 'box)
 
   (setopt conn-mark-idle-timer 0.066
-          conn-aux-map-update-delay 0.25)
+          conn-aux-map-update-delay 0)
 
   (with-eval-after-load 'modus-themes
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
@@ -1317,11 +1317,6 @@ see command `isearch-forward' for more information."
                             "^\\*Echo.*")
                           'emacs-state)
 
-  (conn-add-mark-trail-command 'forward-whitespace)
-  (conn-add-mark-trail-command 'conn-backward-whitespace)
-
-  (keymap-set conn-buffer-map "D" 'toggle-window-dedicated)
-
   (define-keymap
     :keymap conn-mode-map
     "<remap> <forward-char>" 'conn-goto-char-forward
@@ -1329,8 +1324,6 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap global-map
-    "C-c b" 'conn-buffer-map
-    "C-c a" 'conn-misc-edit-map
     "C-c v" 'conn-toggle-mark-command
     "M-n" 'conn-embark-region)
 
@@ -1341,9 +1334,7 @@ see command `isearch-forward' for more information."
     "<" 'global-subword-mode)
 
   (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
-
-  (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-dot-toggle)
-
+  (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-toggle-dot)
   (keymap-set goto-map "C-," 'conn-avy-goto-dot)
 
   (define-keymap
@@ -2089,8 +2080,8 @@ see command `isearch-forward' for more information."
 
 ;;;;; orderless-set-operations
 
-(elpaca (orderless-set-operations :host codeberg
-                                  :repo "crcs/orderless-set-operations")
+(elpaca (orderless-set-operations :host github
+                                  :repo "mtll/orderless-set-operations")
   (with-eval-after-load 'orderless
     (oso-mode 1)))
 
@@ -2314,9 +2305,7 @@ see command `isearch-forward' for more information."
         "M-RET" 'consult-org-link-location)))
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)
-    (keymap-set conn-buffer-map "u" 'consult-project-buffer)
-    (keymap-set conn-buffer-map "b" 'ibuffer)))
+    (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)))
 
 ;;;;; consult-dir
 
@@ -2920,6 +2909,8 @@ see command `isearch-forward' for more information."
                                           embark-target-guess-file-at-point
                                           embark-target-expression-at-point
                                           embark-looking-at-page-target-finder)
+        action-key-eol-function #'ignore
+        assist-key-eol-function #'ignore
         ;; Remove items I want embark to handle instead.
         hkey-alist '(;; Company completion mode
                      ((and (boundp 'company-active-map)
@@ -3088,13 +3079,13 @@ see command `isearch-forward' for more information."
                               (car (embark--targets))))
                       . ((embark-smart-action) . (embark-smart-assist)))
                      ;;
-                     ;; Outline minor mode
-                     ((and (boundp 'outline-minor-mode) outline-minor-mode)
-                      . ((smart-outline) . (smart-outline-assist)))
-                     ;;
                      ;; Todotxt
                      ((eq major-mode 'todotxt-mode)
-                      . ((smart-todotxt) . (smart-todotxt-assist)))))
+                      . ((smart-todotxt) . (smart-todotxt-assist)))
+                     ;;
+                     ;; Outline minor mode
+                     ((and (boundp 'outline-minor-mode) outline-minor-mode)
+                      . ((smart-outline) . (smart-outline-assist)))))
 
   (keymap-set hyperbole-mode-map "<remap> <scroll-up-command>" 'smart-scroll-up)
   (keymap-set hyperbole-mode-map "<remap> <scroll-down-command>" 'smart-scroll-down)
@@ -3162,9 +3153,10 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-," 'action-key)
   (keymap-global-set "C-." 'assist-key)
   (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-windows-mode)
-  (keymap-unset hyperbole-mode-map "C-c RET")
-  (keymap-unset hyperbole-mode-map "M-RET")
-  (keymap-unset hyperbole-mode-map "M-<return>")
+  (keymap-unset hyperbole-mode-map "C-c RET" t)
+  (keymap-unset hyperbole-mode-map "M-RET" t)
+  (keymap-unset hyperbole-mode-map "M-<return>" t)
+  (keymap-unset hyperbole-mode-map "M-w" t)
 
   (with-eval-after-load 'conn-mode
     (dolist (state '(conn-state org-tree-edit-state))
@@ -3174,6 +3166,4 @@ see command `isearch-forward' for more information."
         "h" #'assist-key
         "," #'hyperbole))
 
-    (define-keymap
-      :keymap (conn-get-mode-map 'view-state 'hyperbole-mode)
-      "," #'hyperbole)))
+    (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "," #'hyperbole)))
