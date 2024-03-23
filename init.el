@@ -1603,7 +1603,9 @@ see command `isearch-forward' for more information."
 
 ;;;; magit
 
-(elpaca magit)
+(elpaca magit
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-misc-edit-map "h" 'magit-status)))
 
 
 ;;;; flycheck
@@ -2115,14 +2117,14 @@ see command `isearch-forward' for more information."
     "N" 'consult-ripgrep-n
     "w" 'consult-man
     "e" 'consult-isearch-history
-    "o" 'consult-outline
-    "l" 'consult-line
+    "t" 'consult-outline
+    "o" 'consult-line
     "L" 'consult-line-multi
     "r" 'consult-ripgrep
     "G" 'consult-grep
     "g" 'consult-git-grep
     "f" 'consult-find
-    "O" 'consult-locate
+    "L" 'consult-locate
     "v" 'consult-focus-lines
     "k" 'consult-keep-lines
     "i" 'consult-imenu
@@ -3147,11 +3149,18 @@ see command `isearch-forward' for more information."
   (keymap-set hyperbole-mode-map "M-w" nil)
 
   (with-eval-after-load 'conn-mode
+    (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
+    (keymap-set hycontrol-frames-mode-map ":" 'hycontrol-enable-windows-mode)
+
+    (dolist (state '(conn-state dot-state view-state org-tree-edit-state))
+      (keymap-set (conn-get-mode-map state 'hyperbole-mode)
+                  ":" 'hycontrol-enable-windows-mode))
+
     (dolist (state '(conn-state org-tree-edit-state))
       (define-keymap
         :keymap (conn-get-mode-map state 'hyperbole-mode)
         "e" #'action-key
         "h" #'assist-key
-        "," #'hyperbole))
+        "H" #'hyperbole))
 
-    (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "," #'hyperbole)))
+    (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "H" #'hyperbole)))
