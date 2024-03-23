@@ -121,6 +121,7 @@
 (keymap-global-unset "C-z")
 (keymap-global-unset "C-x C-z")
 
+(keymap-global-set "C-z"             #'exit-recursive-edit)
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
 (keymap-global-set "C-M-<return>"    #'default-indent-new-line)
 (keymap-global-set "S-<backspace>"   #'cycle-spacing)
@@ -1604,8 +1605,7 @@ see command `isearch-forward' for more information."
 ;;;; magit
 
 (elpaca magit
-  (with-eval-after-load 'conn-mode
-    (keymap-set conn-misc-edit-map "h" 'magit-status)))
+  (keymap-global-set "C-c s" 'magit-status))
 
 
 ;;;; flycheck
@@ -2312,9 +2312,9 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-lsp
   (with-eval-after-load 'lsp-mode
-    (keymap-set lsp-mode-map "M-s m" #'consult-lsp-symbols)
-    (keymap-set lsp-mode-map "M-s d" #'consult-lsp-diagnostics)
-    (keymap-set lsp-mode-map "M-s M" #'consult-lsp-file-symbols)))
+    (keymap-set lsp-mode-map "M-s ," #'consult-lsp-symbols)
+    (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
+    (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
 
 ;;;;; consult-extras
 
