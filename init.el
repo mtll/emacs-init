@@ -572,12 +572,7 @@ see command `isearch-forward' for more information."
     "n p" 'ni-narrow-to-page-indirect-other-window)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-region-map "N" 'ni-narrow-to-region-indirect-other-window))
-
-  (with-eval-after-load 'embark
-    (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
-    (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
-    (keymap-set embark-page-map "o" 'ni-narrow-to-page-indirect-other-window)))
+    (keymap-set conn-region-map "N" 'ni-narrow-to-region-indirect-other-window)))
 
 
 ;;;; paredit
@@ -1196,12 +1191,6 @@ see command `isearch-forward' for more information."
     (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
 
 
-;;;; expand-region
-
-(elpaca expand-region
-  (keymap-global-set "C-t" 'er/expand-region))
-
-
 ;;;; zones
 
 (elpaca zones
@@ -1301,17 +1290,26 @@ see command `isearch-forward' for more information."
     (require 'isearch-prop)))
 
 
+;;;; undo-hl
+
+;; (elpaca (undo-hl :host github :repo "casouri/undo-hl")
+;;   (undo-hl-mode 1))
+
+
 ;;;; conn-mode
 
 (elpaca (conn-mode :host github
                    :repo "mtll/conn-mode"
                    :files (:defaults "extensions/*"))
+  (require 'embark)
+  (require 'expreg)
   (setq conn-state-buffer-colors t
         conn-lighter ""
         conn-delete-region-keys "C-S-w"
         dot-state-cursor-type 'box
         conn-state-cursor-type 'box
-        emacs-state-cursor-type 'box)
+        emacs-state-cursor-type 'box
+        conn-expreg-leave-region-active nil)
 
   (setopt conn-mark-idle-timer 0.05
           conn-aux-map-update-delay 0.05)
@@ -1324,6 +1322,8 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
+  (conn-embark-dwim-keys 1)
+  (conn-expreg-always-use-region 1)
 
   (conn-hide-mark-cursor 'view-state)
 
@@ -1344,14 +1344,14 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap conn-state-map
-    "<remap> <forward-char>" 'conn-goto-char-forward
-    "<remap> <backward-char>" 'conn-goto-char-backward
-    "M-TAB" #'indent-for-tab-command
-    "M-<tab>" #'indent-for-tab-command
-    "TAB" #'embark-act
-    "<tab>" #'embark-act)
+    ;; "<remap> <forward-char>" 'conn-goto-char-forward
+    ;; "<remap> <backward-char>" 'conn-goto-char-backward
+    ;; "M-TAB" #'indent-for-tab-command
+    ;; "M-<tab>" #'indent-for-tab-command
+    "M-TAB" #'embark-act
+    "M-<tab>" #'embark-act)
 
-  (keymap-set conn-common-map "B" 'tab-switch)
+  (keymap-set conn-common-map "T" 'tab-switch)
 
   (keymap-set emacs-state-map "M-TAB" 'embark-act)
 
@@ -1377,6 +1377,22 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
+
+
+;;;; evil text objects
+
+(elpaca evil-textobj-tree-sitter)
+
+
+;;;; expreg
+
+(elpaca expreg
+  (keymap-global-set "C-t" 'expreg-expand)
+
+  (with-eval-after-load 'conn-mode
+    (define-keymap
+     :keymap conn-common-map
+     "b" 'expreg-expand)))
 
 
 ;;;; ialign
@@ -1667,8 +1683,6 @@ see command `isearch-forward' for more information."
         embark-help-key "?"
         embark-confirm-act-all nil)
 
-  ;; (keymap-global-set "C-." 'embark-dwim)
-  ;; (keymap-global-set "C-," 'embark-alt-dwim)
   (keymap-global-set "M-." 'embark-act)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
@@ -1685,57 +1699,6 @@ see command `isearch-forward' for more information."
         (embark-act-all)
       (embark-act)))
 
-  (defcustom embark-alt-default-action-overrides nil
-    "`embark-default-action-overrides' for alternate actions."
-    :type '(alist :key-type (choice (symbol :tag "Type")
-                                    (cons (symbol :tag "Type")
-                                          (symbol :tag "Command")))
-                  :value-type (function :tag "Default action")))
-
-  (defun embark-alt--default-action (type)
-    "`embark--default-action' for alt actions"
-    (or (alist-get (cons type embark--command) embark-alt-default-action-overrides
-                   nil nil #'equal)
-        (alist-get type embark-alt-default-action-overrides)
-        (alist-get t embark-alt-default-action-overrides)
-        (keymap-lookup (embark--raw-action-keymap type) "M-RET")))
-
-  (defun embark-alt-dwim (&optional arg)
-    "alternate `embark-dwim'."
-    (interactive "P")
-    (require 'embark)
-    (if-let ((targets (embark--targets)))
-        (let* ((target (car targets))
-               (type (plist-get target :type))
-               (default-action (embark-alt--default-action type))
-               (action (or (command-remapping default-action) default-action))
-               (prefix-arg current-prefix-arg))
-          (unless action
-            (user-error "No default action for %s targets" type))
-          (when (and arg (minibufferp)) (setq embark--toggle-quit t))
-          (embark--act action
-                       (if (and (eq default-action embark--command)
-                                (not (memq default-action
-                                           embark-multitarget-actions)))
-                           (embark--orig-target target)
-                         target)
-                       (embark--quit-p action)))
-      (user-error "No target found")))
-
-  (defun embark-alt-heading-target-finder ()
-    (when (and (derived-mode-p 'outline-mode)
-               (outline-on-heading-p))
-      (let ((bounds (save-excursion
-                      (let ((beg))
-                        (beginning-of-line)
-                        (setq beg (point))
-                        (outline-end-of-subtree)
-                        (cons beg (point))))))
-        (cons 'outline-heading
-              (cons
-               (buffer-substring (car bounds) (cdr bounds))
-               bounds)))))
-
   (defvar-keymap embark-consult-location-map)
   (defvar-keymap embark-consult-grep-map)
 
@@ -1746,6 +1709,11 @@ see command `isearch-forward' for more information."
     "p" 'backward-page
     "u" 'narrow-to-page
     "m" 'mark-page)
+
+  (with-eval-after-load 'narrow-indirect
+    (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
+    (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
+    (keymap-set embark-page-map "o" 'ni-narrow-to-page-indirect-other-window))
 
   (defvar-keymap my/embark-tab-map
     "d" 'embark-tab-delete
@@ -1764,34 +1732,11 @@ see command `isearch-forward' for more information."
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    (keymap-set embark-defun-map "M-RET" 'comment-region)
-    (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
+    ;; (keymap-set embark-defun-map "M-RET" 'comment-region)
+    ;; (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
-    (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
+    ;; (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
-
-    ;; Make embark-dwim pass the current prefix arg along to whatever
-    ;; action it selects. This is much more useful to me than using
-    ;; the prefix arg to select a specific target.
-    (defun embark-dwim (&optional arg)
-      (interactive "P")
-      (if-let ((targets (embark--targets)))
-          (let* ((target (car targets))
-                 (type (plist-get target :type))
-                 (default-action (embark--default-action type))
-                 (action (or (command-remapping default-action) default-action))
-                 (prefix-arg current-prefix-arg))
-            (unless action
-              (user-error "No default action for %s targets" type))
-            (when (and arg (minibufferp)) (setq embark--toggle-quit t))
-            (embark--act action
-                         (if (and (eq default-action embark--command)
-                                  (not (memq default-action
-                                             embark-multitarget-actions)))
-                             (embark--orig-target target)
-                           target)
-                         (embark--quit-p action)))
-        (user-error "No target found")))
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
@@ -2253,6 +2198,51 @@ see command `isearch-forward' for more information."
   (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
   (advice-add #'register-preview :override #'consult-register-window)
 
+  (defun consult-goto-edit ()
+    (interactive)
+    (let* ((curr-line (line-number-at-pos (point) consult-line-numbers-widen))
+           (candidates (consult--slow-operation "Collecting lines..."
+                         (let ((candidates nil))
+                           (save-excursion
+                             (dolist (undo buffer-undo-list)
+                               (pcase undo
+                                 ((and (pred integerp) pos)
+                                  (goto-char pos)
+                                  (push (line-number-at-pos) candidates))
+                                 ((and `(,beg . ,_end)
+                                       (guard (integerp beg)))
+                                  (goto-char beg)
+                                  (push (line-number-at-pos) candidates))
+                                 ((and `(,string . ,pos)
+                                       (guard (stringp string)))
+                                  (goto-char (abs pos))
+                                  (push (line-number-at-pos) candidates)))))
+                           (mapcar (lambda (line)
+                                     (goto-line line)
+                                     (let ((beg (line-beginning-position))
+                                           (end (line-end-position)))
+                                       (consult--location-candidate
+                                        (consult--buffer-substring beg end)
+                                        (cons (current-buffer) beg) line line)))
+                                   (nreverse (seq-uniq candidates
+                                                       (lambda (l1 l2)
+                                                         (< (abs (- l1 l2)) 5)))))))))
+      (consult--read
+       candidates
+       :prompt "Go to edit: "
+       :annotate (consult--line-prefix curr-line)
+       :category 'consult-location
+       :sort nil
+       :require-match t
+       ;; Always add last `isearch-string' to future history
+       :add-history (list (thing-at-point 'symbol) isearch-string)
+       :history '(:input consult--line-history)
+       :lookup #'consult--line-match
+       :default (car candidates)
+       ;; Add `isearch-string' as initial input if starting from Isearch
+       :state (consult--location-state candidates))))
+  (keymap-set search-map "/" 'consult-goto-edit)
+  
   (with-eval-after-load 'ibuffer
     (defun conn-consult-line-multi-ibuffer-marked ()
       (interactive)
@@ -2593,7 +2583,16 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-i" 'tempel-complete)
+  (keymap-global-set "M-i" 'tempel-insert)
+  (keymap-global-set "M-I" 'tempel-insert-region)
+
+  (defun tempel-insert-region ()
+    (interactive)
+    (require 'tempel)
+    (activate-mark t)
+    (unwind-protect
+        (call-interactively 'tempel-insert)
+      (deactivate-mark)))
 
   (with-eval-after-load 'tempel
     (setq tempel-path "/home/dave/.emacs.d/templates/*.eld")
@@ -2880,6 +2879,7 @@ see command `isearch-forward' for more information."
 
 (elpaca hyperbole
   (require 'embark)
+  (require 'conn-mode)
   (hyperbole-mode 1)
 
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
@@ -3119,7 +3119,7 @@ see command `isearch-forward' for more information."
     (interactive)
     (let* ((target hkey-value)
            (type (plist-get target :type))
-           (default-action (embark-alt--default-action type))
+           (default-action (conn-embark-alt--default-action type))
            (action (or (command-remapping default-action) default-action)))
       (unless action
         (user-error "No default action for %s targets" type))
@@ -3157,19 +3157,19 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
-  (with-eval-after-load 'conn-mode
-    (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
-    (keymap-set hycontrol-frames-mode-map ":" 'hycontrol-enable-windows-mode)
+  (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
+  (keymap-set hycontrol-frames-mode-map ":" 'hycontrol-enable-windows-mode)
 
-    (dolist (state '(conn-state dot-state view-state org-tree-edit-state))
-      (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-                  ":" 'hycontrol-enable-windows-mode))
+  (dolist (state '(conn-state dot-state view-state org-tree-edit-state))
+    (keymap-set (conn-get-mode-map state 'hyperbole-mode)
+                ":" 'hycontrol-enable-windows-mode))
 
-    (dolist (state '(conn-state org-tree-edit-state))
-      (define-keymap
-        :keymap (conn-get-mode-map state 'hyperbole-mode)
-        "e" #'action-key
-        "h" #'assist-key
-        "H" #'hyperbole))
+  (dolist (state '(conn-state org-tree-edit-state))
+    (define-keymap
+      :keymap (conn-get-mode-map state 'hyperbole-mode)
+      "e" #'action-key
+      "h" #'assist-key
+      "H" #'hyperbole))
 
-    (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "H" #'hyperbole)))
+  (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "H" #'hyperbole))
+
