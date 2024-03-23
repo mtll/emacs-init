@@ -138,6 +138,7 @@
 (keymap-global-set "C-S-w"           #'delete-region)
 (keymap-global-set "C-S-o"           #'other-window)
 (keymap-global-set "<f2>"            #'other-window)
+
 (put 'other-window 'repeat-map nil)
 
 (keymap-set help-map "M-k" #'describe-keymap)
@@ -231,6 +232,18 @@
     (forward-char))
   (backward-page)
   (beginning-of-line))
+
+
+;;;; kmacro
+
+(require 'kmacro)
+(keymap-global-set "C-x m" 'kmacro-keymap)
+
+(define-keymap
+  :keymap kmacro-keymap
+  "a" 'kmacro-add-counter
+  "s" 'kmacro-set-counter
+  "S" 'kmacro-start-macro)
 
 
 ;;;; view-mode
@@ -664,6 +677,7 @@ see command `isearch-forward' for more information."
                          slime-sbcl-exts
                          slime-banner))
 
+  ;; TODO: use local embark-keymap-alist instead
   (defun slime-setup-embark ()
     (require 'embark)
     (setq-local embark-expression-map (define-keymap
@@ -1270,14 +1284,12 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'isearch+
     (keymap-unset isearch-mode-map "C-t")
     (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
-    (keymap-set isearch-mode-map "C-o" isearchp-filter-map)
     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
     (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
-    (keymap-set isearch-mode-map "M-o" 'isearchp-toggles-map)
     (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
@@ -1320,11 +1332,6 @@ see command `isearch-forward' for more information."
                           'emacs-state)
 
   (define-keymap
-    :keymap conn-mode-map
-    "<remap> <forward-char>" 'conn-goto-char-forward
-    "<remap> <backward-char>" 'conn-goto-char-backward)
-
-  (define-keymap
     :keymap global-map
     "C-c v" 'conn-toggle-mark-command
     "M-n" 'conn-embark-region)
@@ -1337,10 +1344,14 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap conn-state-map
+    "<remap> <forward-char>" 'conn-goto-char-forward
+    "<remap> <backward-char>" 'conn-goto-char-backward
     "M-TAB" #'indent-for-tab-command
     "M-<tab>" #'indent-for-tab-command
     "TAB" #'embark-act
     "<tab>" #'embark-act)
+
+  (keymap-set conn-common-map "B" 'tab-switch)
 
   (keymap-set emacs-state-map "M-TAB" 'embark-act)
 
@@ -1470,12 +1481,12 @@ see command `isearch-forward' for more information."
         (apply app)))
     (advice-add #'avy-process :around 'avy-process-disable-aw-update))
 
-  (keymap-set isearch-mode-map "C-o u"   'avy-isearch)
+  (keymap-set isearch-mode-map "M-," 'avy-isearch)
 
   (define-keymap
     :keymap goto-map
     "j" 'avy-goto-char-timer
-    "u" 'avy-goto-word-or-subword-1
+    "o" 'avy-goto-word-or-subword-1
     "m" 'avy-goto-symbol-1
     "k" 'avy-goto-line
     "l" 'avy-goto-end-of-line
@@ -1736,14 +1747,14 @@ see command `isearch-forward' for more information."
     "u" 'narrow-to-page
     "m" 'mark-page)
 
-  (defvar-keymap embark-tab-bar-map
+  (defvar-keymap my/embark-tab-map
     "d" 'embark-tab-delete
     "r" 'embark-tab-rename
     "t" 'embark-tab-detach)
 
   (with-eval-after-load 'embark
-    (setf (alist-get 'tab-bar embark-keymap-alist) (list 'embark-tab-bar-map)
-          (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
+    (cl-pushnew 'my/embark-tab-map (alist-get 'tab embark-keymap-alist))
+    (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
     (set-keymap-parent embark-consult-location-map embark-general-map)
     (set-keymap-parent embark-consult-grep-map embark-general-map)
@@ -2295,12 +2306,14 @@ see command `isearch-forward' for more information."
         "M-RET" 'consult-org-link-location)))
 
   (with-eval-after-load 'conn-mode
+    ;; (keymap-set conn-common-map "," 'consult-line)
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)))
 
 ;;;;; consult-dir
 
 (elpaca consult-dir
   (keymap-global-set "C-x C-d" 'consult-dir)
+  (keymap-set conn-state-map "F" 'consult-dir)
 
   (with-eval-after-load 'vertico
     (define-keymap
@@ -3077,9 +3090,6 @@ see command `isearch-forward' for more information."
                      ((and (boundp 'outline-minor-mode) outline-minor-mode)
                       . ((smart-outline) . (smart-outline-assist)))))
 
-  (keymap-set hyperbole-mode-map "<remap> <scroll-up-command>" 'smart-scroll-up)
-  (keymap-set hyperbole-mode-map "<remap> <scroll-down-command>" 'smart-scroll-down)
-
   (defun embark-target-defun-looking-at ()
     (pcase (embark-target-defun-at-point)
       ((and target `(,_ ,_ ,beg . ,end)
@@ -3146,7 +3156,6 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "C-c RET" t)
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
-  (keymap-set hyperbole-mode-map "M-w" nil)
 
   (with-eval-after-load 'conn-mode
     (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
