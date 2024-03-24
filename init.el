@@ -171,6 +171,10 @@
   "C-c C-l" #'pp-eval-last-sexp
   "C-c C-r" #'eval-region)
 
+(defun my/show-trailing-whitespace ()
+  (setq show-trailing-whitespace t))
+(add-hook 'prog-mode 'my/show-trailing-whitespace)
+
 (defun my/quit-other-window-for-scrolling ()
   (interactive)
   (with-selected-window (other-window-for-scrolling)
@@ -1304,11 +1308,7 @@ see command `isearch-forward' for more information."
 
 ;;;; conn-mode
 
-(elpaca (conn-mode :host github
-                   :repo "mtll/conn-mode"
-                   :files (:defaults "extensions/*"))
-  (require 'embark)
-  (require 'expreg)
+(elpaca (conn-mode :host github :repo "mtll/conn-mode")
   (setq conn-state-buffer-colors t
         conn-lighter ""
         conn-delete-region-keys "C-S-w"
@@ -1328,14 +1328,10 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
-  (conn-embark-dwim-keys 1)
-  (conn-expreg-always-use-region 1)
 
   (conn-hide-mark-cursor 'view-state)
 
-  (set-default-conn-state '("COMMIT_EDITMSG.*"
-                            "^\\*Echo.*")
-                          'emacs-state)
+  (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'emacs-state)
 
   (define-keymap
     :keymap global-map
@@ -1345,8 +1341,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-x ," 'global-subword-mode)
 
   (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
-  (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-toggle-dot)
-  (keymap-set goto-map "C-," 'conn-avy-goto-dot)
 
   (define-keymap
     :keymap conn-state-map
@@ -1359,7 +1353,17 @@ see command `isearch-forward' for more information."
 
   (keymap-set conn-common-map "T" 'tab-switch)
 
+  (with-eval-after-load 'vertico
+    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
+
+;;;;; Conn Extensions
+
+(elpaca (conn-consult :host github
+                      :repo "mtll/conn-mode"
+                      :files ("extensions/conn-consult.el"))  
   (keymap-set emacs-state-map "M-TAB" 'embark-act)
+  (conn-embark-dwim-keys 1)
+  (conn-complete-keys-prefix-help-command 1)
 
   (with-eval-after-load 'embark
     (define-keymap
@@ -1369,10 +1373,32 @@ see command `isearch-forward' for more information."
 
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
-    (keymap-unset embark-defun-map "D"))
+    (keymap-unset embark-defun-map "D")))
 
-  (with-eval-after-load 'vertico
-    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
+(elpaca (conn-embark :host github
+                     :repo "mtll/conn-mode"
+                     :files ("extensions/conn-embark.el")))
+
+(elpaca (conn-avy :host github
+                  :repo "mtll/conn-mode"
+                  :files ("extensions/conn-avy.el"))
+  (keymap-set goto-map "C-," 'conn-avy-goto-dot))
+
+(elpaca (conn-expreg :host github
+                     :repo "mtll/conn-mode"
+                     :files ("extensions/conn-expreg.el"))
+  (conn-expreg-always-use-region 1))
+
+(elpaca (conn-isearch+ :host github
+                       :repo "mtll/conn-mode"
+                       :files ("extensions/conn-isearch+.el"))
+  (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-dot-toggle))
+
+(elpaca (conn-calc :host github
+                   :repo "mtll/conn-mode"
+                   :files ("extensions/conn-calc.el"))
+  (with-eval-after-load 'calc
+    (conn-calc-shim 1)))
 
 
 ;;;; evil text objects
@@ -1459,15 +1485,15 @@ see command `isearch-forward' for more information."
 
 ;;;; visual-regexp
 
-(elpaca visual-regexp
-  (keymap-global-set "<remap> <query-replace-regexp>" #'vr/query-replace)
-  (keymap-global-set "C-M-!" #'vr/replace)
+;; (elpaca visual-regexp
+;;   (keymap-global-set "<remap> <query-replace-regexp>" #'vr/query-replace)
+;;   (keymap-global-set "C-M-!" #'vr/replace)
 
-  (with-eval-after-load 'conn-mode
-    (define-keymap
-      :keymap conn-misc-edit-map
-      "R" 'vr/query-replace
-      "r" 'vr/replace)))
+;;   (with-eval-after-load 'conn-mode
+;;     (define-keymap
+;;       :keymap conn-misc-edit-map
+;;       "r" 'vr/query-replace
+;;       "R" 'vr/replace)))
 
 
 ;;;; avy
