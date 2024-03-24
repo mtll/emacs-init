@@ -2075,7 +2075,7 @@ see command `isearch-forward' for more information."
     "e" 'consult-isearch-history
     "t" 'consult-outline
     "o" 'consult-line
-    "L" 'consult-line-multi
+    "O" 'consult-line-multi
     "r" 'consult-ripgrep
     "G" 'consult-grep
     "g" 'consult-git-grep
@@ -2242,7 +2242,7 @@ see command `isearch-forward' for more information."
        ;; Add `isearch-string' as initial input if starting from Isearch
        :state (consult--location-state candidates))))
   (keymap-set search-map "/" 'consult-goto-edit)
-  
+
   (with-eval-after-load 'ibuffer
     (defun conn-consult-line-multi-ibuffer-marked ()
       (interactive)
@@ -2303,7 +2303,9 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-dir
   (keymap-global-set "C-x C-d" 'consult-dir)
-  (keymap-set conn-state-map "F" 'consult-dir)
+
+  (with-eval-after-load 'conn-mode
+    (keymap-set conn-state-map "F" 'consult-dir))
 
   (with-eval-after-load 'vertico
     (define-keymap
@@ -2583,7 +2585,7 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-i" 'tempel-insert)
+  (keymap-global-set "M-i" 'tempel-complete)
   (keymap-global-set "M-I" 'tempel-insert-region)
 
   (defun tempel-insert-region ()
@@ -2595,6 +2597,9 @@ see command `isearch-forward' for more information."
       (deactivate-mark)))
 
   (with-eval-after-load 'tempel
+    (keymap-set tempel-map "M-i" 'tempel-next)
+    (keymap-set tempel-map "M-I" 'tempel-previous)
+
     (setq tempel-path "/home/dave/.emacs.d/templates/*.eld")
 
     (defun conn-tempel-insert-ad (fn &rest args)
@@ -2879,7 +2884,7 @@ see command `isearch-forward' for more information."
 
 (elpaca hyperbole
   (require 'embark)
-  (require 'conn-mode)
+  ;; (require 'conn-mode)
   (hyperbole-mode 1)
 
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
@@ -3172,4 +3177,3 @@ see command `isearch-forward' for more information."
       "H" #'hyperbole))
 
   (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "H" #'hyperbole))
-
