@@ -125,7 +125,6 @@
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
 (keymap-global-set "C-M-<return>"    #'default-indent-new-line)
 (keymap-global-set "S-<backspace>"   #'cycle-spacing)
-(keymap-global-set "C-|"             #'indent-relative)
 (keymap-global-set "M-N"             #'tab-bar-switch-to-next-tab)
 (keymap-global-set "M-P"             #'tab-bar-switch-to-prev-tab)
 (keymap-global-set "C-:"             #'read-only-mode)
@@ -133,8 +132,6 @@
 (keymap-global-set "C-x C-b"         #'ibuffer)
 (keymap-global-set "M-;"             #'comment-line)
 (keymap-global-set "C-c c"           #'compile)
-(keymap-global-set "M-W"             #'other-window-prefix)
-(keymap-global-set "M-F"             #'other-frame-prefix)
 (keymap-global-set "C-S-w"           #'delete-region)
 (keymap-global-set "C-S-o"           #'other-window)
 (keymap-global-set "<f2>"            #'other-window)
@@ -1120,23 +1117,32 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap ctl-x-4-map
       "t" 'transpose-frame
+      "C-t" 'transpose-frame
       ">" 'rotate-frame-clockwise
+      "C-." 'rotate-frame-clockwise
       "<" 'rotate-frame-anticlockwise
+      "C-," 'rotate-frame-anticlockwise
       "@" 'rotate-frame
+      "C-o" 'rotate-frame
       "_" 'flip-frame
-      "|" 'flop-frame)
+      "C--" 'flip-frame
+      "|" 'flop-frame
+      "C-\\" 'flop-frame)
 
-    (with-eval-after-load 'transpose-frame
-      (defvar-keymap rotate-frame-map
-        :repeat t
-        ">" 'rotate-frame-clockwise
-        "<" 'rotate-frame-anticlockwise)
-
-      (mapc #'conn-set-repeat-command
-            '(rotate-frame
-              flop-frame
-              flip-frame
-              transpose-frame)))))
+    (defvar-keymap transpose-frame-repeat-map
+      :repeat t
+      "t" 'transpose-frame
+      "C-t" 'transpose-frame
+      ">" 'rotate-frame-clockwise
+      "C-." 'rotate-frame-clockwise
+      "<" 'rotate-frame-anticlockwise
+      "C-," 'rotate-frame-anticlockwise
+      "@" 'rotate-frame
+      "C-o" 'rotate-frame
+      "_" 'flip-frame
+      "C--" 'flip-frame
+      "|" 'flop-frame
+      "C-\\" 'flop-frame)))
 
 
 ;;;; popper
@@ -1346,10 +1352,10 @@ see command `isearch-forward' for more information."
     :keymap conn-state-map
     ;; "<remap> <forward-char>" 'conn-goto-char-forward
     ;; "<remap> <backward-char>" 'conn-goto-char-backward
-    ;; "M-TAB" #'indent-for-tab-command
-    ;; "M-<tab>" #'indent-for-tab-command
-    "M-TAB" #'embark-act
-    "M-<tab>" #'embark-act)
+    "M-TAB" #'indent-for-tab-command
+    "M-<tab>" #'indent-for-tab-command
+    "TAB" #'embark-act
+    "<tab>" #'embark-act)
 
   (keymap-set conn-common-map "T" 'tab-switch)
 
@@ -1363,12 +1369,7 @@ see command `isearch-forward' for more information."
 
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
-    (keymap-unset embark-defun-map "D")
-
-    (put 'conn-set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
-    (put 'conn-set-mark-command 'repeat-check-key 'no)
-    (put 'set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
-    (put 'set-mark-command 'repeat-check-key 'no))
+    (keymap-unset embark-defun-map "D"))
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
