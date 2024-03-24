@@ -1365,11 +1365,6 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")
 
-    (keymap-set conn-mode-map "M-," 'conn-expand-region)
-
-    (defvar-keymap conn-set-mark-repeat-map
-      "," 'conn-expand-region)
-
     (put 'conn-set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
     (put 'conn-set-mark-command 'repeat-check-key 'no)
     (put 'set-mark-command 'repeat-map 'conn-set-mark-repeat-map)
@@ -2610,6 +2605,14 @@ see command `isearch-forward' for more information."
 ;;;;; tempel-collection
 
 (elpaca tempel-collection)
+
+;; 
+;; ;;;; repeat-help
+
+;; (elpaca repeat-help
+;;   (setq repeat-help-auto t)
+;;   (add-hook 'repeat-mode-hook 'repeat-help-mode)
+;;   (repeat-help-mode 1))
 
 
 ;;;; vundo
