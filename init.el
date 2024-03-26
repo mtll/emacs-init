@@ -1415,6 +1415,8 @@ see command `isearch-forward' for more information."
 (elpaca (conn-calc :host github
                    :repo "mtll/conn-mode"
                    :files ("extensions/conn-calc.el"))
+  (keymap-global-set "C-x =" 'calc-dispatch)
+
   (with-eval-after-load 'calc
     (conn-calc-shim 1)))
 
