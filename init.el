@@ -48,7 +48,9 @@
 
 ;;;; emacs
 
-(setq scroll-preserve-screen-position t
+(setq comment-empty-lines t
+      scroll-preserve-screen-position t
+      delete-active-region nil
       fill-column 72
       use-short-answers t
       y-or-n-p-use-read-key t
@@ -128,7 +130,6 @@
 (keymap-global-set "M-N"             #'tab-bar-switch-to-next-tab)
 (keymap-global-set "M-P"             #'tab-bar-switch-to-prev-tab)
 (keymap-global-set "C-:"             #'read-only-mode)
-(keymap-global-set "C-c e"           #'eshell)
 (keymap-global-set "C-x C-b"         #'ibuffer)
 (keymap-global-set "M-;"             #'comment-line)
 (keymap-global-set "C-c c"           #'compile)
@@ -526,6 +527,13 @@ see command `isearch-forward' for more information."
 
 ;;; Packages
 
+;;;; casual
+
+;; (elpaca (casual :host github :repo "kickingvegas/casual")
+;;   (with-eval-after-load 'calc
+;;     (autoload 'casual-main-menu "casual" nil t)
+;;     (keymap-set calc-mode-map "C-o" 'casual-main-menu)))
+
 ;;;; treesit-auto
 
 (elpaca treesit-auto)
@@ -726,8 +734,8 @@ see command `isearch-forward' for more information."
 
 ;;;; rustic
 
-(elpaca rustic
-  (setq rustic-lsp-client 'lsp-mode))
+;; (elpaca rustic
+;;   (setq rustic-lsp-client 'lsp-mode))
 
 
 ;;;; erlang
@@ -1095,17 +1103,19 @@ see command `isearch-forward' for more information."
 
 (elpaca crux
   ;; (keymap-global-set "C-<return>"   'crux-smart-open-line)
-  (keymap-global-set "S-<return>"   'crux-smart-open-line)
-  (keymap-global-set "C-x F"        'crux-sudo-edit)
-  (keymap-global-set "C-x W"        'crux-open-with)
+  (keymap-global-set "S-<return>"    'crux-smart-open-line)
+  (keymap-global-set "C-x F"         'crux-sudo-edit)
+  (keymap-global-set "C-x W"         'crux-open-with)
+  (keymap-global-set "C-<backspace>" 'crux-kill-whole-line)
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
+  (keymap-global-set "C-S-k" 'crux-kill-whole-line)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
-    (keymap-set conn-state-map "D" 'crux-kill-whole-line)
-    (keymap-set ctl-x-x-map    "b" 'crux-rename-file-and-buffer)
+    (keymap-global-set "C-c e" 'crux-visit-shell-buffer)
+
+    (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
       :keymap conn-misc-edit-map
@@ -1281,6 +1291,9 @@ see command `isearch-forward' for more information."
                                        (?l . forward-line)))
 
   (with-eval-after-load 'isearch+
+    (defun my/supress-in-macro () executing-kbd-macro)
+    (advice-add 'isearchp-highlight-lighter :before-until 'my/supress-in-macro)
+
     (keymap-unset isearch-mode-map "C-t")
     (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
@@ -1300,22 +1313,15 @@ see command `isearch-forward' for more information."
     (require 'isearch-prop)))
 
 
-;;;; undo-hl
-
-;; (elpaca (undo-hl :host github :repo "casouri/undo-hl")
-;;   (undo-hl-mode 1))
-
-
 ;;;; conn-mode
 
 (elpaca (conn-mode :host github :repo "mtll/conn-mode")
   (setq conn-state-buffer-colors t
         conn-lighter ""
         conn-delete-region-keys "C-S-w"
-        dot-state-cursor-type 'box
+        conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
-        emacs-state-cursor-type 'box
-        conn-expreg-leave-region-active nil)
+        conn-emacs-state-cursor-type 'box)
 
   (setopt conn-mark-idle-timer 0.05
           conn-aux-map-update-delay 0.05)
@@ -1324,14 +1330,14 @@ see command `isearch-forward' for more information."
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
                                               :background unspecified))))
 
-  (add-hook 'view-mode-hook #'emacs-state)
+  (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
 
-  (conn-hide-mark-cursor 'view-state)
+  (conn-hide-mark-cursor 'conn-view-state)
 
-  (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'emacs-state)
+  (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
 
   (define-keymap
     :keymap global-map
@@ -1340,7 +1346,7 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-x ," 'global-subword-mode)
 
-  (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
+  (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
 
   (define-keymap
     :keymap conn-state-map
@@ -1360,12 +1366,20 @@ see command `isearch-forward' for more information."
 
 (elpaca (conn-consult :host github
                       :repo "mtll/conn-mode"
-                      :files ("extensions/conn-consult.el"))  
-  (keymap-set emacs-state-map "M-TAB" 'embark-act)
-  (conn-embark-dwim-keys 1)
-  (conn-complete-keys-prefix-help-command 1)
+                      :files ("extensions/conn-consult.el"))
+  (require 'consult)
+  (require 'conn-consult))
 
+(elpaca (conn-embark :host github
+                     :repo "mtll/conn-mode"
+                     :files ("extensions/conn-embark.el"))
+  ;; (require 'embark)
+  (conn-embark-dwim-keys 1)
   (with-eval-after-load 'embark
+    (conn-complete-keys-prefix-help-command 1)
+    (keymap-set conn-emacs-state-map "M-TAB" 'embark-act)
+    (conn-embark-dwim-keys 1)
+
     (define-keymap
       :keymap embark-general-map
       "R" 'conn-embark-replace-region
@@ -1375,30 +1389,40 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")))
 
-(elpaca (conn-embark :host github
-                     :repo "mtll/conn-mode"
-                     :files ("extensions/conn-embark.el")))
-
 (elpaca (conn-avy :host github
                   :repo "mtll/conn-mode"
                   :files ("extensions/conn-avy.el"))
-  (keymap-set goto-map "C-," 'conn-avy-goto-dot))
+  (with-eval-after-load 'avy
+    (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
 (elpaca (conn-expreg :host github
                      :repo "mtll/conn-mode"
                      :files ("extensions/conn-expreg.el"))
-  (conn-expreg-always-use-region 1))
+  (with-eval-after-load 'expreg
+    (conn-expreg-always-use-region 1)
+    (defvar-keymap my/expreg-repeat-map
+      :repeat t
+      "B" 'expreg-expand
+      "b" 'expreg-contract)
+    (keymap-set conn-common-map "B" 'expreg-expand)))
 
 (elpaca (conn-isearch+ :host github
                        :repo "mtll/conn-mode"
                        :files ("extensions/conn-isearch+.el"))
-  (keymap-set isearch-mode-map "C-M-." 'conn-isearch-in-dot-toggle))
+  (with-eval-after-load 'isearch+
+    (require 'conn-isearch+)))
 
 (elpaca (conn-calc :host github
                    :repo "mtll/conn-mode"
                    :files ("extensions/conn-calc.el"))
   (with-eval-after-load 'calc
     (conn-calc-shim 1)))
+
+(elpaca (conn-evil-treesit-obj :host github
+                               :repo "mtll/conn-mode"
+                               :files ("extensions/conn-evil-treesit-obj.el"))
+  (with-eval-after-load 'evil-textobj-tree-sitter
+    (require 'conn-evil-treesit-obj)))
 
 
 ;;;; evil text objects
@@ -1518,8 +1542,6 @@ see command `isearch-forward' for more information."
       (cl-letf (((symbol-function 'aw-update) #'ignore))
         (apply app)))
     (advice-add #'avy-process :around 'avy-process-disable-aw-update))
-
-  (keymap-set isearch-mode-map "M-," 'avy-isearch)
 
   (define-keymap
     :keymap goto-map
@@ -1745,11 +1767,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (cl-pushnew 'my/embark-tab-map (alist-get 'tab embark-keymap-alist))
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
-
-    (set-keymap-parent embark-consult-location-map embark-general-map)
-    (set-keymap-parent embark-consult-grep-map embark-general-map)
-    (add-to-list 'embark-keymap-alist '(consult-location embark-consult-location-map))
-    (add-to-list 'embark-keymap-alist '(consult-grep embark-consult-grep-map))
 
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
@@ -2080,8 +2097,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <yank-from-kill-ring>" #'consult-yank-from-kill-ring)
   (keymap-global-set "<remap> <jump-to-register>" #'consult-register-load)
   (keymap-global-set "<remap> <switch-to-buffer>" 'consult-buffer)
+  (keymap-global-set "<remap> <execute-extended-command-for-buffer>" 'consult-mode-command)
   (keymap-global-set "C-x k" 'kill-this-buffer)
-  (keymap-global-set "M-X" 'consult-mode-command)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
   (keymap-global-set "C-h i" 'consult-info)
   (keymap-global-set "C-h TAB" 'info)
@@ -2369,7 +2386,9 @@ see command `isearch-forward' for more information."
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window
                                         (mode . minibuffer-mode))
-        vertico-multiform-categories '((t buffer)))
+        vertico-multiform-categories '((t buffer))
+        vertico-multiform-commands '((calc-execute-extended-command
+                                      grid)))
 
   (face-spec-set 'vertico-current
                  '((t :inherit region)))
@@ -2504,6 +2523,13 @@ see command `isearch-forward' for more information."
 
   (keymap-unset vertico-map "C-j")
 
+  (defvar-keymap my/vertico-scroll-repeat-map
+    :repeat t
+    "SPC" 'vertico-scroll-up
+    "DEL" 'vertico-scroll-down)
+  (put 'vertico-scroll-up 'repeat-check-key 'no)
+  (put 'vertico-scroll-down 'repeat-check-key 'no)
+
   (define-keymap
     :keymap vertico-map
     "M-i" #'vertico-insert
@@ -2626,7 +2652,7 @@ see command `isearch-forward' for more information."
 
     (defun conn-tempel-insert-ad (fn &rest args)
       (apply fn args)
-      (when tempel--active (emacs-state)))
+      (when tempel--active (conn-emacs-state)))
     (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
 
 ;;;;; tempel-collection
@@ -2941,12 +2967,12 @@ see command `isearch-forward' for more information."
                                           embark-target-email-at-point
                                           embark-target-url-at-point
                                           embark-target-file-at-point
-                                          embark-target-defun-looking-at
                                           embark-target-custom-variable-at-point
                                           embark-target-identifier-at-point
                                           embark-target-guess-file-at-point
                                           embark-target-expression-at-point
-                                          embark-looking-at-page-target-finder)
+                                          embark-looking-at-page-target-finder
+                                          embark-target-defun-at-point)
         action-key-eol-function #'ignore
         assist-key-eol-function #'ignore
         ;; Remove items I want embark to handle instead.
@@ -3128,7 +3154,9 @@ see command `isearch-forward' for more information."
   (defun embark-target-defun-looking-at ()
     (pcase (embark-target-defun-at-point)
       ((and target `(,_ ,_ ,beg . ,end)
-            (guard (= beg (point))))
+            (guard (or (= beg (point))
+                       (= end (point))
+                       (= end (1- (point))))))
        target)))
 
   (defun embark-smart-action ()
@@ -3192,18 +3220,18 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
-  (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
-  (keymap-set hycontrol-frames-mode-map ":" 'hycontrol-enable-windows-mode)
+  ;; (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
+  ;; (keymap-set hycontrol-frames-mode-map ":" 'hycontrol-enable-windows-mode)
 
-  (dolist (state '(conn-state dot-state view-state org-tree-edit-state))
-    (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-                ":" 'hycontrol-enable-windows-mode))
+  ;; (dolist (state '(conn-state conn-dot-state conn-view-state conn-org-tree-edit-state))
+  ;;   (keymap-set (conn-get-mode-map state 'hyperbole-mode)
+  ;;               ":" 'hycontrol-enable-windows-mode))
 
-  (dolist (state '(conn-state org-tree-edit-state))
+  (dolist (state '(conn-state conn-org-tree-edit-state))
     (define-keymap
       :keymap (conn-get-mode-map state 'hyperbole-mode)
       "e" #'action-key
       "h" #'assist-key
       "H" #'hyperbole))
 
-  (keymap-set (conn-get-mode-map 'view-state 'hyperbole-mode) "H" #'hyperbole))
+  (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "H" #'hyperbole))
