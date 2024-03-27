@@ -1162,7 +1162,8 @@ see command `isearch-forward' for more information."
 ;;;; popper
 
 (elpaca popper
-  (setq popper-display-function 'display-buffer-reuse-window
+  (setq popper-display-control nil
+        popper-display-function 'display-buffer-reuse-window
         popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
         popper-reference-buffers '("\\*Messages\\*"
                                    "\\*Warnings\\*"
@@ -2945,14 +2946,15 @@ see command `isearch-forward' for more information."
   ;; (require 'conn-mode)
   (hyperbole-mode 1)
 
+  ;; This interferes with help popups from the minibuffer
+  ;; eg. the buffer query-replace displays after ?
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
+  (setq temp-buffer-show-function nil)
 
   (defvar hyperbole-embark-target-finders)
 
   (setq hyperbole-mode-lighter " Hy"
         hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
-        action-key-default-function #'action-key-error
-        assist-key-default-function #'assist-key-error
         smart-scroll-proportional nil
         hpath:display-where 'this-window
         hyperbole-embark-target-finders '(embark--vertico-selected
