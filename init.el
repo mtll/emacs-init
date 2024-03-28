@@ -525,18 +525,21 @@ see command `isearch-forward' for more information."
 (setq eldoc-echo-area-prefer-doc-buffer t)
 
 
+;;;; Transient
+
+(elpaca transient
+  (setq transient-enable-popup-navigation nil
+        transient-mode-line-format 2))
+
+
 ;;; Packages
-
-;;;; casual
-
-;; (elpaca (casual :host github :repo "kickingvegas/casual")
-;;   (with-eval-after-load 'calc
-;;     (autoload 'casual-main-menu "casual" nil t)
-;;     (keymap-set calc-mode-map "C-o" 'casual-main-menu)))
 
 ;;;; treesit-auto
 
-(elpaca treesit-auto)
+(elpaca treesit-auto
+  (require 'treesit-auto)
+  (setq treesit-auto-install 'prompt)
+  (global-treesit-auto-mode 1))
 
 
 ;;;; persist
@@ -563,6 +566,14 @@ see command `isearch-forward' for more information."
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
+
+
+;;;; help-fn+
+
+(load (expand-file-name "load/help-fns+.el" user-emacs-directory))
+(load (expand-file-name "load/help+.el" user-emacs-directory))
+(load (expand-file-name "load/help-macro+.el" user-emacs-directory))
+(load (expand-file-name "load/help-mode+.el" user-emacs-directory))
 
 
 ;;;; narrow-indirect
@@ -1162,7 +1173,7 @@ see command `isearch-forward' for more information."
 ;;;; popper
 
 (elpaca popper
-  (setq popper-display-control nil
+  (setq popper-display-control 'user
         popper-display-function 'display-buffer-reuse-window
         popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
         popper-reference-buffers '("\\*Messages\\*"
@@ -1173,13 +1184,12 @@ see command `isearch-forward' for more information."
                                    "\\*sly-description\\*"
                                    "\\*projectile-files-errors\\*"
                                    help-mode
-                                   helpful-mode
                                    compilation-mode))
 
   (define-keymap
     :keymap global-map
-    "C-`"   'popper-toggle
-    "M-`"   'popper-cycle
+    "M-~"   'popper-cycle
+    "M-`"   'popper-toggle
     "C-M-`" 'popper-toggle-type)
 
   (popper-mode 1)
@@ -1190,26 +1200,6 @@ see command `isearch-forward' for more information."
 
 (when window-system
   (elpaca posframe))
-
-
-;;;; ace-window
-
-(elpaca ace-window
-  (setq aw-keys '(?f ?d ?r ?s ?g ?t ?q ?w)
-        aw-dispatch-always t)
-
-  (face-spec-set
-   'aw-leading-char-face
-   '((t (:inherit ace-jump-face-foreground :height 5.0))))
-
-  (keymap-global-set "C-;" 'ace-window)
-
-  (with-eval-after-load 'ace-window
-    (when window-system
-      (ace-window-posframe-mode 1)))
-
-  (with-eval-after-load 'conn-mode
-    (advice-add 'aw-show-dispatch-help :around 'disable-minibuffer-max-height)))
 
 
 ;;;; zones
@@ -1436,19 +1426,14 @@ see command `isearch-forward' for more information."
 ;;;; expreg
 
 (elpaca expreg
-  (keymap-global-set "C-t" 'expreg-expand)
-
-  (with-eval-after-load 'conn-mode
-    (define-keymap
-     :keymap conn-common-map
-     "b" 'expreg-expand)))
+  (keymap-global-set "C-t" 'expreg-expand))
 
 
 ;;;; ialign
 
 (elpaca ialign
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-region-map "a" 'ialign))
+    (keymap-set conn-region-map "a i" 'ialign))
 
   (with-eval-after-load 'embark
     (defun embark-ialign (_reg)
@@ -1508,19 +1493,6 @@ see command `isearch-forward' for more information."
 (elpaca (dired+ :host github
                 :repo "emacsmirror/dired-plus"
                 :main "dired+.el"))
-
-
-;;;; visual-regexp
-
-;; (elpaca visual-regexp
-;;   (keymap-global-set "<remap> <query-replace-regexp>" #'vr/query-replace)
-;;   (keymap-global-set "C-M-!" #'vr/replace)
-
-;;   (with-eval-after-load 'conn-mode
-;;     (define-keymap
-;;       :keymap conn-misc-edit-map
-;;       "r" 'vr/query-replace
-;;       "R" 'vr/replace)))
 
 
 ;;;; avy
@@ -1648,22 +1620,6 @@ see command `isearch-forward' for more information."
     (put 'my/avy-toggle-insertion-style 'repeat-map goto-map)))
 
 
-;;;; helpful
-
-(elpaca helpful
-  (keymap-global-set "C-h v" 'helpful-variable)
-  (keymap-global-set "C-h k" 'helpful-key)
-  (keymap-global-set "C-h ," 'display-local-help)
-  (keymap-global-set "C-h ." 'helpful-at-point)
-  (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
-  (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
-
-  (push '(help-mode . helpful-mode) major-mode-remap-alist)
-
-  (with-eval-after-load 'embark
-    (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
-
-
 ;;;; all-the-icons
 
 (elpaca all-the-icons)
@@ -1772,13 +1728,14 @@ see command `isearch-forward' for more information."
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
-    (keymap-set embark-symbol-map "h" 'helpful-symbol)
+    ;; (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    ;; (keymap-set embark-defun-map "M-RET" 'comment-region)
+    (keymap-set embark-defun-map "M-RET" 'comment-or-uncomment-region)
     ;; (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     ;; (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
+    (keymap-set embark-symbol-map "M-RET" 'describe-symbol)
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
@@ -1986,6 +1943,8 @@ see command `isearch-forward' for more information."
 ;;;; gif-screencase
 
 (elpaca gif-screencast
+  (setq gif-screencast-scale-factor 0.5)
+
   (with-eval-after-load 'conn-mode
     (keymap-global-set "M-<f2>" 'gif-screencast-start-or-stop)))
 
@@ -2003,8 +1962,6 @@ see command `isearch-forward' for more information."
 ;;;; separedit
 
 (elpaca separedit
-  (with-eval-after-load 'helpful
-    (keymap-set helpful-mode-map "C-c '" 'separedit))
   (keymap-set prog-mode-map "C-c '" 'separedit)
   (keymap-set minibuffer-local-map "C-c '" 'separedit)
   (keymap-set help-mode-map "C-c '" 'separedit))
@@ -2023,6 +1980,8 @@ see command `isearch-forward' for more information."
                                          (?! . orderless-without-literal)
                                          (?, . orderless-initialism))
         completion-styles '(orderless basic)
+        orderless-kwd-prefix ?~
+        orderless-kwd-separator "~="
         orderless-matching-styles '(orderless-literal
                                     orderless-regexp)
         orderless-style-dispatchers '(orderless-kwd-dispatch
@@ -2338,7 +2297,6 @@ see command `isearch-forward' for more information."
         "M-RET" 'consult-org-link-location)))
 
   (with-eval-after-load 'conn-mode
-    ;; (keymap-set conn-common-map "," 'consult-line)
     (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)))
 
 ;;;;; consult-dir
@@ -2538,9 +2496,7 @@ see command `isearch-forward' for more information."
     "M-i" #'vertico-insert
     "RET" #'vertico-directory-enter
     "DEL" #'vertico-directory-delete-char
-    "C-<backspace>" #'vertico-directory-delete-word
-    "C-DEL" #'vertico-directory-delete-word
-    "M-<backspace>" #'vertico-directory-up
+    "M-<backspace>" #'vertico-directory-delete-word
     "M-DEL" #'vertico-directory-up
     "M-RET" #'vertico-exit-input
     "C-M-j" #'vertico-exit-input
@@ -2662,14 +2618,6 @@ see command `isearch-forward' for more information."
 
 (elpaca tempel-collection)
 
-;; 
-;; ;;;; repeat-help
-
-;; (elpaca repeat-help
-;;   (setq repeat-help-auto t)
-;;   (add-hook 'repeat-mode-hook 'repeat-help-mode)
-;;   (repeat-help-mode 1))
-
 
 ;;;; vundo
 
@@ -2719,12 +2667,6 @@ see command `isearch-forward' for more information."
 ;;;; polymode
 
 (elpaca polymode)
-
-
-;;;; visual-fill-column
-
-;; (elpaca visual-fill-column
-;;   (add-hook 'text-mode-hook 'visual-fill-column-mode))
 
 
 ;;;; denote
@@ -2959,7 +2901,7 @@ see command `isearch-forward' for more information."
         hpath:display-where 'this-window
         hyperbole-embark-target-finders '(embark--vertico-selected
                                           embark-target-top-minibuffer-candidate
-                                          embark-target-active-region
+                                          ;; embark-target-active-region
                                           embark-org-target-link
                                           embark-org-target-element-context
                                           embark-org-target-agenda-item
@@ -3224,12 +3166,12 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
-  ;; (keymap-set hycontrol-windows-mode-map ":" 'hycontrol-enable-frames-mode)
-  ;; (keymap-set hycontrol-frames-mode-map ":" 'hycontrol-enable-windows-mode)
+  (keymap-set hycontrol-windows-mode-map "E" 'hycontrol-enable-frames-mode)
+  (keymap-set hycontrol-frames-mode-map "E" 'hycontrol-enable-windows-mode)
 
-  ;; (dolist (state '(conn-state conn-dot-state conn-view-state conn-org-tree-edit-state))
-  ;;   (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-  ;;               ":" 'hycontrol-enable-windows-mode))
+  (dolist (state '(conn-state conn-dot-state conn-view-state conn-org-tree-edit-state))
+    (keymap-set (conn-get-mode-map state 'hyperbole-mode)
+                "E" 'hycontrol-enable-windows-mode))
 
   (dolist (state '(conn-state conn-org-tree-edit-state))
     (define-keymap
