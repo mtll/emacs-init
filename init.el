@@ -110,7 +110,7 @@
 (minibuffer-depth-indicate-mode 1)
 (global-goto-address-mode 1)
 (show-paren-mode 1)
-(delete-selection-mode 1)
+(delete-selection-mode -1)
 (column-number-mode 1)
 (line-number-mode 1)
 (electric-pair-mode 1)
@@ -234,18 +234,6 @@
     (forward-char))
   (backward-page)
   (beginning-of-line))
-
-
-;;;; kmacro
-
-(require 'kmacro)
-(keymap-global-set "C-x m" 'kmacro-keymap)
-
-(define-keymap
-  :keymap kmacro-keymap
-  "a" 'kmacro-add-counter
-  "s" 'kmacro-set-counter
-  "S" 'kmacro-start-macro)
 
 
 ;;;; view-mode
@@ -568,12 +556,35 @@ see command `isearch-forward' for more information."
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
 
 
+;;;; helpful
+
+(elpaca helpful
+  (keymap-global-set "C-h v" 'helpful-variable)
+  (keymap-global-set "C-h k" 'helpful-key)
+  (keymap-global-set "C-h ," 'display-local-help)
+  (keymap-global-set "C-h ." 'helpful-at-point)
+  (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
+  (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
+
+  (push '(help-mode . helpful-mode) major-mode-remap-alist)
+
+  ;; (with-eval-after-load 'conn-embark
+  ;;   (keymap-set conn-embark-alt-symbol-map "M-RET" 'helpful-symbol))
+
+  (with-eval-after-load 'helpful
+    (fset 'helpful--source #'ignore))
+
+  (with-eval-after-load 'embark
+    (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
+
+
+
 ;;;; help-fn+
 
-(load (expand-file-name "load/help-fns+.el" user-emacs-directory))
-(load (expand-file-name "load/help+.el" user-emacs-directory))
-(load (expand-file-name "load/help-macro+.el" user-emacs-directory))
-(load (expand-file-name "load/help-mode+.el" user-emacs-directory))
+;; (load (expand-file-name "load/help-fns+.el" user-emacs-directory))
+;; (load (expand-file-name "load/help+.el" user-emacs-directory))
+;; (load (expand-file-name "load/help-macro+.el" user-emacs-directory))
+;; (load (expand-file-name "load/help-mode+.el" user-emacs-directory))
 
 
 ;;;; narrow-indirect
@@ -1184,6 +1195,7 @@ see command `isearch-forward' for more information."
                                    "\\*sly-description\\*"
                                    "\\*projectile-files-errors\\*"
                                    help-mode
+                                   helpful-mode
                                    compilation-mode))
 
   (define-keymap
@@ -1314,8 +1326,7 @@ see command `isearch-forward' for more information."
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type 'box)
 
-  (setopt conn-mark-idle-timer 0.05
-          conn-aux-map-update-delay 0.05)
+  (setopt conn-mark-idle-timer 0.05)
 
   (with-eval-after-load 'modus-themes
     (face-spec-set 'conn-mark-face '((default :inherit modus-themes-intense-magenta
@@ -1389,13 +1400,14 @@ see command `isearch-forward' for more information."
 (elpaca (conn-expreg :host github
                      :repo "mtll/conn-mode"
                      :files ("extensions/conn-expreg.el"))
+  (setq conn-expreg-leave-region-active nil)
+  (keymap-set conn-common-map "B" 'expreg-expand)
   (with-eval-after-load 'expreg
     (conn-expreg-always-use-region 1)
     (defvar-keymap my/expreg-repeat-map
       :repeat t
       "B" 'expreg-expand
-      "b" 'expreg-contract)
-    (keymap-set conn-common-map "B" 'expreg-expand)))
+      "b" 'expreg-contract)))
 
 (elpaca (conn-isearch+ :host github
                        :repo "mtll/conn-mode"
@@ -1420,7 +1432,8 @@ see command `isearch-forward' for more information."
 
 ;;;; evil text objects
 
-(elpaca evil-textobj-tree-sitter)
+(elpaca evil-textobj-tree-sitter
+  (require 'evil-textobj-tree-sitter))
 
 
 ;;;; expreg
@@ -1728,14 +1741,14 @@ see command `isearch-forward' for more information."
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
-    ;; (keymap-set embark-symbol-map "h" 'helpful-symbol)
+    (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
     (keymap-set embark-defun-map "M-RET" 'comment-or-uncomment-region)
-    ;; (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
+    (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
-    ;; (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
+    (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
-    (keymap-set embark-symbol-map "M-RET" 'describe-symbol)
+    (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
@@ -2347,9 +2360,7 @@ see command `isearch-forward' for more information."
         vertico-cycle t
         vertico-buffer-display-action '(display-buffer-reuse-mode-window
                                         (mode . minibuffer-mode))
-        vertico-multiform-categories '((t buffer))
-        vertico-multiform-commands '((calc-execute-extended-command
-                                      grid)))
+        vertico-multiform-categories '((t buffer)))
 
   (face-spec-set 'vertico-current
                  '((t :inherit region)))
