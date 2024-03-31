@@ -634,18 +634,8 @@ see command `isearch-forward' for more information."
     (keymap-unset paredit-mode-map "M-s")
     (keymap-unset paredit-mode-map "M-;")
 
-    (define-keymap
-      :keymap paredit-mode-map
-      "<remap> <backward-kill-word>" 'paredit-backward-kill-word
-      "<remap> <backward-delete>" 'paredit-backward-delete
-      "<remap> <forward-sexp>" 'paredit-forward
-      "<remap> <backward-sexp>" 'paredit-backward
-      "<remap> <forward-sentence>" 'paredit-forward-up
-      "<remap> <backward-sentence>" 'paredit-backward-up)
-
     (keymap-set paredit-mode-map "M-l" 'paredit-splice-sexp)
     (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
-    (keymap-set paredit-mode-map "<remap> <kill-region>" 'paredit-kill-region)
     (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
 
     (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
@@ -1341,25 +1331,10 @@ see command `isearch-forward' for more information."
 
   (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
 
-  (define-keymap
-    :keymap global-map
-    "C-c v" 'conn-toggle-mark-command
-    "M-n" 'conn-embark-region)
-
+  (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-x ," 'global-subword-mode)
 
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
-
-  (define-keymap
-    :keymap conn-state-map
-    ;; "<remap> <forward-char>" 'conn-goto-char-forward
-    ;; "<remap> <backward-char>" 'conn-goto-char-backward
-    "M-TAB" #'indent-for-tab-command
-    "M-<tab>" #'indent-for-tab-command
-    "TAB" #'embark-act
-    "<tab>" #'embark-act)
-
-  (keymap-set conn-common-map "T" 'tab-switch)
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
@@ -1397,17 +1372,17 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'avy
     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
-(elpaca (conn-expreg :host github
-                     :repo "mtll/conn-mode"
-                     :files ("extensions/conn-expreg.el"))
-  (setq conn-expreg-leave-region-active nil)
-  (keymap-set conn-common-map "B" 'expreg-expand)
-  (with-eval-after-load 'expreg
-    (conn-expreg-always-use-region 1)
-    (defvar-keymap my/expreg-repeat-map
-      :repeat t
-      "B" 'expreg-expand
-      "b" 'expreg-contract)))
+;; (elpaca (conn-expreg :host github
+;;                      :repo "mtll/conn-mode"
+;;                      :files ("extensions/conn-expreg.el"))
+;;   (setq conn-expreg-leave-region-active t)
+;;   (keymap-set conn-common-map "B" 'expreg-expand)
+;;   (with-eval-after-load 'expreg
+;;     (conn-expreg-always-use-region 1)
+;;     (defvar-keymap my/expreg-repeat-map
+;;       :repeat t
+;;       "B" 'expreg-expand
+;;       "b" 'expreg-contract)))
 
 (elpaca (conn-isearch+ :host github
                        :repo "mtll/conn-mode"
@@ -1430,6 +1405,20 @@ see command `isearch-forward' for more information."
     (require 'conn-evil-treesit-obj)))
 
 
+;;;; Expand Region
+
+(elpaca expand-region
+  (with-eval-after-load 'conn-mode
+    (define-keymap
+      :keymap conn-common-map
+      "B" 'er/expand-region)
+
+    (defvar-keymap conn-expand-region-repeat-map
+      :repeat t
+      "B" 'er/expand-region
+      "b" 'er/contract-region)))
+
+
 ;;;; evil text objects
 
 (elpaca evil-textobj-tree-sitter
@@ -1438,8 +1427,8 @@ see command `isearch-forward' for more information."
 
 ;;;; expreg
 
-(elpaca expreg
-  (keymap-global-set "C-t" 'expreg-expand))
+;; (elpaca expreg
+;;   (keymap-global-set "C-t" 'expreg-expand))
 
 
 ;;;; ialign
@@ -1700,6 +1689,7 @@ see command `isearch-forward' for more information."
         embark-confirm-act-all nil)
 
   (keymap-global-set "M-." 'embark-act)
+  (keymap-global-set "M-n" 'embark-act)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
   (defun embark-act-persist ()
@@ -2090,9 +2080,9 @@ see command `isearch-forward' for more information."
     "t" 'consult-outline
     "o" 'consult-line
     "O" 'consult-line-multi
-    "r" 'consult-ripgrep
+    "r" 'consult-git-grep
     "G" 'consult-grep
-    "g" 'consult-git-grep
+    "g" 'consult-ripgrep
     "f" 'consult-find
     "L" 'consult-locate
     "v" 'consult-focus-lines
@@ -2330,7 +2320,7 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-lsp
   (with-eval-after-load 'lsp-mode
-    (keymap-set lsp-mode-map "M-s ," #'consult-lsp-symbols)
+    (keymap-set lsp-mode-map "M-s x" #'consult-lsp-symbols)
     (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
     (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
 
