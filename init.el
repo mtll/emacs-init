@@ -155,8 +155,7 @@
   :keymap ctl-x-map
   "s"   #'save-buffer
   "C-s" #'save-some-buffers
-  "f"   #'find-file
-  "C-f" #'set-fill-column)
+  "f"   #'find-file)
 
 (define-keymap
   :keymap window-prefix-map
@@ -234,6 +233,51 @@
     (forward-char))
   (backward-page)
   (beginning-of-line))
+
+
+;;;; pulse
+
+(require 'pulse)
+
+(defun pulse-momentary-highlight-overlay-bfm-ad (o &optional face)
+  "Pulse the overlay O, unhighlighting before next command.
+Optional argument FACE specifies the face to do the highlighting."
+  ;; We don't support simultaneous highlightings.
+  (pulse-momentary-unhighlight)
+  (overlay-put o 'original-face (overlay-get o 'face))
+  ;; Make this overlay take priority over the `transient-mark-mode'
+  ;; overlay.
+  (overlay-put o 'original-priority (overlay-get o 'priority))
+  (overlay-put o 'priority 1)
+  (setq pulse-momentary-overlay o)
+  (if (eq pulse-flag 'never)
+      nil
+    (if (or (not pulse-flag) (not (pulse-available-p)))
+	;; Provide a face... clear on next command
+	(progn
+	  (overlay-put o 'face (or face 'pulse-highlight-start-face))
+	  (add-hook 'pre-command-hook
+		    #'pulse-momentary-unhighlight))
+      ;; Pulse it.
+      (overlay-put o 'face 'pulse-highlight-face)
+      ;; The pulse function puts FACE onto 'pulse-highlight-face.
+      ;; Thus above we put our face on the overlay, but pulse
+      ;; with a reference face needed for the color.
+      (pulse-reset-face face)
+      (let* ((start (color-name-to-rgb
+                     (face-background 'pulse-highlight-face nil 'default)))
+             (stop (color-name-to-rgb (face-background (or (and buffer-face-mode
+                                                                buffer-face-mode-face)
+                                                           'default))))
+             (colors (mapcar (apply-partially 'apply 'color-rgb-to-hex)
+                             (color-gradient start stop pulse-iterations))))
+        (setq pulse-momentary-timer
+              (run-with-timer 0 pulse-delay #'pulse-tick
+                              colors
+                              (time-add nil
+                                        (* pulse-delay pulse-iterations))))))))
+(advice-add 'pulse-momentary-highlight-overlay :override
+            'pulse-momentary-highlight-overlay-bfm-ad)
 
 
 ;;;; view-mode
@@ -530,11 +574,6 @@ see command `isearch-forward' for more information."
   (global-treesit-auto-mode 1))
 
 
-;;;; persist
-
-(elpaca (persist :host github :repo "emacs-straight/persist"))
-
-
 ;;;; Compat
 
 (elpaca compat)
@@ -554,6 +593,21 @@ see command `isearch-forward' for more information."
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
+
+
+;;;; Expreg
+
+(elpaca expreg
+  (with-eval-after-load 'conn-mode
+    (with-eval-after-load 'treesit-auto
+      (defvar-keymap conn-expreg-repeat-map
+        :repeat t
+        "B" 'expreg-expand
+        "b" 'expreg-contract)
+
+      (dolist (mode global-treesit-auto-modes)
+        (keymap-set (conn-get-mode-map 'conn-state mode) "B" 'expreg-expand)
+        (keymap-set (conn-get-mode-map 'conn-dot-state mode) "B" 'expreg-contract)))))
 
 
 ;;;; helpful
@@ -1260,8 +1314,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-region-map "z" #'zz-add-zone))
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-state-map "X" 'zz-narrow)
-    (keymap-set conn-misc-edit-map "w" #'zz-narrow-repeat)))
+    (keymap-set conn-state-map "X" 'zz-narrow)))
 
 
 ;;;; isearch+
@@ -1333,6 +1386,11 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-x ," 'global-subword-mode)
+
+  (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
+  (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
+  (keymap-set (conn-get-transition-map 'conn-view-state) "<f8>" 'conn-state)
+  (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
 
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
 
@@ -2308,7 +2366,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-x C-d" 'consult-dir)
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-state-map "F" 'consult-dir))
+    (keymap-set conn-state-map "D" 'consult-dir))
 
   (with-eval-after-load 'vertico
     (define-keymap
@@ -3167,12 +3225,12 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
-  (keymap-set hycontrol-windows-mode-map "E" 'hycontrol-enable-frames-mode)
-  (keymap-set hycontrol-frames-mode-map "E" 'hycontrol-enable-windows-mode)
+  (keymap-set hycontrol-windows-mode-map "Q" 'hycontrol-enable-frames-mode)
+  (keymap-set hycontrol-frames-mode-map "Q" 'hycontrol-enable-windows-mode)
 
   (dolist (state '(conn-state conn-dot-state conn-view-state conn-org-tree-edit-state))
     (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-                "E" 'hycontrol-enable-windows-mode))
+                "Q" 'hycontrol-enable-windows-mode))
 
   (dolist (state '(conn-state conn-org-tree-edit-state))
     (define-keymap
