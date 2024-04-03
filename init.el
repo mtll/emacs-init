@@ -1724,8 +1724,11 @@ see command `isearch-forward' for more information."
         embark-confirm-act-all nil)
 
   (keymap-global-set "M-." 'embark-act)
-  (keymap-global-set "M-n" 'embark-act)
+  (keymap-global-set "C-TAB" 'embark-act)
+  (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
+
+  (keymap-set embark-region-map "RET" 'copy-region-as-kill)
 
   (defun embark-act-persist ()
     (interactive)
@@ -1956,13 +1959,8 @@ see command `isearch-forward' for more information."
 (elpaca bicycle
   (with-eval-after-load 'outline
     (define-keymap
-      :keymap outline-mode-map
-      "C-<tab>" 'bicycle-cycle)
-
-    (define-keymap
       :keymap outline-minor-mode-map
       ;; [C-tab] 'bicycle-cycle
-      "C-<tab>" 'bicycle-cycle
       "<backtab>" 'bicycle-cycle-global)))
 
 
@@ -2934,7 +2932,7 @@ see command `isearch-forward' for more information."
         hpath:display-where 'this-window
         hyperbole-embark-target-finders '(embark--vertico-selected
                                           embark-target-top-minibuffer-candidate
-                                          ;; embark-target-active-region
+                                          embark-target-active-region
                                           embark-org-target-link
                                           embark-org-target-element-context
                                           embark-org-target-agenda-item
@@ -3129,6 +3127,48 @@ see command `isearch-forward' for more information."
                      ;; Outline minor mode
                      ((and (boundp 'outline-minor-mode) outline-minor-mode)
                       . ((smart-outline) . (smart-outline-assist)))))
+
+  (with-eval-after-load 'bicycle
+    (defun smart-outline ()
+      (interactive)
+      (cond (smart-outline-cut
+             (setq smart-outline-cut nil) (yank))
+            ((smart-eobp) (outline-show-all))
+            ((and (bolp) (looking-at outline-regexp))
+             (setq smart-outline-cut t)
+             (kill-region
+              (point)
+              (or (outline-get-next-sibling)
+                  ;; Skip past start of current entry
+                  (progn (re-search-forward outline-regexp nil t)
+                         (smart-outline-to-entry-end t)))))
+            ((eolp)
+             (funcall action-key-eol-function))
+            ((zerop (smart-outline-level))
+             nil)
+            ;; On an outline heading line but not at the start/end of line.
+            ((smart-outline-subtree-hidden-p)
+             (save-excursion (bicycle-cycle-local)))
+            (t (outline-hide-subtree))))
+
+    (defun smart-outline-assist ()
+      (interactive)
+      (cond (smart-outline-cut (yank))
+            ((smart-eobp) (outline-hide-body))
+            ((and (bolp) (looking-at outline-regexp))
+             (setq smart-outline-cut t)
+             (kill-region (point)
+                          ;; Skip past start of current entry
+                          (progn (re-search-forward outline-regexp nil t)
+                                 (smart-outline-to-entry-end))))
+            ((eolp)
+             (funcall assist-key-eol-function))
+            ((zerop (smart-outline-level))
+             nil)
+            ;; On an outline heading line but not at the start/end of line.
+            ((smart-outline-subtree-hidden-p)
+             (save-excursion (bicycle-cycle-local)))
+            (t (outline-hide-entry)))))
 
   (defun embark-target-defun-looking-at ()
     (pcase (embark-target-defun-at-point)
