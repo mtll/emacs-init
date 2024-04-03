@@ -253,11 +253,11 @@ Optional argument FACE specifies the face to do the highlighting."
   (if (eq pulse-flag 'never)
       nil
     (if (or (not pulse-flag) (not (pulse-available-p)))
-	;; Provide a face... clear on next command
-	(progn
-	  (overlay-put o 'face (or face 'pulse-highlight-start-face))
-	  (add-hook 'pre-command-hook
-		    #'pulse-momentary-unhighlight))
+        ;; Provide a face... clear on next command
+        (progn
+          (overlay-put o 'face (or face 'pulse-highlight-start-face))
+          (add-hook 'pre-command-hook
+                    #'pulse-momentary-unhighlight))
       ;; Pulse it.
       (overlay-put o 'face 'pulse-highlight-face)
       ;; The pulse function puts FACE onto 'pulse-highlight-face.
@@ -599,6 +599,11 @@ see command `isearch-forward' for more information."
 
 (elpaca expreg
   (with-eval-after-load 'conn-mode
+    (defun my/expreg-ad (&rest _)
+      (unless conn-emacs-state
+        (activate-mark t)))
+    (advice-add 'expreg-expand :before #'my/expreg-ad)
+
     (with-eval-after-load 'treesit-auto
       (defvar-keymap conn-expreg-repeat-map
         :repeat t
@@ -916,13 +921,14 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'pdf-tools
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode))
 
+  (setopt pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
+  (pdf-loader-install)
+
   (defun my-bmk-pdf-handler-advice (bookmark)
     (bookmark-default-handler (bookmark-get-bookmark bookmark)))
 
   (advice-add 'pdf-view-bookmark-jump-handler
-              :after 'my-bmk-pdf-handler-advice)
-
-  (pdf-loader-install))
+              :after 'my-bmk-pdf-handler-advice))
 
 ;;;;; org-pdf-tools
 
@@ -1065,7 +1071,7 @@ see command `isearch-forward' for more information."
         org-fold-core-style 'overlays
         org-startup-indented nil)
 
-  (keymap-global-set "C-c c" 'org-capture)
+  (keymap-global-set "C-c p" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
   (keymap-global-set "C-c l" 'org-insert-link-global)
 
@@ -1184,7 +1190,7 @@ see command `isearch-forward' for more information."
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
-      :keymap conn-misc-edit-map
+      :keymap conn-edit-map
       "D"   'crux-duplicate-and-comment-current-line-or-region
       "RET" 'crux-cleanup-buffer-or-region
       "@"   'crux-insert-date)))
@@ -1364,7 +1370,6 @@ see command `isearch-forward' for more information."
 (elpaca (conn-mode :host github :repo "mtll/conn-mode")
   (setq conn-state-buffer-colors t
         conn-lighter ""
-        conn-delete-region-keys "C-S-w"
         conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type 'box)
@@ -1408,7 +1413,6 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn-mode"
                      :files ("extensions/conn-embark.el"))
-  ;; (require 'embark)
   (conn-embark-dwim-keys 1)
   (with-eval-after-load 'embark
     (conn-complete-keys-prefix-help-command 1)
@@ -1429,18 +1433,6 @@ see command `isearch-forward' for more information."
                   :files ("extensions/conn-avy.el"))
   (with-eval-after-load 'avy
     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
-
-;; (elpaca (conn-expreg :host github
-;;                      :repo "mtll/conn-mode"
-;;                      :files ("extensions/conn-expreg.el"))
-;;   (setq conn-expreg-leave-region-active t)
-;;   (keymap-set conn-common-map "B" 'expreg-expand)
-;;   (with-eval-after-load 'expreg
-;;     (conn-expreg-always-use-region 1)
-;;     (defvar-keymap my/expreg-repeat-map
-;;       :repeat t
-;;       "B" 'expreg-expand
-;;       "b" 'expreg-contract)))
 
 (elpaca (conn-isearch+ :host github
                        :repo "mtll/conn-mode"
@@ -1467,6 +1459,11 @@ see command `isearch-forward' for more information."
 
 (elpaca expand-region
   (with-eval-after-load 'conn-mode
+    (defun my/expand-region-ad (&rest _)
+      (unless conn-emacs-state
+        (activate-mark t)))
+    (advice-add 'er/expand-region :before #'my/expand-region-ad)
+
     (define-keymap
       :keymap conn-common-map
       "B" 'er/expand-region)
@@ -1481,12 +1478,6 @@ see command `isearch-forward' for more information."
 
 (elpaca evil-textobj-tree-sitter
   (require 'evil-textobj-tree-sitter))
-
-
-;;;; expreg
-
-;; (elpaca expreg
-;;   (keymap-global-set "C-t" 'expreg-expand))
 
 
 ;;;; ialign
@@ -1510,6 +1501,8 @@ see command `isearch-forward' for more information."
   (run-with-timer 0.5 nil (lambda () (require 'bookmark+)))
 
   (setq bmkp-bookmark-map-prefix-keys '("x")
+        ;; bookmark-default-file "/home/dave/.emacs.d/var/bmkp/current-bookmark.el"
+
         bmkp-last-as-first-bookmark-file nil
         bmkp-prompt-for-tags-flag t
         bookmark-version-control t
@@ -1944,7 +1937,7 @@ see command `isearch-forward' for more information."
       (completion-at-point)
       (corfu-insert-separator))
 
-    (keymap-set corfu-mode-map "M-SPC" #'corfu-sep-and-start))
+    (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start))
 
   (with-eval-after-load 'lsp-mode
     (defun wrap-lsp-capf ()
@@ -2051,11 +2044,17 @@ see command `isearch-forward' for more information."
         completion-category-overrides '((file (styles basic
                                                       partial-completion
                                                       orderless+flex))
-                                        (lsp-capf (styles orderless+flex)))
+                                        (lsp-capf (styles orderless+flex))
+                                        (consult-location (styles orderless-loc))
+                                        (consult-grep (styles orderless-loc)))
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-smart-case t
         read-file-name-completion-ignore-case nil
         read-buffer-completion-ignore-case nil)
+
+  (defun my/quote-region-for-consult (string)
+    (concat "=" (string-replace " " "\\ " string)))
+  (setq conn-completion-region-quote-function 'my/quote-region-for-consult)
 
   (defun flex-first-if-completing (pattern index _total)
     (when (and (= index 0) completion-in-region-mode)
@@ -2084,7 +2083,12 @@ see command `isearch-forward' for more information."
                                  orderless-regexp))
     (orderless-style-dispatchers '(orderless-kwd-dispatch
                                    orderless-affix-dispatch
-                                   flex-first))))
+                                   flex-first)))
+
+  (orderless-define-completion-style orderless-loc
+    (orderless-matching-styles '(orderless-literal orderless-regexp))
+    (orderless-affix-dispatch '((?\= . orderless-literal)))
+    (orderless-style-dispatchers '(orderless-affix-dispatch))))
 
 ;;;;; orderless-set-operations
 
@@ -2358,7 +2362,7 @@ see command `isearch-forward' for more information."
         "M-RET" 'consult-org-link-location)))
 
   (with-eval-after-load 'conn-mode
-    (keymap-set conn-misc-edit-map "e" 'consult-keep-lines)))
+    (keymap-set conn-edit-map "e" 'consult-keep-lines)))
 
 ;;;;; consult-dir
 
@@ -2897,21 +2901,6 @@ see command `isearch-forward' for more information."
           (list 'embark-consult-denote-heading-map))))
 
 
-;;;; tab bookmark
-
-(elpaca (tab-bookmark :host github
-                      :repo "minad/tab-bookmark")
-  (define-keymap
-    :keymap bookmark-map
-    "v b" #'tab-bookmark
-    "v r" #'tab-bookmark-rename
-    "v s" #'tab-bookmark-save
-    "v o" #'tab-bookmark-open
-    "v d" #'tab-bookmark-delete
-    "v k" #'tab-bookmark-push
-    "v i" #'tab-bookmark-pop))
-
-
 ;;;; diff-hl
 
 (elpaca diff-hl
@@ -2944,9 +2933,10 @@ see command `isearch-forward' for more information."
 
 (elpaca hyperbole
   (require 'embark)
-  ;; (require 'conn-mode)
+  (require 'conn-mode)
   (hyperbole-mode 1)
 
+  (keymap-unset hyperbole-mode-map "M-o")
   ;; This interferes with help popups from the minibuffer
   ;; eg. the buffer query-replace displays after ?
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
