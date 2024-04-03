@@ -3277,6 +3277,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'transpose-frame
     (define-keymap
       :keymap hycontrol-windows-mode-map
+      "\\" 'transpose-frame
       ">" 'rotate-frame-clockwise
       "<" 'rotate-frame-anticlockwise
       "_" 'flip-frame
