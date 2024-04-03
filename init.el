@@ -607,8 +607,8 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'treesit-auto
       (defvar-keymap conn-expreg-repeat-map
         :repeat t
-        "B" 'expreg-expand
-        "b" 'expreg-contract)
+        "H" 'expreg-expand
+        "h" 'expreg-contract)
 
       (dolist (mode global-treesit-auto-modes)
         (keymap-set (conn-get-mode-map 'conn-state mode) "B" 'expreg-expand)
@@ -1214,21 +1214,6 @@ see command `isearch-forward' for more information."
       "_" 'flip-frame
       "C--" 'flip-frame
       "|" 'flop-frame
-      "C-\\" 'flop-frame)
-
-    (defvar-keymap transpose-frame-repeat-map
-      :repeat t
-      "t" 'transpose-frame
-      "C-t" 'transpose-frame
-      ">" 'rotate-frame-clockwise
-      "C-." 'rotate-frame-clockwise
-      "<" 'rotate-frame-anticlockwise
-      "C-," 'rotate-frame-anticlockwise
-      "@" 'rotate-frame
-      "C-o" 'rotate-frame
-      "_" 'flip-frame
-      "C--" 'flip-frame
-      "|" 'flop-frame
       "C-\\" 'flop-frame)))
 
 
@@ -1465,12 +1450,12 @@ see command `isearch-forward' for more information."
 
     (define-keymap
       :keymap conn-common-map
-      "B" 'er/expand-region)
+      "H" 'er/expand-region)
 
     (defvar-keymap conn-expand-region-repeat-map
       :repeat t
-      "B" 'er/expand-region
-      "b" 'er/contract-region)))
+      "H" 'er/expand-region
+      "h" 'er/contract-region)))
 
 
 ;;;; evil text objects
@@ -3209,32 +3194,67 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-," 'action-key)
   (keymap-global-set "C-." 'assist-key)
-  (keymap-set hyperbole-mode-map "C-c C-\\" #'hycontrol-windows-mode)
   (keymap-unset hyperbole-mode-map "C-c RET" t)
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
   (keymap-set hycontrol-windows-mode-map "H" 'hycontrol-enable-frames-mode)
   (keymap-set hycontrol-frames-mode-map "H" 'hycontrol-enable-windows-mode)
-  (keymap-set hycontrol-windows-mode-map "~" 'conn-swap-windows)
+
+  (setq hycontrol--windows-prompt-format
+        (concat
+         "WINDOWS: (h=heighten, s=shorten, w=widen, n=narrow, arrow=move frame) by %d unit%s, .=clear units\n"
+         "a/A=cycle adjust frame width/height, d/D=delete win/others, o/O=other win/frame, i/j/k/l=to window, v/s=split win atop/sideways, (/)=save/restore wconfig\n"
+         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/~=un/bury/swap bufs |/_/</> flop/flip/rotate windows\n"
+         "Frame to edges: c=cycle, I/J/K/L=expand/contract, p/num-keypad=move; z/Z=zoom out/in, t=to FRAMES mode, Q=quit"))
+
+  (define-keymap
+    :keymap hycontrol-windows-mode-map
+    "`" 'conn-swap-windows
+    "~" 'conn-swap-windows
+    "D" 'delete-other-windows
+    "i" 'windmove-up
+    "j" 'windmove-left
+    "l" 'windmove-right
+    "k" 'windmove-down
+    "SPC" (lambda (arg)
+            (interactive "p")
+            (if (pos-visible-in-window-p (point-min))
+                (progn (beep) (message "Beginning of buffer"))
+              (scroll-up (unless (or (= 0 arg) (= 1 arg)) arg))))
+    "DEL" (lambda (arg)
+            (interactive "p")
+            (if (pos-visible-in-window-p (point-min))
+                (progn (beep) (message "Beginning of buffer"))
+              (scroll-down (unless (or (= 0 arg) (= 1 arg)) arg))))
+    "r" (lambda () (interactive) (split-window-horizontally))
+    "v" (lambda () (interactive) (split-window-vertically))
+    "I" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-top hycontrol-arg)))
+    "J" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-left hycontrol-arg)))
+    "K" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-right hycontrol-arg)))
+    "M" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-bottom hycontrol-arg))))
 
   (with-eval-after-load 'transpose-frame
     (define-keymap
       :keymap hycontrol-windows-mode-map
-      "D" 'delete-other-windows
       ">" 'rotate-frame-clockwise
       "<" 'rotate-frame-anticlockwise
       "_" 'flip-frame
       "|" 'flop-frame))
 
+  (keymap-set conn-state-map "h" 'conn-mark-thing-map)
+  (keymap-set conn-dot-state-map "h" 'conn-mark-thing-map)
+
   (dolist (state '(conn-state conn-dot-state conn-org-tree-edit-state))
     (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-                "h" 'hycontrol-enable-windows-mode))
+                "b" 'hycontrol-enable-windows-mode))
 
   (dolist (state '(conn-state conn-org-tree-edit-state))
     (define-keymap
       :keymap (conn-get-mode-map state 'hyperbole-mode)
       "e" #'hkey-either
-      "H" #'hyperbole))
+      "B" #'hyperbole))
 
-  (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "H" #'hyperbole))
+  (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "B" #'hyperbole)
+
+  (conn-unset-repeat-command 'bury-buffer))
