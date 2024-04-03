@@ -41,13 +41,11 @@
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
-(face-spec-set 'default '((t (:background "#ffffff"
-                              :foreground "#000000"
-                              :slant normal
-                              :weight medium
-                              :height 142
-                              :width normal
-                              :family "Iosevka DK"))))
+(face-spec-set 'default '((default (:slant normal
+                                           :weight medium
+                                           :height 142
+                                           :width normal
+                                           :family "Iosevka DK"))))
 
 (when (>= emacs-major-version 30)
   (with-eval-after-load 'modus-themes
