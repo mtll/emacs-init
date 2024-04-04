@@ -1664,9 +1664,9 @@ see command `isearch-forward' for more information."
 ;;;; magit
 
 (elpaca magit
-  (keymap-global-set "C-c g" 'magit-file-dispatch)
-  (keymap-global-set "C-c s" 'magit-status)
-  (keymap-global-set "C-c d" 'magit-dispatch))
+  (keymap-global-set "C-c m g" 'magit-file-dispatch)
+  (keymap-global-set "C-c m s" 'magit-status)
+  (keymap-global-set "C-c m d" 'magit-dispatch))
 
 
 ;;;; flycheck
@@ -3209,20 +3209,20 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap hycontrol-windows-mode-map
-    "x" (lambda () (interactive) (conn-swap-windows))
-    "D" 'delete-other-windows
-    "i" 'windmove-up
-    "j" 'windmove-left
-    "l" 'windmove-right
-    "k" 'windmove-down
+    "x"   (lambda () (interactive) (conn-swap-windows))
+    "D"   'delete-other-windows
+    "i"   'windmove-up
+    "j"   'windmove-left
+    "l"   'windmove-right
+    "k"   'windmove-down
     "SPC" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-up)))
     "DEL" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-down)))
-    "r" (lambda () (interactive) (split-window-horizontally))
-    "v" (lambda () (interactive) (split-window-vertically))
-    "I" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-top hycontrol-arg)))
-    "J" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-left hycontrol-arg)))
-    "K" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-right hycontrol-arg)))
-    "M" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-bottom hycontrol-arg))))
+    "r"   (lambda () (interactive) (split-window-horizontally))
+    "v"   (lambda () (interactive) (split-window-vertically))
+    "I"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-top hycontrol-arg)))
+    "J"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-left hycontrol-arg)))
+    "K"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-right hycontrol-arg)))
+    "M"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-bottom hycontrol-arg))))
 
   (keymap-set conn-state-map "h" 'conn-mark-thing-map)
   (keymap-set conn-dot-state-map "h" 'conn-mark-thing-map)
