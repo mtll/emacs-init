@@ -124,7 +124,6 @@
 (keymap-global-unset "C-z")
 (keymap-global-unset "C-x C-z")
 
-(keymap-global-set "C-z"             #'exit-recursive-edit)
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
 (keymap-global-set "C-M-<return>"    #'default-indent-new-line)
 (keymap-global-set "S-<backspace>"   #'cycle-spacing)
@@ -1665,7 +1664,9 @@ see command `isearch-forward' for more information."
 ;;;; magit
 
 (elpaca magit
-  (keymap-global-set "C-c g" 'magit-file-dispatch))
+  (keymap-global-set "C-c g" 'magit-file-dispatch)
+  (keymap-global-set "C-c s" 'magit-status)
+  (keymap-global-set "C-c d" 'magit-dispatch))
 
 
 ;;;; flycheck
@@ -1770,6 +1771,10 @@ see command `isearch-forward' for more information."
     (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)
+
+    (with-eval-after-load 'bicycle
+      (keymap-set embark-heading-map "RET" #'bicycle-cycle)
+      (keymap-set embark-org-heading-map "RET" #'bicycle-cycle))
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
@@ -2912,7 +2917,8 @@ see command `isearch-forward' for more information."
 
   ;; Need to set this before hyperbole loads
   (defvar hyperbole-embark-target-finders)
-  (setq hyperbole-embark-target-finders '(embark--vertico-selected
+  (setq hsys-org-enable-smart-keys t
+        hyperbole-embark-target-finders '(embark--vertico-selected
                                           embark-target-top-minibuffer-candidate
                                           embark-target-active-region
                                           embark-org-target-link
@@ -3111,7 +3117,7 @@ see command `isearch-forward' for more information."
 
   (hyperbole-mode 1)
 
-  ;; (keymap-unset hyperbole-mode-map "M-o")
+  (keymap-unset hyperbole-mode-map "M-o")
   ;; This interferes with help popups from the minibuffer
   ;; eg. the buffer query-replace displays after ?
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
@@ -3241,19 +3247,19 @@ Any ARGS will be passed to `hmouse-release'."
       (hmouse-release nil)
       (let ((hkey-alist hmouse-alist))
         (cond (action-key-cancelled
-	       (setq action-key-cancelled nil
-		     assist-key-depressed-flag nil))
-	      (assist-key-depressed-flag
- 	       (hmouse-function nil nil args))
-	      ((hkey-mouse-help nil args))
-	      (t
-	       (run-hooks 'action-key-release-hook)
-	       (hmouse-function #'action-key-internal nil args)
+               (setq action-key-cancelled nil
+                     assist-key-depressed-flag nil))
+              (assist-key-depressed-flag
+               (hmouse-function nil nil args))
+              ((hkey-mouse-help nil args))
+              (t
+               (run-hooks 'action-key-release-hook)
+               (hmouse-function #'action-key-internal nil args)
                (setq action-key-depressed-flag nil)))
         ;; Need to clear these variables so that mouse pasting does
         ;; not occur repeatedly from a single region selection.
         (setq hkey-region nil
-	      hkey-value nil))))
+              hkey-value nil))))
 
   (defun assist-mouse-key (&rest args)
     "Set point to the mouse or keyboard cursor position and execute `assist-key'.
@@ -3265,22 +3271,24 @@ Any ARGS will be passed to `hmouse-release'."
       (hmouse-release t)
       (let ((hkey-alist hmouse-alist))
         (cond (assist-key-cancelled
-	       (setq assist-key-cancelled nil
-		     action-key-depressed-flag nil))
-	      (action-key-depressed-flag
-	       (hmouse-function nil t args))
-	      ((hkey-mouse-help t args))
-	      (t
-	       (run-hooks 'assist-key-release-hook)
-	       (hmouse-function #'assist-key-internal t args)
+               (setq assist-key-cancelled nil
+                     action-key-depressed-flag nil))
+              (action-key-depressed-flag
+               (hmouse-function nil t args))
+              ((hkey-mouse-help t args))
+              (t
+               (run-hooks 'assist-key-release-hook)
+               (hmouse-function #'assist-key-internal t args)
                (setq assist-key-depressed-flag nil)))
         ;; Need to clear this variable so that mouse pasting does
         ;; not occur repeatedly from a single region selection.
         (setq hkey-region nil
-	      hkey-value nil))))
+              hkey-value nil))))
 
   (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "B" #'hyperbole)
 
+  ;; hkey help
+  ;; "~/.emacs.d/elpaca/repos/hyperbole/man/hkey-help.txt"
   (hmouse-install)
   (hmouse-bind-shifted-key-emacs 1 #'action-key-depress-emacs #'action-mouse-key-emacs)
   (hmouse-bind-shifted-key-emacs 3 #'assist-key-depress-emacs #'assist-mouse-key-emacs)
