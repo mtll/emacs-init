@@ -1611,51 +1611,24 @@ see command `isearch-forward' for more information."
       (let ((avy-single-candidate-jump t))
         (apply fn args)))
     (advice-add 'avy-goto-char-in-line :around #'avy-enable-single-candidate-jump)
-    (advice-add 'avy-goto-char-timer :around #'avy-enable-single-candidate-jump)
 
     (defun avy-isearch ()
       "Jump to one of the current isearch candidates."
       (interactive)
       (avy-with avy-isearch
-                (let ((avy-background nil)
-                      (avy-case-fold-search case-fold-search))
-                  (prog1
-                      (avy-process
-                       (avy--regex-candidates
-                        (cond
-                         ((functionp isearch-regexp-function)
-                          (funcall isearch-regexp-function isearch-string))
-                         (isearch-regexp-function (word-search-regexp isearch-string))
-                         (isearch-regexp isearch-string)
-                         (t (regexp-quote isearch-string)))))
-                    (isearch-done)))))
-
-    (with-eval-after-load 'hyperbole
-      (defun avy-action-action-key (pt)
-        (unwind-protect
-            (let ((newpt (save-excursion
-                           (goto-char pt)
-                           (action-key)
-                           (point))))
-              (unless (eq newpt pt)
-                (goto-char newpt)))
-          (select-window
-           (cdr (ring-ref avy-ring 0))))
-        t)
-      (setf (alist-get ?e avy-dispatch-alist) #'avy-action-action-key)
-
-      (defun avy-action-assist-key (pt)
-        (unwind-protect
-            (let ((newpt (save-excursion
-                           (goto-char pt)
-                           (assist-key)
-                           (point))))
-              (unless (eq newpt pt)
-                (goto-char newpt)))
-          (select-window
-           (cdr (ring-ref avy-ring 0))))
-        t)
-      (setf (alist-get ?h avy-dispatch-alist) #'avy-action-assist-key))
+        (let ((avy-background nil)
+              (avy-case-fold-search case-fold-search))
+          (prog1
+              (avy-process
+               (avy--regex-candidates
+                (cond
+                 ((functionp isearch-regexp-function)
+                  (funcall isearch-regexp-function isearch-string))
+                 (isearch-regexp-function (word-search-regexp isearch-string))
+                 (isearch-regexp isearch-string)
+                 (t (regexp-quote isearch-string)))))
+            (isearch-done)))))
+    (keymap-set isearch-mode-map "M-." #'avy-isearch)
 
     (with-eval-after-load 'embark
       (defun avy-action-embark (pt)
@@ -1692,7 +1665,7 @@ see command `isearch-forward' for more information."
 ;;;; magit
 
 (elpaca magit
-  (keymap-global-set "C-c s" 'magit-status))
+  (keymap-global-set "C-c g" 'magit-file-dispatch))
 
 
 ;;;; flycheck
@@ -2938,6 +2911,7 @@ see command `isearch-forward' for more information."
   (require 'conn-mode)
 
   ;; Need to set this before hyperbole loads
+  (defvar hyperbole-embark-target-finders)
   (setq hyperbole-embark-target-finders '(embark--vertico-selected
                                           embark-target-top-minibuffer-candidate
                                           embark-target-active-region
@@ -3143,33 +3117,10 @@ see command `isearch-forward' for more information."
   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
   (setq temp-buffer-show-function nil)
 
-  (defvar hyperbole-embark-target-finders)
-
   (setq hyperbole-mode-lighter " Hy"
         hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
         smart-scroll-proportional nil
         hpath:display-where 'this-window
-        hyperbole-embark-target-finders '(embark--vertico-selected
-                                          embark-target-top-minibuffer-candidate
-                                          embark-target-active-region
-                                          embark-org-target-link
-                                          embark-org-target-element-context
-                                          embark-org-target-agenda-item
-                                          embark-target-collect-candidate
-                                          embark-target-completion-list-candidate
-                                          embark-target-flymake-at-point
-                                          embark-target-smerge-at-point
-                                          embark-target-package-at-point
-                                          embark-target-email-at-point
-                                          embark-target-url-at-point
-                                          embark-target-file-at-point
-                                          embark-target-custom-variable-at-point
-                                          embark-target-identifier-at-point
-                                          embark-target-guess-file-at-point
-                                          embark-target-expression-at-point
-                                          embark-looking-at-page-target-finder
-                                          embark-target-defun-at-point
-                                          embark-target-heading-at-point)
         action-key-eol-function #'ignore
         assist-key-eol-function #'ignore)
 
@@ -3280,19 +3231,58 @@ see command `isearch-forward' for more information."
       "e" #'hkey-either
       "B" #'hyperbole))
 
+  (defun action-mouse-key (&rest args)
+    "Set point to the mouse or keyboard cursor position and execute `action-key'.
+Any ARGS will be passed to `hmouse-release'."
+    (interactive)
+    ;; Make this a no-op if some local mouse key binding overrode the global
+    ;; action-key-depress command invocation.
+    (when action-key-depressed-flag
+      (hmouse-release nil)
+      (let ((hkey-alist hmouse-alist))
+        (cond (action-key-cancelled
+	       (setq action-key-cancelled nil
+		     assist-key-depressed-flag nil))
+	      (assist-key-depressed-flag
+ 	       (hmouse-function nil nil args))
+	      ((hkey-mouse-help nil args))
+	      (t
+	       (run-hooks 'action-key-release-hook)
+	       (hmouse-function #'action-key-internal nil args)
+               (setq action-key-depressed-flag nil)))
+        ;; Need to clear these variables so that mouse pasting does
+        ;; not occur repeatedly from a single region selection.
+        (setq hkey-region nil
+	      hkey-value nil))))
+
+  (defun assist-mouse-key (&rest args)
+    "Set point to the mouse or keyboard cursor position and execute `assist-key'.
+Any ARGS will be passed to `hmouse-release'."
+    (interactive)
+    ;; Make this a no-op if some local mouse key binding overrode the global
+    ;; assist-key-depress command invocation.
+    (when assist-key-depressed-flag
+      (hmouse-release t)
+      (let ((hkey-alist hmouse-alist))
+        (cond (assist-key-cancelled
+	       (setq assist-key-cancelled nil
+		     action-key-depressed-flag nil))
+	      (action-key-depressed-flag
+	       (hmouse-function nil t args))
+	      ((hkey-mouse-help t args))
+	      (t
+	       (run-hooks 'assist-key-release-hook)
+	       (hmouse-function #'assist-key-internal t args)
+               (setq assist-key-depressed-flag nil)))
+        ;; Need to clear this variable so that mouse pasting does
+        ;; not occur repeatedly from a single region selection.
+        (setq hkey-region nil
+	      hkey-value nil))))
+
   (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "B" #'hyperbole)
 
-  (setq kmacro-call-mouse-event nil)
+  (hmouse-install)
   (hmouse-bind-shifted-key-emacs 1 #'action-key-depress-emacs #'action-mouse-key-emacs)
   (hmouse-bind-shifted-key-emacs 3 #'assist-key-depress-emacs #'assist-mouse-key-emacs)
-  (with-eval-after-load "company"
-    (define-key company-active-map [S-down-mouse-1] 'ignore)
-    (define-key company-active-map [S-mouse-1] 'smart-company-to-definition)
-    (define-key company-active-map [S-down-mouse-3] 'ignore)
-    (define-key company-active-map [S-mouse-3] 'smart-company-help))
-  (setq hmouse-bindings (hmouse-get-bindings nil)
-        hmouse-bindings-flag t)
-
-  (keymap-global-set "<mouse-2>" 'xref-go-back)
 
   (conn-unset-repeat-command 'bury-buffer))
