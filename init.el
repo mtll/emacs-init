@@ -2821,10 +2821,12 @@ see command `isearch-forward' for more information."
      :require-match t))
   (keymap-global-set "C-c n f" 'consult-denote)
 
-  (defun consult-denote-headings (files)
+  (defun consult-denote-headings (&optional files)
     (interactive)
-    (let ((builder (consult--ripgrep-make-builder
-                    (mapcar #'consult-notes-denote--file files))))
+    (let* ((consult--regexp-compiler #'consult--default-regexp-compiler)
+           (builder (consult--ripgrep-make-builder
+                     (or (when files (mapcar #'consult-notes-denote--file files))
+                         (denote-directory-files)))))
       (consult--read
        (consult--async-command builder
          (consult--grep-format builder))
@@ -2834,11 +2836,12 @@ see command `isearch-forward' for more information."
        :state (consult--grep-state)
        :add-history (thing-at-point 'symbol)
        :require-match t
-       :initial "#/^[*]+#"
+       :initial (concat "#" "^[*]+" "#")
        :category 'consult-denote-heading
        :group #'consult--prefix-group
        :history '(:input consult--note-history)
        :sort nil)))
+  (keymap-global-set "C-c n h" 'consult-denote-headings)
 
   (with-eval-after-load 'embark
     (add-to-list 'embark-multitarget-actions 'consult-denote-headings)
