@@ -1055,7 +1055,7 @@ see command `isearch-forward' for more information."
 
 (elpaca (math-delimiters :host github :repo "oantolin/math-delimiters")
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "S-SPC" 'math-delimiters-insert)))
+    (keymap-set org-mode-map "M-SPC" 'math-delimiters-insert)))
 
 
 ;;;; org
@@ -1188,7 +1188,7 @@ see command `isearch-forward' for more information."
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
-  (keymap-global-set "C-S-k" 'crux-kill-whole-line)
+  (keymap-global-set "C-S-k" 'crux-kill-line-backwards)
 
   (with-eval-after-load 'conn-mode
     (keymap-global-set "C-c e" 'crux-visit-shell-buffer)
@@ -1399,7 +1399,13 @@ see command `isearch-forward' for more information."
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
 
   (with-eval-after-load 'vertico
-    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
+    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus))
+
+  (defun my/space-after-point ()
+    (interactive)
+    (insert " ")
+    (backward-char))
+  (keymap-global-set "S-SPC" 'my/space-after-point))
 
 ;;;;; Conn Extensions
 
@@ -2384,7 +2390,7 @@ see command `isearch-forward' for more information."
 
 ;;;;; consult-extras
 
-(elpaca (consult-extras :host codeberg :repo "crcs/consult-extras")
+(elpaca (consult-extras :host github :repo "mtll/consult-extras")
   (keymap-global-set "C-h o" 'consult-symbol)
   (keymap-set goto-map "y" 'consult-all-marks)
   (with-eval-after-load 'consult
@@ -2930,21 +2936,9 @@ see command `isearch-forward' for more information."
 (elpaca hyperbole
   (require 'embark)
   (require 'conn-mode)
-  (hyperbole-mode 1)
 
-  (keymap-unset hyperbole-mode-map "M-o")
-  ;; This interferes with help popups from the minibuffer
-  ;; eg. the buffer query-replace displays after ?
-  (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
-  (setq temp-buffer-show-function nil)
-
-  (defvar hyperbole-embark-target-finders)
-
-  (setq hyperbole-mode-lighter " Hy"
-        hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
-        smart-scroll-proportional nil
-        hpath:display-where 'this-window
-        hyperbole-embark-target-finders '(embark--vertico-selected
+  ;; Need to set this before hyperbole loads
+  (setq hyperbole-embark-target-finders '(embark--vertico-selected
                                           embark-target-top-minibuffer-candidate
                                           embark-target-active-region
                                           embark-org-target-link
@@ -2965,9 +2959,6 @@ see command `isearch-forward' for more information."
                                           embark-looking-at-page-target-finder
                                           embark-target-defun-at-point
                                           embark-target-heading-at-point)
-        action-key-eol-function #'ignore
-        assist-key-eol-function #'ignore
-        ;; Remove items I want embark to handle instead.
         hkey-alist '(;; Company completion mode
                      ((and (boundp 'company-active-map)
                            (memq company-active-map (current-minor-mode-maps)))
@@ -3141,7 +3132,46 @@ see command `isearch-forward' for more information."
                      ;;
                      ;; Outline minor mode
                      ((and (boundp 'outline-minor-mode) outline-minor-mode)
-                      . ((smart-outline) . (smart-outline-assist)))))
+                      . ((smart-outline) . (smart-outline-assist))))
+        hmouse-alist hkey-alist)
+
+  (hyperbole-mode 1)
+
+  ;; (keymap-unset hyperbole-mode-map "M-o")
+  ;; This interferes with help popups from the minibuffer
+  ;; eg. the buffer query-replace displays after ?
+  (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
+  (setq temp-buffer-show-function nil)
+
+  (defvar hyperbole-embark-target-finders)
+
+  (setq hyperbole-mode-lighter " Hy"
+        hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
+        smart-scroll-proportional nil
+        hpath:display-where 'this-window
+        hyperbole-embark-target-finders '(embark--vertico-selected
+                                          embark-target-top-minibuffer-candidate
+                                          embark-target-active-region
+                                          embark-org-target-link
+                                          embark-org-target-element-context
+                                          embark-org-target-agenda-item
+                                          embark-target-collect-candidate
+                                          embark-target-completion-list-candidate
+                                          embark-target-flymake-at-point
+                                          embark-target-smerge-at-point
+                                          embark-target-package-at-point
+                                          embark-target-email-at-point
+                                          embark-target-url-at-point
+                                          embark-target-file-at-point
+                                          embark-target-custom-variable-at-point
+                                          embark-target-identifier-at-point
+                                          embark-target-guess-file-at-point
+                                          embark-target-expression-at-point
+                                          embark-looking-at-page-target-finder
+                                          embark-target-defun-at-point
+                                          embark-target-heading-at-point)
+        action-key-eol-function #'ignore
+        assist-key-eol-function #'ignore)
 
   (defun embark-target-defun-looking-at ()
     (pcase (embark-target-defun-at-point)
@@ -3207,7 +3237,6 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-," 'action-key)
   (keymap-global-set "C-." 'assist-key)
-  (keymap-unset hyperbole-mode-map "C-c RET" t)
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
@@ -3252,5 +3281,18 @@ see command `isearch-forward' for more information."
       "B" #'hyperbole))
 
   (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "B" #'hyperbole)
+
+  (setq kmacro-call-mouse-event nil)
+  (hmouse-bind-shifted-key-emacs 1 #'action-key-depress-emacs #'action-mouse-key-emacs)
+  (hmouse-bind-shifted-key-emacs 3 #'assist-key-depress-emacs #'assist-mouse-key-emacs)
+  (with-eval-after-load "company"
+    (define-key company-active-map [S-down-mouse-1] 'ignore)
+    (define-key company-active-map [S-mouse-1] 'smart-company-to-definition)
+    (define-key company-active-map [S-down-mouse-3] 'ignore)
+    (define-key company-active-map [S-mouse-3] 'smart-company-help))
+  (setq hmouse-bindings (hmouse-get-bindings nil)
+        hmouse-bindings-flag t)
+
+  (keymap-global-set "<mouse-2>" 'xref-go-back)
 
   (conn-unset-repeat-command 'bury-buffer))
