@@ -48,7 +48,8 @@
 
 ;;;; emacs
 
-(setq comment-empty-lines t
+(setq even-window-sizes nil
+      comment-empty-lines t
       scroll-preserve-screen-position t
       delete-active-region nil
       fill-column 72
@@ -117,7 +118,7 @@
 (undelete-frame-mode 1)
 (context-menu-mode 1)
 
-(define-key global-map [remap yank] #'yank-in-context)
+;; (define-key global-map [remap yank] #'yank-in-context)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-z")
@@ -1129,29 +1130,33 @@ see command `isearch-forward' for more information."
 
 (when (< emacs-major-version 30)
   (elpaca modus-themes
-    (run-with-timer 0.33 nil (lambda () (require 'modus-themes)))
+    (require 'modus-themes)
 
-    (with-eval-after-load 'modus-themes
-      (setq modus-themes-common-palette-overrides
-            (seq-concatenate
-             'list
-             `((bg-main "#f8f8f8")
-               (cursor "#000000")
-               (bg-region "#e1e1e1")
-               (fg-region unspecified)
-               (fg-completion-match-0 "#323c32")
-               (bg-completion-match-0 "#caf1c9")
-               (fg-completion-match-1 "#38333c")
-               (bg-completion-match-1 "#e3cff1")
-               (fg-completion-match-2 "#3c3333")
-               (bg-completion-match-2 "#f1cccc")
-               (fg-completion-match-3 "#343b3c")
-               (bg-completion-match-3 "#d1eff1")
-               (bg-search-lazy bg-magenta-subtle)
-               (bg-search-current bg-yellow-intense))
-             modus-themes-preset-overrides-warmer))
+    (setq modus-themes-common-palette-overrides
+          (seq-concatenate
+           'list
+           `((bg-main "#f8f8f8")
+             (cursor "#000000")
+             (bg-region "#e1e1e1")
+             (fg-region unspecified)
+             (fg-completion-match-0 "#323c32")
+             (bg-completion-match-0 "#caf1c9")
+             (fg-completion-match-1 "#38333c")
+             (bg-completion-match-1 "#e3cff1")
+             (fg-completion-match-2 "#3c3333")
+             (bg-completion-match-2 "#f1cccc")
+             (fg-completion-match-3 "#343b3c")
+             (bg-completion-match-3 "#d1eff1")
+             (bg-search-lazy bg-magenta-subtle)
+             (bg-search-current bg-yellow-intense))
+           modus-themes-preset-overrides-warmer))
 
-      (load-theme 'modus-operandi-tinted t))))
+    (load-theme 'modus-operandi-tinted t)
+
+    (custom-set-faces
+     `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+     `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
+     `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))))
 
 (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
                               "modus-themes-subtle-red"
@@ -1200,6 +1205,15 @@ see command `isearch-forward' for more information."
 ;;;; transpose-frame
 
 (elpaca transpose-frame
+  (with-eval-after-load 'hyperbole
+    (define-keymap
+      :keymap hycontrol-windows-mode-map
+      "\\" 'transpose-frame
+      ">" 'rotate-frame-clockwise
+      "<" 'rotate-frame-anticlockwise
+      "_" 'flip-frame
+      "|" 'flop-frame))
+
   (with-eval-after-load 'conn-mode
     (define-keymap
       :keymap ctl-x-4-map
@@ -1597,18 +1611,18 @@ see command `isearch-forward' for more information."
       "Jump to one of the current isearch candidates."
       (interactive)
       (avy-with avy-isearch
-        (let ((avy-background nil)
-              (avy-case-fold-search case-fold-search))
-          (prog1
-              (avy-process
-               (avy--regex-candidates
-                (cond
-                 ((functionp isearch-regexp-function)
-                  (funcall isearch-regexp-function isearch-string))
-                 (isearch-regexp-function (word-search-regexp isearch-string))
-                 (isearch-regexp isearch-string)
-                 (t (regexp-quote isearch-string)))))
-            (isearch-done)))))
+                (let ((avy-background nil)
+                      (avy-case-fold-search case-fold-search))
+                  (prog1
+                      (avy-process
+                       (avy--regex-candidates
+                        (cond
+                         ((functionp isearch-regexp-function)
+                          (funcall isearch-regexp-function isearch-string))
+                         (isearch-regexp-function (word-search-regexp isearch-string))
+                         (isearch-regexp isearch-string)
+                         (t (regexp-quote isearch-string)))))
+                    (isearch-done)))))
 
     (with-eval-after-load 'hyperbole
       (defun avy-action-action-key (pt)
@@ -2949,7 +2963,8 @@ see command `isearch-forward' for more information."
                                           embark-target-guess-file-at-point
                                           embark-target-expression-at-point
                                           embark-looking-at-page-target-finder
-                                          embark-target-defun-at-point)
+                                          embark-target-defun-at-point
+                                          embark-target-heading-at-point)
         action-key-eol-function #'ignore
         assist-key-eol-function #'ignore
         ;; Remove items I want embark to handle instead.
@@ -3128,48 +3143,6 @@ see command `isearch-forward' for more information."
                      ((and (boundp 'outline-minor-mode) outline-minor-mode)
                       . ((smart-outline) . (smart-outline-assist)))))
 
-  (with-eval-after-load 'bicycle
-    (defun smart-outline ()
-      (interactive)
-      (cond (smart-outline-cut
-             (setq smart-outline-cut nil) (yank))
-            ((smart-eobp) (outline-show-all))
-            ((and (bolp) (looking-at outline-regexp))
-             (setq smart-outline-cut t)
-             (kill-region
-              (point)
-              (or (outline-get-next-sibling)
-                  ;; Skip past start of current entry
-                  (progn (re-search-forward outline-regexp nil t)
-                         (smart-outline-to-entry-end t)))))
-            ((eolp)
-             (funcall action-key-eol-function))
-            ((zerop (smart-outline-level))
-             nil)
-            ;; On an outline heading line but not at the start/end of line.
-            ((smart-outline-subtree-hidden-p)
-             (save-excursion (bicycle-cycle-local)))
-            (t (outline-hide-subtree))))
-
-    (defun smart-outline-assist ()
-      (interactive)
-      (cond (smart-outline-cut (yank))
-            ((smart-eobp) (outline-hide-body))
-            ((and (bolp) (looking-at outline-regexp))
-             (setq smart-outline-cut t)
-             (kill-region (point)
-                          ;; Skip past start of current entry
-                          (progn (re-search-forward outline-regexp nil t)
-                                 (smart-outline-to-entry-end))))
-            ((eolp)
-             (funcall assist-key-eol-function))
-            ((zerop (smart-outline-level))
-             nil)
-            ;; On an outline heading line but not at the start/end of line.
-            ((smart-outline-subtree-hidden-p)
-             (save-excursion (bicycle-cycle-local)))
-            (t (outline-hide-entry)))))
-
   (defun embark-target-defun-looking-at ()
     (pcase (embark-target-defun-at-point)
       ((and target `(,_ ,_ ,beg . ,end)
@@ -3245,43 +3218,25 @@ see command `isearch-forward' for more information."
         (concat
          "WINDOWS: (h=heighten, s=shorten, w=widen, n=narrow, arrow=move frame) by %d unit%s, .=clear units\n"
          "a/A=cycle adjust frame width/height, d/D=delete win/others, o/O=other win/frame, i/j/k/l=to window, v/s=split win atop/sideways, (/)=save/restore wconfig\n"
-         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/~=un/bury/swap bufs |/_/</> flop/flip/rotate windows\n"
+         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/x=un/bury/swap bufs |/_/</> flop/flip/rotate windows\n"
          "Frame to edges: c=cycle, I/J/K/L=expand/contract, p/num-keypad=move; z/Z=zoom out/in, t=to FRAMES mode, Q=quit"))
 
   (define-keymap
     :keymap hycontrol-windows-mode-map
-    "`" 'conn-swap-windows
-    "~" 'conn-swap-windows
+    "x" (lambda () (interactive) (conn-swap-windows))
     "D" 'delete-other-windows
     "i" 'windmove-up
     "j" 'windmove-left
     "l" 'windmove-right
     "k" 'windmove-down
-    "SPC" (lambda (arg)
-            (interactive "p")
-            (if (pos-visible-in-window-p (point-min))
-                (progn (beep) (message "Beginning of buffer"))
-              (scroll-up (unless (or (= 0 arg) (= 1 arg)) arg))))
-    "DEL" (lambda (arg)
-            (interactive "p")
-            (if (pos-visible-in-window-p (point-min))
-                (progn (beep) (message "Beginning of buffer"))
-              (scroll-down (unless (or (= 0 arg) (= 1 arg)) arg))))
+    "SPC" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-up)))
+    "DEL" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-down)))
     "r" (lambda () (interactive) (split-window-horizontally))
     "v" (lambda () (interactive) (split-window-vertically))
     "I" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-top hycontrol-arg)))
     "J" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-left hycontrol-arg)))
     "K" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-right hycontrol-arg)))
     "M" (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-bottom hycontrol-arg))))
-
-  (with-eval-after-load 'transpose-frame
-    (define-keymap
-      :keymap hycontrol-windows-mode-map
-      "\\" 'transpose-frame
-      ">" 'rotate-frame-clockwise
-      "<" 'rotate-frame-anticlockwise
-      "_" 'flip-frame
-      "|" 'flop-frame))
 
   (keymap-set conn-state-map "h" 'conn-mark-thing-map)
   (keymap-set conn-dot-state-map "h" 'conn-mark-thing-map)

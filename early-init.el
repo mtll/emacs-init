@@ -68,6 +68,11 @@
              (bg-search-current bg-yellow-intense))
            modus-themes-preset-overrides-warmer)))
 
-  (load-theme 'modus-operandi-tinted t))
+  (load-theme 'modus-operandi-tinted t)
+
+  (custom-set-faces
+   `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+   `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
+   `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900")))))
 
 (provide 'early-init)
