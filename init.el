@@ -424,7 +424,7 @@ see command `isearch-forward' for more information."
 
 (setq tab-bar-show nil
       tab-bar-tab-name-function 'tab-bar-tab-name-all
-      tab-bar-new-tab-choice "*scratch*")
+      tab-bar-new-tab-choice t)
 
 (tab-bar-mode 1)
 (tab-bar-history-mode 1)
@@ -1163,7 +1163,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "S-<return>"    'crux-smart-open-line)
   (keymap-global-set "C-x F"         'crux-sudo-edit)
   (keymap-global-set "C-x W"         'crux-open-with)
-  (keymap-global-set "C-<backspace>" 'crux-smart-kill-line)
+  (keymap-global-set "C-<backspace>" 'crux-kill-whole-line)
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
@@ -1373,6 +1373,8 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
+  (keymap-set conn-global-map "C-z" 'conn-other-place-prefix)
+  (keymap-set conn-global-map "C-t" 'tab-bar-new-tab)
 
   (defun my/space-after-point (N)
     (interactive "p")
@@ -3177,17 +3179,19 @@ see command `isearch-forward' for more information."
         (concat
          "WINDOWS: (h=heighten, s=shorten, w=widen, n=narrow, arrow=move frame) by %d unit%s, .=clear units\n"
          "a/A=cycle adjust frame width/height, d/D=delete win/others, o/O=other win/frame, i/j/k/l=to window, v/s=split win atop/sideways, (/)=save/restore wconfig\n"
-         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/x/e=un/bury/swap/throw bufs |/_/</> flop/flip/rotate windows\n"
-         "Frame to edges: c=cycle, I/J/K/L=expand/contract, p/num-keypad=move; z/Z=zoom out/in, t=to FRAMES mode, Q=quit"))
+         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/x/e=un/bury/swap/throw bufs, |/_/</> flop/flip/rotate windows\n"
+         "Frame to edges: c=cycle, C-d=kill buf and win, I/J/K/L=expand/contract, p/num-keypad=move; z/Z=zoom out/in, t=to FRAMES mode, Q=quit"))
 
   (define-keymap
     :keymap hycontrol-windows-mode-map
+    "C-d" 'kill-buffer-and-window
     "x"   (lambda () (interactive) (conn-swap-windows))
     "D"   'delete-other-windows
     "i"   'windmove-up
     "j"   'windmove-left
     "l"   'windmove-right
     "k"   'windmove-down
+    "e"   'conn-buffer-to-other-window
     "e"   'conn-buffer-to-other-window
     "SPC" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-up)))
     "DEL" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-down)))
