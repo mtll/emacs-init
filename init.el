@@ -159,8 +159,8 @@
 
 (define-keymap
   :keymap window-prefix-map
-  "t" #'tab-detach
-  "f" #'tear-off-window)
+  "d" #'tab-detach
+  "t" #'tear-off-window)
 
 (define-keymap
   :keymap emacs-lisp-mode-map
@@ -233,6 +233,11 @@
     (forward-char))
   (backward-page)
   (beginning-of-line))
+
+
+;;;; bookmarks
+
+(setq bookmark-save-flag 1)
 
 
 ;;;; pulse
@@ -418,10 +423,15 @@ see command `isearch-forward' for more information."
 ;;;; tab-bar-mode
 
 (setq tab-bar-show nil
-      tab-bar-tab-name-function 'tab-bar-tab-name-all)
+      tab-bar-tab-name-function 'tab-bar-tab-name-all
+      tab-bar-new-tab-choice "*scratch*")
 
 (tab-bar-mode 1)
 (tab-bar-history-mode 1)
+
+(defun my/tab-bar-new-message (&rest _)
+  (message "Added new tab at %s" tab-bar-new-tab-to))
+(advice-add 'tab-bar-new-tab-to :after #'my/tab-bar-new-message)
 
 
 ;;;; diary / calendar
@@ -470,11 +480,7 @@ see command `isearch-forward' for more information."
 (with-eval-after-load 'no-littering
   (require 'savehist)
 
-  (setq savehist-additional-variables '(projectile-project-command-history
-                                        search-ring
-                                        regexp-search-ring
-                                        register-alist)
-        savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
+  (setq savehist-file (expand-file-name "var/savehist/hist" user-emacs-directory))
 
   (savehist-mode 1))
 
@@ -545,8 +551,7 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap dired-mode-map
-    "/" 'other-window-prefix
-    "?" 'other-frame-prefix))
+    "/" 'dired-undo))
 
 
 ;;;; eldoc
@@ -837,7 +842,6 @@ see command `isearch-forward' for more information."
         lsp-ui-doc-header t
         lsp-ui-doc-border "black"
         lsp-ui-doc-background '((t (:background "#dfd9cf")))
-        ;; lsp-flycheck-warning-unnecessary-face '((t (:inherit modus-themes-lang-warning)))
         lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
 
   (setq lsp-clients-clangd-args '("-j=4"
@@ -856,31 +860,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'lsp-mode
     (define-keymap
       :keymap lsp-mode-map
-      "C-c I" 'lsp-inlay-hints-mode))
-
-  ;; emacs-lsp-booster
-  ;; (define-advice json-parse-buffer (:around (old-fn &rest args) lsp-booster-parse-bytecode)
-  ;;   "Try to parse bytecode instead of json."
-  ;;   (or
-  ;;    (when (equal (following-char) ?#)
-  ;;      (let ((bytecode (read (current-buffer))))
-  ;;        (when (byte-code-function-p bytecode)
-  ;;          (funcall bytecode))))
-  ;;    (apply old-fn args)))
-  ;;
-  ;; (define-advice lsp-resolve-final-command (:around (old-fn cmd &optional test?) add-lsp-server-booster)
-  ;;   "Prepend emacs-lsp-booster command to lsp CMD."
-  ;;   (let ((orig-result (funcall old-fn cmd test?)))
-  ;;     (if (and (not test?)                             ;; for check lsp-server-present?
-  ;;              (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
-  ;;              lsp-use-plists
-  ;;              (not (functionp 'json-rpc-connection))  ;; native json-rpc
-  ;;              (executable-find "emacs-lsp-booster"))
-  ;;         (progn
-  ;;           (message "Using emacs-lsp-booster for %s!" orig-result)
-  ;;           (cons "emacs-lsp-booster" orig-result))
-  ;;       orig-result)))
-  )
+      "C-c I" 'lsp-inlay-hints-mode)))
 
 ;;;;; lsp-ui
 
@@ -1119,10 +1099,10 @@ see command `isearch-forward' for more information."
 
 ;;;; exec-path-from-shell
 
-;; (elpaca exec-path-from-shell
-;;   (when (memq window-system '(mac ns x))
-;;     (require 'exec-path-from-shell)
-;;     (exec-path-from-shell-initialize)))
+(elpaca exec-path-from-shell
+  (when (memq window-system '(mac ns x))
+    (require 'exec-path-from-shell)
+    (exec-path-from-shell-initialize)))
 
 
 ;;;; modus-themes
@@ -1183,14 +1163,14 @@ see command `isearch-forward' for more information."
   (keymap-global-set "S-<return>"    'crux-smart-open-line)
   (keymap-global-set "C-x F"         'crux-sudo-edit)
   (keymap-global-set "C-x W"         'crux-open-with)
-  (keymap-global-set "C-<backspace>" 'crux-kill-whole-line)
+  (keymap-global-set "C-<backspace>" 'crux-smart-kill-line)
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
   (keymap-global-set "C-S-k" 'crux-kill-line-backwards)
 
   (with-eval-after-load 'conn-mode
-    (keymap-global-set "C-c e" 'crux-visit-shell-buffer)
+    (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
 
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
@@ -1371,9 +1351,8 @@ see command `isearch-forward' for more information."
         conn-lighter ""
         conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
-        conn-emacs-state-cursor-type 'box)
-
-  (setopt conn-mark-idle-timer 0.05)
+        conn-emacs-state-cursor-type 'box
+        conn-mark-idle-timer 0.05)
 
   (face-spec-set 'cursor '((((background light)) :background "#000000")))
 
@@ -1389,22 +1368,21 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-x ," 'global-subword-mode)
-
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
-
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
 
-  (with-eval-after-load 'vertico
-    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus))
+  (defun my/space-after-point (N)
+    (interactive "p")
+    (save-excursion
+      (let ((last-command-event ?\ ))
+        (self-insert-command N))))
+  (keymap-global-set "S-SPC" 'my/space-after-point)
 
-  (defun my/space-after-point ()
-    (interactive)
-    (insert " ")
-    (backward-char))
-  (keymap-global-set "S-SPC" 'my/space-after-point))
+  (with-eval-after-load 'vertico
+    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
 
 ;;;;; Conn Extensions
 
@@ -1498,50 +1476,49 @@ see command `isearch-forward' for more information."
 
 ;;;; bookmark+
 
-(elpaca (bookmark+ :host github
-                   :repo "emacsmirror/bookmark-plus"
-                   :main "bookmark+.el")
-  (run-with-timer 0.5 nil (lambda () (require 'bookmark+)))
-
-  (setq bmkp-bookmark-map-prefix-keys '("x")
-        ;; bookmark-default-file "/home/dave/.emacs.d/var/bmkp/current-bookmark.el"
-
-        bmkp-last-as-first-bookmark-file nil
-        bmkp-prompt-for-tags-flag t
-        bookmark-version-control t
-        delete-old-versions t
-        bookmark-save-flag 1)
-
-  (defun bmkp-org-bookmark-store-link-1 ()
-    (when (eq major-mode #'bookmark-bmenu-mode)
-      (bmkp-org-bookmark-store-link)))
-
-  (defun bmkp-org-bookmark-store-link ()
-    (interactive)
-    (require 'org)
-    (let* ((bmk  (bmkp-completing-read-lax (format "Org link for bookmark")))
-           (link (format "bmk:%s" bmk))
-           (desc (read-string "Description: ")))
-      (org-link-store-props :type "bmk"
-                            :link link
-                            :description desc)
-      link))
-
-  (defun bmkp-org-bookmark-link (bmk)
-    (interactive (list (bmkp-completing-read-lax (format "Org link for bookmark"))))
-    (require 'org)
-    (insert (org-link-make-string (format "bmk:%s" bmk)
-                                  (let ((desc (read-string "Description: ")))
-                                    (unless (string= desc "")
-                                      desc)))))
-
-  (keymap-set bookmark-map "k" #'bmkp-org-bookmark-link)
-  (keymap-set bookmark-map "K" #'bmkp-org-bookmark-store-link)
-
-  (with-eval-after-load 'org
-    (org-link-set-parameters "bmk"
-                             :follow #'bookmark-jump
-                             :store #'bmkp-org-bookmark-store-link-1)))
+;; (elpaca (bookmark+ :host github
+;;                    :repo "emacsmirror/bookmark-plus"
+;;                    :main "bookmark+.el")
+;;   (require 'bookmark+)
+;; 
+;;   (setq bmkp-bookmark-map-prefix-keys '("x")
+;;         bookmark-default-file "/home/dave/.emacs.d/var/bmkp/current-bookmarks.el"
+;;         bmkp-last-as-first-bookmark-file nil
+;;         bmkp-prompt-for-tags-flag t
+;;         bookmark-version-control t
+;;         delete-old-versions t
+;;         bookmark-save-flag 1)
+;; 
+;;   (defun bmkp-org-bookmark-store-link-1 ()
+;;     (when (eq major-mode #'bookmark-bmenu-mode)
+;;       (bmkp-org-bookmark-store-link)))
+;; 
+;;   (defun bmkp-org-bookmark-store-link ()
+;;     (interactive)
+;;     (require 'org)
+;;     (let* ((bmk  (bmkp-completing-read-lax (format "Org link for bookmark")))
+;;            (link (format "bmk:%s" bmk))
+;;            (desc (read-string "Description: ")))
+;;       (org-link-store-props :type "bmk"
+;;                             :link link
+;;                             :description desc)
+;;       link))
+;; 
+;;   (defun bmkp-org-bookmark-link (bmk)
+;;     (interactive (list (bmkp-completing-read-lax (format "Org link for bookmark"))))
+;;     (require 'org)
+;;     (insert (org-link-make-string (format "bmk:%s" bmk)
+;;                                   (let ((desc (read-string "Description: ")))
+;;                                     (unless (string= desc "")
+;;                                       desc)))))
+;; 
+;;   (keymap-set bookmark-map "k" #'bmkp-org-bookmark-link)
+;;   (keymap-set bookmark-map "K" #'bmkp-org-bookmark-store-link)
+;; 
+;;   (with-eval-after-load 'org
+;;     (org-link-set-parameters "bmk"
+;;                              :follow #'bookmark-jump
+;;                              :store #'bmkp-org-bookmark-store-link-1)))
 
 
 ;;;; dired+
@@ -1627,7 +1604,7 @@ see command `isearch-forward' for more information."
                  (isearch-regexp isearch-string)
                  (t (regexp-quote isearch-string)))))
             (isearch-done)))))
-    (keymap-set isearch-mode-map "M-." #'avy-isearch)
+    (keymap-set isearch-mode-map "C-j" #'avy-isearch)
 
     (with-eval-after-load 'embark
       (defun avy-action-embark (pt)
@@ -2527,13 +2504,6 @@ see command `isearch-forward' for more information."
 
   (keymap-unset vertico-map "C-j")
 
-  (defvar-keymap my/vertico-scroll-repeat-map
-    :repeat t
-    "SPC" 'vertico-scroll-up
-    "DEL" 'vertico-scroll-down)
-  (put 'vertico-scroll-up 'repeat-check-key 'no)
-  (put 'vertico-scroll-down 'repeat-check-key 'no)
-
   (define-keymap
     :keymap vertico-map
     "M-i" #'vertico-insert
@@ -3207,7 +3177,7 @@ see command `isearch-forward' for more information."
         (concat
          "WINDOWS: (h=heighten, s=shorten, w=widen, n=narrow, arrow=move frame) by %d unit%s, .=clear units\n"
          "a/A=cycle adjust frame width/height, d/D=delete win/others, o/O=other win/frame, i/j/k/l=to window, v/s=split win atop/sideways, (/)=save/restore wconfig\n"
-         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/x=un/bury/swap bufs |/_/</> flop/flip/rotate windows\n"
+         "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/x/e=un/bury/swap/throw bufs |/_/</> flop/flip/rotate windows\n"
          "Frame to edges: c=cycle, I/J/K/L=expand/contract, p/num-keypad=move; z/Z=zoom out/in, t=to FRAMES mode, Q=quit"))
 
   (define-keymap
@@ -3218,6 +3188,7 @@ see command `isearch-forward' for more information."
     "j"   'windmove-left
     "l"   'windmove-right
     "k"   'windmove-down
+    "e"   'conn-buffer-to-other-window
     "SPC" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-up)))
     "DEL" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-down)))
     "r"   (lambda () (interactive) (split-window-horizontally))
