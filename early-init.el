@@ -41,11 +41,7 @@
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
-(face-spec-set 'default '((default (:slant normal
-                                           :weight medium
-                                           :height 142
-                                           :width normal
-                                           :family "Iosevka DK"))))
+(load (expand-file-name "font.el" user-emacs-directory) t t)
 
 (when (>= emacs-major-version 30)
   (with-eval-after-load 'modus-themes
