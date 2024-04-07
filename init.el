@@ -653,21 +653,21 @@ see command `isearch-forward' for more information."
 
 ;;;; narrow-indirect
 
-(elpaca (narrow-indirect :host github :repo "emacsmirror/narrow-indirect")
-  (with-eval-after-load 'narrow-indirect
-    (with-eval-after-load 'modus-themes
-      (face-spec-set 'ni-mode-line-buffer-id
-                     '((t :background "#ffddff"
-                          :box (:line-width 1 :color "#675967"))))))
-
-  (define-keymap
-    :keymap ctl-x-4-map
-    "n d" 'ni-narrow-to-defun-indirect-other-window
-    "n n" 'ni-narrow-to-region-indirect-other-window
-    "n p" 'ni-narrow-to-page-indirect-other-window)
-
-  (with-eval-after-load 'conn-mode
-    (keymap-set conn-region-map "N" 'ni-narrow-to-region-indirect-other-window)))
+;; (elpaca (narrow-indirect :host github :repo "emacsmirror/narrow-indirect")
+;;   (with-eval-after-load 'narrow-indirect
+;;     (with-eval-after-load 'modus-themes
+;;       (face-spec-set 'ni-mode-line-buffer-id
+;;                      '((t :background "#ffddff"
+;;                           :box (:line-width 1 :color "#675967"))))))
+;;
+;;   (define-keymap
+;;     :keymap ctl-x-4-map
+;;     "n d" 'ni-narrow-to-defun-indirect-other-window
+;;     "n n" 'ni-narrow-to-region-indirect-other-window
+;;     "n p" 'ni-narrow-to-page-indirect-other-window)
+;;
+;;   (with-eval-after-load 'conn-mode
+;;     (keymap-set conn-region-map "N" 'ni-narrow-to-region-indirect-other-window)))
 
 
 ;;;; paredit
@@ -1482,7 +1482,7 @@ see command `isearch-forward' for more information."
 ;;                    :repo "emacsmirror/bookmark-plus"
 ;;                    :main "bookmark+.el")
 ;;   (require 'bookmark+)
-;; 
+;;
 ;;   (setq bmkp-bookmark-map-prefix-keys '("x")
 ;;         bookmark-default-file "/home/dave/.emacs.d/var/bmkp/current-bookmarks.el"
 ;;         bmkp-last-as-first-bookmark-file nil
@@ -1490,11 +1490,11 @@ see command `isearch-forward' for more information."
 ;;         bookmark-version-control t
 ;;         delete-old-versions t
 ;;         bookmark-save-flag 1)
-;; 
+;;
 ;;   (defun bmkp-org-bookmark-store-link-1 ()
 ;;     (when (eq major-mode #'bookmark-bmenu-mode)
 ;;       (bmkp-org-bookmark-store-link)))
-;; 
+;;
 ;;   (defun bmkp-org-bookmark-store-link ()
 ;;     (interactive)
 ;;     (require 'org)
@@ -1505,7 +1505,7 @@ see command `isearch-forward' for more information."
 ;;                             :link link
 ;;                             :description desc)
 ;;       link))
-;; 
+;;
 ;;   (defun bmkp-org-bookmark-link (bmk)
 ;;     (interactive (list (bmkp-completing-read-lax (format "Org link for bookmark"))))
 ;;     (require 'org)
@@ -1513,10 +1513,10 @@ see command `isearch-forward' for more information."
 ;;                                   (let ((desc (read-string "Description: ")))
 ;;                                     (unless (string= desc "")
 ;;                                       desc)))))
-;; 
+;;
 ;;   (keymap-set bookmark-map "k" #'bmkp-org-bookmark-link)
 ;;   (keymap-set bookmark-map "K" #'bmkp-org-bookmark-store-link)
-;; 
+;;
 ;;   (with-eval-after-load 'org
 ;;     (org-link-set-parameters "bmk"
 ;;                              :follow #'bookmark-jump
@@ -3172,9 +3172,6 @@ see command `isearch-forward' for more information."
   (keymap-unset hyperbole-mode-map "M-RET" t)
   (keymap-unset hyperbole-mode-map "M-<return>" t)
 
-  (keymap-set hycontrol-windows-mode-map "H" 'hycontrol-enable-frames-mode)
-  (keymap-set hycontrol-frames-mode-map "H" 'hycontrol-enable-windows-mode)
-
   (setq hycontrol--windows-prompt-format
         (concat
          "WINDOWS: (h=heighten, s=shorten, w=widen, n=narrow, arrow=move frame) by %d unit%s, .=clear units\n"
@@ -3192,7 +3189,6 @@ see command `isearch-forward' for more information."
     "l"   'windmove-right
     "k"   'windmove-down
     "e"   'conn-buffer-to-other-window
-    "e"   'conn-buffer-to-other-window
     "SPC" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-up)))
     "DEL" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-down)))
     "r"   (lambda () (interactive) (split-window-horizontally))
@@ -3202,18 +3198,14 @@ see command `isearch-forward' for more information."
     "K"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-right hycontrol-arg)))
     "M"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-bottom hycontrol-arg))))
 
-  (keymap-set conn-state-map "h" 'conn-mark-thing-map)
-  (keymap-set conn-dot-state-map "h" 'conn-mark-thing-map)
-
   (dolist (state '(conn-state conn-dot-state conn-org-tree-edit-state))
     (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-                "b" 'hycontrol-enable-windows-mode))
+                "a" 'hycontrol-enable-windows-mode))
 
   (dolist (state '(conn-state conn-org-tree-edit-state))
     (define-keymap
       :keymap (conn-get-mode-map state 'hyperbole-mode)
-      "e" #'hkey-either
-      "B" #'hyperbole))
+      "e" #'hkey-either))
 
   (defun action-mouse-key (&rest args)
     "Set point to the mouse or keyboard cursor position and execute `action-key'.
@@ -3263,12 +3255,8 @@ Any ARGS will be passed to `hmouse-release'."
         (setq hkey-region nil
               hkey-value nil))))
 
-  (keymap-set (conn-get-mode-map 'conn-view-state 'hyperbole-mode) "B" #'hyperbole)
-
   ;; hkey help
   ;; "~/.emacs.d/elpaca/repos/hyperbole/man/hkey-help.txt"
   (hmouse-install)
   (hmouse-bind-shifted-key-emacs 1 #'action-key-depress-emacs #'action-mouse-key-emacs)
-  (hmouse-bind-shifted-key-emacs 3 #'assist-key-depress-emacs #'assist-mouse-key-emacs)
-
-  (conn-unset-repeat-command 'bury-buffer))
+  (hmouse-bind-shifted-key-emacs 3 #'assist-key-depress-emacs #'assist-mouse-key-emacs))
