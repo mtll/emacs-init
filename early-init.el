@@ -29,7 +29,7 @@
       custom-file (make-temp-file "emacs-custom-")
       frame-resize-pixelwise t
       visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow)
-      frame-title-format (list "%b")
+      frame-title-format (list '(:eval (alist-get 'name (tab-bar--current-tab))))
       native-comp-async-report-warnings-errors 'silent
       frame-inhibit-implied-resize t
       package-enable-at-startup nil
