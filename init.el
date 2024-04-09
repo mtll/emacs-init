@@ -1885,7 +1885,7 @@ see command `isearch-forward' for more information."
         corfu-quit-no-match 'separator
         corfu-preview-current nil
         corfu-on-exact-match nil
-        corfu-auto t
+        corfu-auto nil
         corfu-auto-delay 0.05
         corfu-auto-prefix 3
         corfu-map (define-keymap
@@ -1901,6 +1901,10 @@ see command `isearch-forward' for more information."
                     "C-g" #'corfu-quit
                     "TAB" #'corfu-complete
                     "M-SPC" #'corfu-insert-separator))
+
+  (defun my/corfu-auto-on ()
+    (setq-local corfu-auto t))
+  (add-hook 'prog-mode-hook 'my/corfu-auto-on)
 
   (with-eval-after-load 'corfu
     (defun corfu-sep-and-start ()
