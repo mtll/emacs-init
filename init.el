@@ -1348,6 +1348,7 @@ see command `isearch-forward' for more information."
 
 (elpaca (conn-mode :host github :repo "mtll/conn-mode")
   (setq conn-state-buffer-colors t
+        conn-wincontrol-initial-help nil
         conn-lighter ""
         conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
