@@ -50,7 +50,7 @@
 
 (setq even-window-sizes nil
       comment-empty-lines t
-      scroll-conservatively 10
+      scroll-conservatively 4
       scroll-preserve-screen-position t
       delete-active-region nil
       fill-column 72
@@ -239,51 +239,6 @@
 ;;;; bookmarks
 
 (setq bookmark-save-flag 1)
-
-
-;;;; pulse
-
-(require 'pulse)
-
-(defun pulse-momentary-highlight-overlay-bfm-ad (o &optional face)
-  "Pulse the overlay O, unhighlighting before next command.
-Optional argument FACE specifies the face to do the highlighting."
-  ;; We don't support simultaneous highlightings.
-  (pulse-momentary-unhighlight)
-  (overlay-put o 'original-face (overlay-get o 'face))
-  ;; Make this overlay take priority over the `transient-mark-mode'
-  ;; overlay.
-  (overlay-put o 'original-priority (overlay-get o 'priority))
-  (overlay-put o 'priority 1)
-  (setq pulse-momentary-overlay o)
-  (if (eq pulse-flag 'never)
-      nil
-    (if (or (not pulse-flag) (not (pulse-available-p)))
-        ;; Provide a face... clear on next command
-        (progn
-          (overlay-put o 'face (or face 'pulse-highlight-start-face))
-          (add-hook 'pre-command-hook
-                    #'pulse-momentary-unhighlight))
-      ;; Pulse it.
-      (overlay-put o 'face 'pulse-highlight-face)
-      ;; The pulse function puts FACE onto 'pulse-highlight-face.
-      ;; Thus above we put our face on the overlay, but pulse
-      ;; with a reference face needed for the color.
-      (pulse-reset-face face)
-      (let* ((start (color-name-to-rgb
-                     (face-background 'pulse-highlight-face nil 'default)))
-             (stop (color-name-to-rgb (face-background (or (and buffer-face-mode
-                                                                buffer-face-mode-face)
-                                                           'default))))
-             (colors (mapcar (apply-partially 'apply 'color-rgb-to-hex)
-                             (color-gradient start stop pulse-iterations))))
-        (setq pulse-momentary-timer
-              (run-with-timer 0 pulse-delay #'pulse-tick
-                              colors
-                              (time-add nil
-                                        (* pulse-delay pulse-iterations))))))))
-(advice-add 'pulse-momentary-highlight-overlay :override
-            'pulse-momentary-highlight-overlay-bfm-ad)
 
 
 ;;;; view-mode
@@ -1114,18 +1069,18 @@ see command `isearch-forward' for more information."
     (setq modus-themes-common-palette-overrides
           (seq-concatenate
            'list
-           `((bg-main "#f8f8f8")
-             (cursor "#000000")
-             (bg-region "#e1e1e1")
+           `((bg-main "#f7eee1")
+             (cursor "#7d0002")
+             (bg-region "#f1d5d0")
              (fg-region unspecified)
-             (fg-completion-match-0 "#323c32")
-             (bg-completion-match-0 "#caf1c9")
-             (fg-completion-match-1 "#38333c")
-             (bg-completion-match-1 "#e3cff1")
-             (fg-completion-match-2 "#3c3333")
-             (bg-completion-match-2 "#f1cccc")
-             (fg-completion-match-3 "#343b3c")
-             (bg-completion-match-3 "#d1eff1")
+             (fg-completion-match-0 "#353b44")
+             (bg-completion-match-0 "#c5dfff")
+             (fg-completion-match-1 "#384231")
+             (bg-completion-match-1 "#cdf3b5")
+             (fg-completion-match-2 "#3b3544")
+             (bg-completion-match-2 "#d1baf1")
+             (fg-completion-match-3 "#313c37")
+             (bg-completion-match-3 "#bef1da")
              (bg-search-lazy bg-magenta-subtle)
              (bg-search-current bg-yellow-intense))
            modus-themes-preset-overrides-warmer))
@@ -1355,13 +1310,15 @@ see command `isearch-forward' for more information."
         conn-emacs-state-cursor-type 'box
         conn-mark-idle-timer 0.05)
 
-  (face-spec-set 'cursor '((((background light)) :background "#000000")))
+  ;; (face-spec-set 'cursor '((((background light)) :background "#000000")))
+  (face-spec-set 'conn-dot-face '((t (:background "#cfe7d4"))))
 
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
-  (conn-buffer-colors 1)
+  ;; (conn-buffer-colors 1)
+  (conn-cursor-colors 1)
 
   (conn-hide-mark-cursor 'conn-view-state)
 
