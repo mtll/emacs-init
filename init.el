@@ -235,6 +235,21 @@
   (backward-page)
   (beginning-of-line))
 
+(defun my/inside-regexp-in-line (regexp)
+  (let ((pt (point))
+        result)
+    (save-excursion
+      (with-restriction (line-beginning-position) (line-end-position)
+        (goto-char (point-min))
+        (while (and (re-search-forward regexp nil t)
+                    (not result))
+          (when (and (<= (match-beginning 0) pt)
+                     (<= pt (point)))
+            (setq result (propertize
+                          (match-string 0)
+                          'match-data (match-data)))))))
+    result))
+
 
 ;;;; bookmarks
 
@@ -1310,7 +1325,6 @@ see command `isearch-forward' for more information."
         conn-emacs-state-cursor-type 'box
         conn-mark-idle-timer 0.05)
 
-  ;; (face-spec-set 'cursor '((((background light)) :background "#000000")))
   (face-spec-set 'conn-dot-face '((t (:background "#cfe7d4"))))
 
   (add-hook 'view-mode-hook #'conn-emacs-state)
@@ -1341,6 +1355,11 @@ see command `isearch-forward' for more information."
       (let ((last-command-event ?\ ))
         (self-insert-command N))))
   (keymap-global-set "S-SPC" 'my/space-after-point)
+
+  (with-eval-after-load 'embark
+    (keymap-set conn-state-map "TAB" 'embark-act)
+    (keymap-set conn-state-map "<tab>" 'embark-act)
+    (keymap-set conn-state-map "M-<tab>" 'indent-region))
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
@@ -1773,6 +1792,27 @@ see command `isearch-forward' for more information."
         (kill-new (string-join strs "\n"))))
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
+
+    (defun my/embark-gh-issue-finder ()
+      (when-let ((button (and (not (minibufferp))
+                              (my/inside-regexp-in-line
+                               "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
+        `(url
+          ,(format "www.github.com/%s/issues/%s"
+                   (match-string-no-properties 1)
+                   (match-string-no-properties 2))
+          ,(match-beginning 0) . ,(match-end 0))))
+    (cl-pushnew 'my/embark-gh-issue-finder embark-target-finders)
+
+    (defun my/embark-gnu-bug-finder ()
+      (when-let ((button (and (not (minibufferp))
+                              (my/inside-regexp-in-line
+                               "bug#\\([0-9]*\\)"))))
+        `(url
+          ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
+                   (match-string-no-properties 1))
+          ,(match-beginning 0) . ,(match-end 0))))
+    (cl-pushnew 'my/embark-gnu-bug-finder embark-target-finders)
 
     (with-eval-after-load 'org
       (defun embark-bookmark-link (cand)
@@ -2850,381 +2890,3 @@ see command `isearch-forward' for more information."
 
 (elpaca jinx
   (keymap-global-set "<remap> <ispell-word>" #'jinx-correct))
-
-
-;;;; hyperbole
-
-;; (elpaca hyperbole
-;;   (require 'embark)
-;;   (require 'conn-mode)
-;; 
-;;   ;; Need to set this before hyperbole loads
-;;   (defvar hyperbole-embark-target-finders)
-;;   (setq hsys-org-enable-smart-keys t
-;;         hyperbole-embark-target-finders '(embark--vertico-selected
-;;                                           embark-target-top-minibuffer-candidate
-;;                                           embark-target-active-region
-;;                                           embark-org-target-link
-;;                                           embark-org-target-element-context
-;;                                           embark-org-target-agenda-item
-;;                                           embark-target-collect-candidate
-;;                                           embark-target-completion-list-candidate
-;;                                           embark-target-flymake-at-point
-;;                                           embark-target-smerge-at-point
-;;                                           embark-target-package-at-point
-;;                                           embark-target-email-at-point
-;;                                           embark-target-url-at-point
-;;                                           embark-target-file-at-point
-;;                                           embark-target-custom-variable-at-point
-;;                                           embark-target-identifier-at-point
-;;                                           embark-target-guess-file-at-point
-;;                                           embark-target-expression-at-point
-;;                                           embark-looking-at-page-target-finder
-;;                                           embark-target-defun-at-point
-;;                                           embark-target-heading-at-point)
-;;         hkey-alist '(;; Company completion mode
-;;                      ((and (boundp 'company-active-map)
-;;                            (memq company-active-map (current-minor-mode-maps)))
-;;                       . ((smart-company-to-definition) . (smart-company-help)))
-;;                      ;;
-;;                      ;; Treemacs hierarchical file manager
-;;                      ((eq major-mode 'treemacs-mode)
-;;                       . ((smart-treemacs) . (smart-treemacs)))
-;;                      ;;
-;;                      ;; dired-sidebar-mode
-;;                      ((eq major-mode 'dired-sidebar-mode)
-;;                       . ((smart-dired-sidebar) . (smart-dired-sidebar)))
-;;                      ;;
-;;                      ((and (eq major-mode 'ert-results-mode)
-;;                            (featurep 'ert-results)
-;;                            (setq hkey-value (ert-results-filter-status-p)))
-;;                       . ((smart-ert-results hkey-value) . (smart-ert-results-assist hkey-value)))
-;;                      ;;
-;;                      ;;
-;;                      ;; Handle Emacs push buttons in buffers
-;;                      ((and (fboundp 'button-at) (button-at (point)))
-;;                       . ((smart-push-button nil (mouse-event-p last-command-event))
-;;                          . (smart-push-button-help nil (mouse-event-p last-command-event))))
-;;                      ;;
-;;                      ;; Smart end of line
-;;                      ;; ((smart-eolp)
-;;                      ;;  . ((funcall action-key-eol-function) . (funcall assist-key-eol-function)))
-;;                      ;;
-;;                      ;; Handle any Org mode-specific contexts but give priority to Hyperbole
-;;                      ;; buttons prior to cycling Org headlines
-;;                      ((and (not (hyperb:stack-frame '(smart-org)))
-;;                            (let ((hrule:action #'actype:identity))
-;;                              (smart-org)))
-;;                       . ((smart-org) . (smart-org)))
-;;                      ;;
-;;                      ;; If in an xref buffer on a listing of matching identifier lines, go to
-;;                      ;; the source line referenced by the current entry.
-;;                      ((and (fboundp 'xref--item-at-point) (xref--item-at-point))
-;;                       . ((xref-goto-xref) . (xref-show-location-at-point)))
-;;                      ;;
-;;                      ;; The Smart Menu system is an attractive in-buffer menu system
-;;                      ;; that works on any display system that supports Emacs.  It
-;;                      ;; predates Emacs' menu systems; it is a part of InfoDock.
-;;                      ;; It is not included with Hyperbole but is compatible with the
-;;                      ;; Smart Keys.
-;;                      ;;
-;;                      ;; This selects or gives help for a menu item.
-;;                      ((eq major-mode 'smart-menu-mode)
-;;                       . ((smart-menu-select) . (smart-menu-help)))
-;;                      ;;
-;;                      ((derived-mode-p 'dired-mode)
-;;                       . ((smart-dired) . (smart-dired-assist)))
-;;                      ;;
-;;                      ((string-prefix-p "magit-" (symbol-name major-mode))
-;;                       . ((smart-magit) . (smart-magit-assist)))
-;;                      ;;
-;;                      ;; If on a Hyperbole button, perform action or give help.
-;;                      ((hbut:at-p)
-;;                       . ((hui:hbut-act 'hbut:current) . (hui:hbut-help 'hbut:current)))
-;;                      ;;
-;;                      ;; View minor mode
-;;                      ((if (boundp 'view-minor-mode) view-minor-mode)
-;;                       . ((cond ((last-line-p)
-;;                                 (view-quit))
-;;                                ((pos-visible-in-window-p (point-max))
-;;                                 (goto-char (point-max)))
-;;                                (t (scroll-up)))
-;;                          . (scroll-down)))
-;;                      ;;
-;;                      ;; View major mode
-;;                      ((eq major-mode 'view-mode) .
-;;                       ((View-scroll-lines-forward) . (View-scroll-lines-backward)))
-;;                      ;;
-;;                      ((eq major-mode 'occur-mode)
-;;                       . ((occur-mode-goto-occurrence) . (occur-mode-goto-occurrence)))
-;;                      ;;
-;;                      ((eq major-mode 'moccur-mode)
-;;                       . ((moccur-mode-goto-occurrence) . (moccur-mode-goto-occurrence)))
-;;                      ((eq major-mode 'amoccur-mode)
-;;                       . ((amoccur-mode-goto-occurrence) . (amoccur-mode-goto-occurrence)))
-;;                      ;;
-;;                      ((eq major-mode 'kotl-mode)
-;;                       . ((kotl-mode:action-key) . (kotl-mode:assist-key)))
-;;                      ;;
-;;                      ;; If in the flymake linter list of issues buffer, jump to or show issue at point
-;;                      ((eq major-mode 'flymake-diagnostics-buffer-mode)
-;;                       . ((flymake-goto-diagnostic (point)) . (flymake-show-diagnostic (point) t)))
-;;                      ;;
-;;                      ;; Handle widgets in Custom-mode
-;;                      ((eq major-mode 'Custom-mode)
-;;                       . ((smart-custom) . (smart-custom-assist)))
-;;                      ;;
-;;                      ;; Emacs bookmarks menu (bookmark.el)
-;;                      ((eq major-mode 'bookmark-bmenu-mode)
-;;                       . ((bookmark-jump (bookmark-bmenu-bookmark) (hpath:display-buffer-function))
-;;                          .
-;;                          ;; Below we want the Assist Key to show what the Action Key does.
-;;                          (hkey-help)))
-;;                      ;;
-;;                      ;; Pages directory listing mode (page-ext.el)
-;;                      ((eq major-mode 'pages-directory-mode)
-;;                       . ((pages-directory-goto) . (pages-directory-goto)))
-;;                      ;;
-;;                      ;; Imenu listing in GNU Emacs
-;;                      ((smart-imenu-item-at-p)
-;;                       . ((smart-imenu-display-item-where (car hkey-value) (cdr hkey-value)) .
-;;                          (imenu-choose-buffer-index)))
-;;                      ;;
-;;                      ((eq major-mode 'calendar-mode)
-;;                       . ((smart-calendar) . (smart-calendar-assist)))
-;;                      ;;
-;;                      ;; Part of InfoDock
-;;                      ((eq major-mode 'unix-apropos-mode)
-;;                       . ((smart-apropos) . (smart-apropos-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'outline-mode)
-;;                       . ((smart-outline) . (smart-outline-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'Info-mode)
-;;                       . ((smart-info) .  (smart-info-assist)))
-;;                      ;;
-;;                      ((if (boundp 'hmail:reader)
-;;                           (or (eq major-mode hmail:reader)
-;;                               (eq major-mode hmail:lister)))
-;;                       . ((smart-hmail) . (smart-hmail-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'gnus-group-mode)
-;;                       (smart-gnus-group) . (smart-gnus-group-assist))
-;;                      ;;
-;;                      ((eq major-mode 'gnus-summary-mode)
-;;                       . ((smart-gnus-summary) . (smart-gnus-summary-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'gnus-article-mode)
-;;                       . ((smart-gnus-article) . (smart-gnus-article-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'Buffer-menu-mode)
-;;                       . ((smart-buffer-menu) . (smart-buffer-menu-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'ibuffer-mode)
-;;                       . ((smart-ibuffer-menu) . (smart-ibuffer-menu-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'tar-mode)
-;;                       . ((smart-tar) . (smart-tar-assist)))
-;;                      ;;
-;;                      ;; Follow references in man pages.
-;;                      ((setq hkey-value (smart-man-entry-ref))
-;;                       . ((smart-man-display hkey-value) . (smart-man-display hkey-value)))
-;;                      ;;
-;;                      ((eq major-mode 'w3-mode)
-;;                       . ((w3-follow-link) . (w3-goto-last-buffer)))
-;;                      ;;
-;;                      ((eq major-mode 'hyrolo-mode)
-;;                       . ((smart-hyrolo) . (smart-hyrolo-assist)))
-;;                      ;;
-;;                      ((eq major-mode 'image-dired-thumbnail-mode)
-;;                       . ((smart-image-dired-thumbnail) . (smart-image-dired-thumbnail-assist)))
-;;                      ;;
-;;                      ;; Gomoku game
-;;                      ((eq major-mode 'gomoku-mode)
-;;                       . ((gomoku-human-plays) . (gomoku-human-takes-back)))
-;;                      ;;
-;;                      ;; Embark-dwim
-;;                      ((setq hkey-value
-;;                             (let* ((embark-target-finders hyperbole-embark-target-finders))
-;;                               (car (embark--targets))))
-;;                       . ((embark-smart-action) . (embark-smart-assist)))
-;;                      ;;
-;;                      ;; Todotxt
-;;                      ((eq major-mode 'todotxt-mode)
-;;                       . ((smart-todotxt) . (smart-todotxt-assist)))
-;;                      ;;
-;;                      ;; Outline minor mode
-;;                      ((and (boundp 'outline-minor-mode) outline-minor-mode)
-;;                       . ((smart-outline) . (smart-outline-assist))))
-;;         hmouse-alist hkey-alist)
-;; 
-;;   (hyperbole-mode 1)
-;; 
-;;   (keymap-unset hyperbole-mode-map "M-o")
-;;   ;; This interferes with help popups from the minibuffer
-;;   ;; eg. the buffer query-replace displays after ?
-;;   (remove-hook 'temp-buffer-show-hook #'hkey-help-show)
-;;   (setq temp-buffer-show-function nil)
-;; 
-;;   (setq hyperbole-mode-lighter " Hy"
-;;         hyrolo-file-list (list (expand-file-name "var/hyperbole/rolo.org" user-emacs-directory))
-;;         smart-scroll-proportional nil
-;;         hpath:display-where 'this-window
-;;         action-key-eol-function #'ignore
-;;         assist-key-eol-function #'ignore)
-;; 
-;;   (defun embark-target-defun-looking-at ()
-;;     (pcase (embark-target-defun-at-point)
-;;       ((and target `(,_ ,_ ,beg . ,end)
-;;             (guard (or (= beg (point))
-;;                        (= end (point))
-;;                        (= end (1- (point))))))
-;;        target)))
-;; 
-;;   (defun embark-smart-action ()
-;;     (interactive)
-;;     (let* ((target hkey-value)
-;;            (type (plist-get target :type))
-;;            (default-action (embark--default-action type))
-;;            (action (or (command-remapping default-action) default-action)))
-;;       (unless action
-;;         (user-error "No default action for %s targets" type))
-;;       (when (and current-prefix-arg (minibufferp))
-;;         (setq embark--toggle-quit t))
-;;       (embark--act action
-;;                    (if (and (eq default-action embark--command)
-;;                             (not (memq default-action
-;;                                        embark-multitarget-actions)))
-;;                        (embark--orig-target target)
-;;                      target)
-;;                    (embark--quit-p action)))
-;;     (setq hkey-value nil))
-;; 
-;;   (defun embark-smart-assist ()
-;;     (interactive)
-;;     (let* ((target hkey-value)
-;;            (type (plist-get target :type))
-;;            (default-action (conn-embark-alt--default-action type))
-;;            (action (or (command-remapping default-action) default-action)))
-;;       (unless action
-;;         (user-error "No default action for %s targets" type))
-;;       (when (and current-prefix-arg (minibufferp))
-;;         (setq embark--toggle-quit t))
-;;       (embark--act action
-;;                    (if (and (eq default-action embark--command)
-;;                             (not (memq default-action
-;;                                        embark-multitarget-actions)))
-;;                        (embark--orig-target target)
-;;                      target)
-;;                    (embark--quit-p action)))
-;;     (setq hkey-value nil))
-;; 
-;;   (defib gh-issue-link ()
-;;     "Link to a github issue."
-;;     (when (org-in-regexp "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)")
-;;       (ibut:label-set (match-string 0))
-;;       (hact 'www-url (concat "https://github.com/"
-;;                              (match-string 1)
-;;                              "/issues/"
-;;                              (match-string 2)))))
-;; 
-;;   (defib gnu-bug-link ()
-;;     "Link to a gnu bug."
-;;     (when (org-in-regexp "bug#\\([0-9]*\\)")
-;;       (ibut:label-set (match-string 0))
-;;       (hact 'www-url (concat "https://debbugs.gnu.org/cgi/bugreport.cgi?bug="
-;;                              (match-string 1)))))
-;; 
-;;   (keymap-global-set "C-," 'action-key)
-;;   (keymap-global-set "C-." 'assist-key)
-;;   (keymap-unset hyperbole-mode-map "M-RET" t)
-;;   (keymap-unset hyperbole-mode-map "M-<return>" t)
-;; 
-;;   (setq hycontrol--windows-prompt-format
-;;         (concat
-;;          "WINDOWS: (h=heighten, s=shorten, w=widen, n=narrow, arrow=move frame) by %d unit%s, .=clear units\n"
-;;          "a/A=cycle adjust frame width/height, d/D=delete win/others, o/O=other win/frame, i/j/k/l=to window, v/r=split win atop/sideways, (/)=save/restore wconfig\n"
-;;          "@=grid of wins, f/F=clone/move win to new frame, -/+=minimize/maximize win, ==wins same size, u/b/x/e=un/bury/swap/throw bufs, |/_/</> flop/flip/rotate windows\n"
-;;          "Frame to edges: c=cycle, C-d=kill buf and win, I/J/K/L=expand/contract, p/num-keypad=move; z/Z=zoom out/in, t=to FRAMES mode, Q=quit"))
-;; 
-;;   (define-keymap
-;;     :keymap hycontrol-windows-mode-map
-;;     "C-d" 'kill-buffer-and-window
-;;     "x"   (lambda () (interactive) (conn-swap-windows))
-;;     "D"   'delete-other-windows
-;;     "i"   'windmove-up
-;;     "j"   'windmove-left
-;;     "l"   'windmove-right
-;;     "k"   'windmove-down
-;;     "e"   'conn-buffer-to-other-window
-;;     "SPC" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-up)))
-;;     "DEL" (lambda (arg) (interactive "p") (let ((next-screen-context-lines arg)) (scroll-down)))
-;;     "r"   (lambda () (interactive) (split-window-horizontally))
-;;     "v"   (lambda () (interactive) (split-window-vertically))
-;;     "I"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-top hycontrol-arg)))
-;;     "J"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-left hycontrol-arg)))
-;;     "K"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-right hycontrol-arg)))
-;;     "M"   (lambda () (interactive) (setq hycontrol-arg (hycontrol-frame-resize-to-bottom hycontrol-arg))))
-;; 
-;;   ;; (dolist (state '(conn-state conn-dot-state conn-org-tree-edit-state))
-;;   ;;   (keymap-set (conn-get-mode-map state 'hyperbole-mode)
-;;   ;;               "a" 'hycontrol-enable-windows-mode))
-;; 
-;;   (dolist (state '(conn-state conn-org-tree-edit-state))
-;;     (define-keymap
-;;       :keymap (conn-get-mode-map state 'hyperbole-mode)
-;;       "e" #'hkey-either))
-;; 
-;;   (defun action-mouse-key (&rest args)
-;;     "Set point to the mouse or keyboard cursor position and execute `action-key'.
-;; Any ARGS will be passed to `hmouse-release'."
-;;     (interactive)
-;;     ;; Make this a no-op if some local mouse key binding overrode the global
-;;     ;; action-key-depress command invocation.
-;;     (when action-key-depressed-flag
-;;       (hmouse-release nil)
-;;       (let ((hkey-alist hmouse-alist))
-;;         (cond (action-key-cancelled
-;;                (setq action-key-cancelled nil
-;;                      assist-key-depressed-flag nil))
-;;               (assist-key-depressed-flag
-;;                (hmouse-function nil nil args))
-;;               ((hkey-mouse-help nil args))
-;;               (t
-;;                (run-hooks 'action-key-release-hook)
-;;                (hmouse-function #'action-key-internal nil args)
-;;                (setq action-key-depressed-flag nil)))
-;;         ;; Need to clear these variables so that mouse pasting does
-;;         ;; not occur repeatedly from a single region selection.
-;;         (setq hkey-region nil
-;;               hkey-value nil))))
-;; 
-;;   (defun assist-mouse-key (&rest args)
-;;     "Set point to the mouse or keyboard cursor position and execute `assist-key'.
-;; Any ARGS will be passed to `hmouse-release'."
-;;     (interactive)
-;;     ;; Make this a no-op if some local mouse key binding overrode the global
-;;     ;; assist-key-depress command invocation.
-;;     (when assist-key-depressed-flag
-;;       (hmouse-release t)
-;;       (let ((hkey-alist hmouse-alist))
-;;         (cond (assist-key-cancelled
-;;                (setq assist-key-cancelled nil
-;;                      action-key-depressed-flag nil))
-;;               (action-key-depressed-flag
-;;                (hmouse-function nil t args))
-;;               ((hkey-mouse-help t args))
-;;               (t
-;;                (run-hooks 'assist-key-release-hook)
-;;                (hmouse-function #'assist-key-internal t args)
-;;                (setq assist-key-depressed-flag nil)))
-;;         ;; Need to clear this variable so that mouse pasting does
-;;         ;; not occur repeatedly from a single region selection.
-;;         (setq hkey-region nil
-;;               hkey-value nil))))
-;; 
-;;   ;; hkey help
-;;   ;; "~/.emacs.d/elpaca/repos/hyperbole/man/hkey-help.txt"
-;;   (hmouse-install)
-;;   (hmouse-bind-shifted-key-emacs 1 #'action-key-depress-emacs #'action-mouse-key-emacs)
-;;   (hmouse-bind-shifted-key-emacs 3 #'assist-key-depress-emacs #'assist-mouse-key-emacs))
