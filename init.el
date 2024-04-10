@@ -1863,7 +1863,7 @@ see command `isearch-forward' for more information."
                  (match-string-no-properties 1)
                  (match-string-no-properties 2))
         ,(match-beginning 0) . ,(match-end 0))))
-  (cl-pushnew 'my/embark-gh-issue-finder embark-target-finders)
+  (add-hook 'embark-target-finders 'my/embark-gh-issue-finder)
 
   (defun my/embark-gnu-bug-finder ()
     (when-let ((button (and (not (minibufferp))
@@ -1873,16 +1873,18 @@ see command `isearch-forward' for more information."
         ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
                  (match-string-no-properties 1))
         ,(match-beginning 0) . ,(match-end 0))))
-  (cl-pushnew 'my/embark-gnu-bug-finder embark-target-finders)
+  (add-hook 'embark-target-finders 'my/embark-gnu-bug-finder)
 
-  (with-eval-after-load 'magit
-    (defun my/embark-commit-target-finder ()
-      (when-let ((commit (or (magit-thing-at-point 'git-revision t)
-                             (magit-branch-or-commit-at-point))))
-        `(git-commit ,commit)))
-    (cl-pushnew 'my/embark-commit-target-finder embark-target-finders)
-    (setf (alist-get 'git-commit embark-default-action-overrides)
-          'magit-show-commit))
+  (defun my/embark-commit-target-finder ()
+    (require 'magit)
+    (when-let ((_ (eq 'Git (vc-deduce-backend)))
+               (commit (or (magit-thing-at-point 'git-revision t)
+                           (magit-branch-or-commit-at-point))))
+      `(git-commit ,commit)))
+  (add-hook 'embark-target-finders 'my/embark-commit-target-finder)
+
+  (setf (alist-get 'git-commit embark-default-action-overrides)
+        'magit-show-commit)
 
   (defvar my/button-target-functions nil)
 
@@ -1892,7 +1894,7 @@ see command `isearch-forward' for more information."
                        'my/button-target-functions
                        (match-string 1) (match-string 2))))
         (append tar (cons (match-beginning 1) (match-end 2))))))
-  (cl-pushnew 'my/embark-button-target embark-target-finders)
+  (add-hook 'embark-target-finders 'my/embark-button-target)
 
   (defun my/bookmark-button (type bookmark)
     (require 'bookmark)
