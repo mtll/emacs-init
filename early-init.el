@@ -53,7 +53,7 @@
              (bg-region "#f7dbd6")
              (fg-region unspecified)
              (fg-completion-match-0 "#353b44")
-             (bg-completion-match-0 "#c5dfff")
+             (bg-completion-match-0 "#d0e4ff")
              (fg-completion-match-1 "#384231")
              (bg-completion-match-1 "#cdf3b5")
              (fg-completion-match-2 "#3b3544")

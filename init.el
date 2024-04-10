@@ -1162,7 +1162,7 @@ see command `isearch-forward' for more information."
 ;;       "<" 'rotate-frame-anticlockwise
 ;;       "_" 'flip-frame
 ;;       "|" 'flop-frame))
-;; 
+;;
 ;;   (with-eval-after-load 'conn-mode
 ;;     (define-keymap
 ;;       :keymap ctl-x-4-map
@@ -1325,8 +1325,6 @@ see command `isearch-forward' for more information."
         conn-emacs-state-cursor-type 'box
         conn-mark-idle-timer 0.05)
 
-  (face-spec-set 'conn-dot-face '((t (:background "#cfe7d4"))))
-
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
@@ -1339,7 +1337,7 @@ see command `isearch-forward' for more information."
   (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
 
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
-  (keymap-global-set "C-c a" 'conn-wincontrol-mode)
+  (keymap-global-set "C-c a" 'conn-wincontrol)
   (keymap-global-set "C-x ," 'global-subword-mode)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
@@ -1348,6 +1346,9 @@ see command `isearch-forward' for more information."
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
   (keymap-set conn-global-map "C-z" 'conn-other-place-prefix)
   (keymap-set conn-global-map "C-t" 'tab-bar-new-tab)
+  (keymap-set conn-global-map "M-," 'conn-wincontrol)
+  (keymap-set conn-global-map "C-," 'embark-dwim)
+  (keymap-set conn-global-map "C-." 'conn-embark-alt-dwim)
 
   (defun my/space-after-point (N)
     (interactive "p")
@@ -1359,7 +1360,9 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (keymap-set conn-state-map "TAB" 'embark-act)
     (keymap-set conn-state-map "<tab>" 'embark-act)
-    (keymap-set conn-state-map "M-<tab>" 'indent-region))
+    (keymap-set conn-state-map "M-<tab>" 'indent-region)
+    (keymap-unset conn-state-transition-map "M-TAB")
+    (keymap-unset conn-state-transition-map "M-<tab>"))
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
@@ -1378,10 +1381,10 @@ see command `isearch-forward' for more information."
                      :repo "mtll/conn-mode"
                      :files ("extensions/conn-embark.el"))
   (require 'conn-embark)
-  
+
   (conn-embark-dwim-keys 1)
   (conn-complete-keys-prefix-help-command 1)
-  
+
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
   (keymap-set conn-emacs-state-map "M-TAB" 'embark-act)
 
@@ -1793,27 +1796,6 @@ see command `isearch-forward' for more information."
     (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
     (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
 
-    (defun my/embark-gh-issue-finder ()
-      (when-let ((button (and (not (minibufferp))
-                              (my/inside-regexp-in-line
-                               "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
-        `(url
-          ,(format "www.github.com/%s/issues/%s"
-                   (match-string-no-properties 1)
-                   (match-string-no-properties 2))
-          ,(match-beginning 0) . ,(match-end 0))))
-    (cl-pushnew 'my/embark-gh-issue-finder embark-target-finders)
-
-    (defun my/embark-gnu-bug-finder ()
-      (when-let ((button (and (not (minibufferp))
-                              (my/inside-regexp-in-line
-                               "bug#\\([0-9]*\\)"))))
-        `(url
-          ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
-                   (match-string-no-properties 1))
-          ,(match-beginning 0) . ,(match-end 0))))
-    (cl-pushnew 'my/embark-gnu-bug-finder embark-target-finders)
-
     (with-eval-after-load 'org
       (defun embark-bookmark-link (cand)
         (when cand
@@ -1868,6 +1850,51 @@ see command `isearch-forward' for more information."
       "h I" 'consult-imenu-multi
       "h L" 'consult-line-multi
       "h r" 'consult-ripgrep)))
+
+;;;;; embark buttons
+
+(with-eval-after-load 'embark
+  (defun my/embark-gh-issue-finder ()
+    (when-let ((button (and (not (minibufferp))
+                            (my/inside-regexp-in-line
+                             "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
+      `(url
+        ,(format "www.github.com/%s/issues/%s"
+                 (match-string-no-properties 1)
+                 (match-string-no-properties 2))
+        ,(match-beginning 0) . ,(match-end 0))))
+  (cl-pushnew 'my/embark-gh-issue-finder embark-target-finders)
+
+  (defun my/embark-gnu-bug-finder ()
+    (when-let ((button (and (not (minibufferp))
+                            (my/inside-regexp-in-line
+                             "bug#\\([0-9]*\\)"))))
+      `(url
+        ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
+                 (match-string-no-properties 1))
+        ,(match-beginning 0) . ,(match-end 0))))
+  (cl-pushnew 'my/embark-gnu-bug-finder embark-target-finders)
+
+  (defvar my/button-target-functions nil)
+
+  (defun my/embark-button-target ()
+    (when (my/inside-regexp-in-line "<\\[\\([^:]+\\):\\(.*\\)\\]>")
+      (when-let ((tar (run-hook-with-args-until-success
+                       'my/button-target-functions
+                       (match-string 1) (match-string 2))))
+        (append tar (cons (match-beginning 1) (match-end 2))))))
+  (cl-pushnew 'my/embark-button-target embark-target-finders)
+
+  (defun my/bookmark-button (type bookmark)
+    (require 'bookmark)
+    (when (and (equal type "bmk")
+               (bookmark-get-bookmark bookmark t))
+      `(bookmark ,bookmark)))
+  (add-hook 'my/button-target-functions 'my/bookmark-button)
+
+  (defun my/insert-bookmark-button (bmk)
+    (interactive (list (bookmark-completing-read "Bookmark: ")))
+    (insert "<[bmk:" bmk "]>")))
 
 
 ;;;; corfu
@@ -2516,6 +2543,10 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap vertico-map
+    "<next>" #'vertico-scroll-up
+    "<prior>" #'vertico-scroll-down
+    "M-<up>" #'previous-history-element
+    "M-<down>" #'next-history-element
     "M-i" #'vertico-insert
     "RET" #'vertico-directory-enter
     "DEL" #'vertico-directory-delete-char
@@ -2890,3 +2921,8 @@ see command `isearch-forward' for more information."
 
 (elpaca jinx
   (keymap-global-set "<remap> <ispell-word>" #'jinx-correct))
+
+
+;;;; ef-themes
+
+(elpaca ef-themes)
