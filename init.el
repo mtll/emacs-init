@@ -1875,6 +1875,15 @@ see command `isearch-forward' for more information."
         ,(match-beginning 0) . ,(match-end 0))))
   (cl-pushnew 'my/embark-gnu-bug-finder embark-target-finders)
 
+  (with-eval-after-load 'magit
+    (defun my/embark-commit-target-finder ()
+      (when-let ((commit (or (magit-thing-at-point 'git-revision t)
+                             (magit-branch-or-commit-at-point))))
+        `(git-commit ,commit)))
+    (cl-pushnew 'my/embark-commit-target-finder embark-target-finders)
+    (setf (alist-get 'git-commit embark-default-action-overrides)
+          'magit-show-commit))
+
   (defvar my/button-target-functions nil)
 
   (defun my/embark-button-target ()
