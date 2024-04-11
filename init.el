@@ -642,6 +642,7 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'paredit-mode))
 
+    (keymap-unset paredit-mode-map "C-j")
     (keymap-unset paredit-mode-map "RET")
     (keymap-unset paredit-mode-map "M-s")
     (keymap-unset paredit-mode-map "M-;")
@@ -1319,6 +1320,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-c a" 'conn-wincontrol)
   (keymap-global-set "C-x ," 'global-subword-mode)
+  (keymap-global-set "<f9>" 'conn-wincontrol)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
@@ -1409,6 +1411,7 @@ see command `isearch-forward' for more information."
 (elpaca (conn-avy :host github
                   :repo "mtll/conn-mode"
                   :files ("extensions/conn-avy.el"))
+  (keymap-set conn-global-map "C-j" 'avy-goto-char-timer)
   (with-eval-after-load 'avy
     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
