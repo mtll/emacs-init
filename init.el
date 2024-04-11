@@ -571,6 +571,14 @@ see command `isearch-forward' for more information."
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
 
 
+;;;; info+
+
+(elpaca (info+ :host github
+               :repo "emacsmirror/info-plus")
+  (with-eval-after-load 'info
+    (require 'info+)))
+
+
 ;;;; Expreg
 
 (elpaca expreg
@@ -1314,6 +1322,39 @@ see command `isearch-forward' for more information."
     (require 'isearch-prop)))
 
 
+;;;; spacious padding
+
+(elpaca spacious-padding
+  (with-eval-after-load 'conn-mode
+    (require 'spacious-padding)
+    (cl-pushnew 'conn-state-lighter-face spacious-padding--mode-line-faces)
+    (cl-pushnew 'conn-emacs-state-lighter-face spacious-padding--mode-line-faces)
+    (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
+    (cl-pushnew 'conn-org-tree-edit-state-lighter-face spacious-padding--mode-line-faces)
+
+    (defun pad-conn-mode-line-faces (_theme)
+      (apply #'set-face-attribute
+             'conn-state-lighter-face 0
+             (spacious-padding-set-face-box-padding
+              'conn-state-lighter-face 'mode-line))
+      (apply #'set-face-attribute
+             'conn-emacs-state-lighter-face 0
+             (spacious-padding-set-face-box-padding
+              'conn-emacs-state-lighter-face 'mode-line))
+      (apply #'set-face-attribute
+             'conn-dot-state-lighter-face 0
+             (spacious-padding-set-face-box-padding
+              'conn-dot-state-lighter-face 'mode-line))
+      (apply #'set-face-attribute
+             'conn-org-tree-edit-state-lighter-face 0
+             (spacious-padding-set-face-box-padding
+              'conn-org-tree-edit-state-lighter-face 'mode-line)))
+    (advice-add 'spacious-padding-set-invisible-dividers
+                :after 'pad-conn-mode-line-faces)
+    
+    (spacious-padding-mode 1)))
+
+
 ;;;; conn-mode
 
 (elpaca (conn-mode :host github :repo "mtll/conn-mode")
@@ -1386,7 +1427,7 @@ see command `isearch-forward' for more information."
   (conn-complete-keys-prefix-help-command 1)
 
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
-  (keymap-set conn-emacs-state-map "M-TAB" 'embark-act)
+  (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
 
   (define-keymap
     :keymap embark-general-map
@@ -2909,11 +2950,10 @@ see command `isearch-forward' for more information."
 ;;;; diff-hl
 
 (elpaca diff-hl
-  (run-with-timer
-   1 nil
-   (lambda ()
-     (global-diff-hl-mode 1)
-     (add-hook 'dired-mode-hook #'diff-hl-dired-mode))))
+  (setq diff-hl-draw-borders nil
+        diff-hl-update-async t)
+  (global-diff-hl-mode 1)
+  (add-hook 'dired-mode-hook #'diff-hl-dired-mode))
 
 
 ;;;; teco
