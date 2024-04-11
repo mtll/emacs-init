@@ -119,8 +119,6 @@
 (undelete-frame-mode 1)
 (context-menu-mode 1)
 
-;; (define-key global-map [remap yank] #'yank-in-context)
-
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-z")
 (keymap-global-unset "C-x C-z")
@@ -620,34 +618,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
 
-
-
-;;;; help-fn+
-
-;; (load (expand-file-name "load/help-fns+.el" user-emacs-directory))
-;; (load (expand-file-name "load/help+.el" user-emacs-directory))
-;; (load (expand-file-name "load/help-macro+.el" user-emacs-directory))
-;; (load (expand-file-name "load/help-mode+.el" user-emacs-directory))
-
-
-;;;; narrow-indirect
-
-;; (elpaca (narrow-indirect :host github :repo "emacsmirror/narrow-indirect")
-;;   (with-eval-after-load 'narrow-indirect
-;;     (with-eval-after-load 'modus-themes
-;;       (face-spec-set 'ni-mode-line-buffer-id
-;;                      '((t :background "#ffddff"
-;;                           :box (:line-width 1 :color "#675967"))))))
-;;
-;;   (define-keymap
-;;     :keymap ctl-x-4-map
-;;     "n d" 'ni-narrow-to-defun-indirect-other-window
-;;     "n n" 'ni-narrow-to-region-indirect-other-window
-;;     "n p" 'ni-narrow-to-page-indirect-other-window)
-;;
-;;   (with-eval-after-load 'conn-mode
-;;     (keymap-set conn-region-map "N" 'ni-narrow-to-region-indirect-other-window)))
-
 
 ;;;; paredit
 
@@ -788,8 +758,7 @@ see command `isearch-forward' for more information."
 
 ;;;; rustic
 
-;; (elpaca rustic
-;;   (setq rustic-lsp-client 'lsp-mode))
+(elpaca rustic (setq rustic-lsp-client 'lsp-mode))
 
 
 ;;;; erlang
@@ -1159,35 +1128,6 @@ see command `isearch-forward' for more information."
       "@"   'crux-insert-date)))
 
 
-;;;; transpose-frame
-
-;; (elpaca transpose-frame
-;;   (with-eval-after-load 'hyperbole
-;;     (define-keymap
-;;       :keymap hycontrol-windows-mode-map
-;;       "\\" 'transpose-frame
-;;       ">" 'rotate-frame-clockwise
-;;       "<" 'rotate-frame-anticlockwise
-;;       "_" 'flip-frame
-;;       "|" 'flop-frame))
-;;
-;;   (with-eval-after-load 'conn-mode
-;;     (define-keymap
-;;       :keymap ctl-x-4-map
-;;       "t" 'transpose-frame
-;;       "C-t" 'transpose-frame
-;;       ">" 'rotate-frame-clockwise
-;;       "C-." 'rotate-frame-clockwise
-;;       "<" 'rotate-frame-anticlockwise
-;;       "C-," 'rotate-frame-anticlockwise
-;;       "@" 'rotate-frame
-;;       "C-o" 'rotate-frame
-;;       "_" 'flip-frame
-;;       "C--" 'flip-frame
-;;       "|" 'flop-frame
-;;       "C-\\" 'flop-frame)))
-
-
 ;;;; popper
 
 (elpaca popper
@@ -1332,26 +1272,26 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
     (cl-pushnew 'conn-org-tree-edit-state-lighter-face spacious-padding--mode-line-faces)
 
-    (defun pad-conn-mode-line-faces (_theme)
-      (apply #'set-face-attribute
-             'conn-state-lighter-face 0
-             (spacious-padding-set-face-box-padding
-              'conn-state-lighter-face 'mode-line))
-      (apply #'set-face-attribute
-             'conn-emacs-state-lighter-face 0
-             (spacious-padding-set-face-box-padding
-              'conn-emacs-state-lighter-face 'mode-line))
-      (apply #'set-face-attribute
-             'conn-dot-state-lighter-face 0
-             (spacious-padding-set-face-box-padding
-              'conn-dot-state-lighter-face 'mode-line))
-      (apply #'set-face-attribute
-             'conn-org-tree-edit-state-lighter-face 0
-             (spacious-padding-set-face-box-padding
-              'conn-org-tree-edit-state-lighter-face 'mode-line)))
-    (advice-add 'spacious-padding-set-invisible-dividers
-                :after 'pad-conn-mode-line-faces)
-    
+    (defun my/spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
+      (when (facep face)
+        (let* ((original-bg (face-background face nil fallback))
+               (subtle-bg (face-background 'default))
+               (subtlep (and subtle-key spacious-padding-subtle-mode-line))
+               (bg (if subtlep subtle-bg original-bg))
+               (face-width (spacious-padding--get-face-width face)))
+          `(,@(when subtlep
+                (list
+                 :background bg
+                 :overline (spacious-padding--get-face-overline-color face fallback subtle-key)))
+            ,@(unless (eq face-width 0)
+                (list
+                 :box
+                 `( :line-width ,face-width
+                    :color ,subtle-bg
+                    :style nil)))))))
+    (advice-add 'spacious-padding-set-face-box-padding :override
+                'my/spacious-padding-set-face-box-padding)
+
     (spacious-padding-mode 1)))
 
 
@@ -1370,7 +1310,6 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conn-mode-line-indicator-mode 1)
-  ;; (conn-buffer-colors 1)
   (conn-cursor-colors 1)
 
   (conn-hide-mark-cursor 'conn-view-state)
@@ -1413,6 +1352,7 @@ see command `isearch-forward' for more information."
 (elpaca (conn-consult :host github
                       :repo "mtll/conn-mode"
                       :files ("extensions/conn-consult.el"))
+  (with-eval-after-load 'consult (require 'conn-consult))
   (keymap-set conn-region-map "o" 'conn-consult-line-region)
   (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
   (keymap-set conn-region-map "h" 'conn-consult-region-search-map)
@@ -1427,6 +1367,34 @@ see command `isearch-forward' for more information."
   (conn-complete-keys-prefix-help-command 1)
 
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
+  (keymap-global-unset "S-<down-mouse-1>")
+
+  (defun my/embark-dwim-mouse (event)
+    (interactive "e")
+    (mouse-minibuffer-check event)
+    (let* ((start-posn (event-start event))
+           (start-point (posn-point start-posn))
+           (start-window (posn-window start-posn)))
+      (with-selected-window start-window
+        (with-current-buffer (window-buffer start-window)
+          (goto-char start-point)
+          (embark-dwim)))))
+  (keymap-set conn-global-map "S-<mouse-1>" 'my/embark-dwim-mouse)
+
+  (defun my/embark-alt-dwim-mouse (event)
+    (interactive "e")
+    (mouse-minibuffer-check event)
+    (let* ((start-posn (event-start event))
+           (start-point (posn-point start-posn))
+           (start-window (posn-window start-posn)))
+      (with-selected-window start-window
+        (with-current-buffer (window-buffer start-window)
+          (goto-char start-point)
+          (conn-embark-alt-dwim)))))
+  (keymap-set conn-global-map "S-<mouse-3>" 'my/embark-alt-dwim-mouse)
+
+  (keymap-set conn-global-map "<mouse-2>" 'xref-go-back)
+
   (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
 
   (define-keymap
@@ -1916,6 +1884,16 @@ see command `isearch-forward' for more information."
         ,(match-beginning 0) . ,(match-end 0))))
   (add-hook 'embark-target-finders 'my/embark-gnu-bug-finder)
 
+  (defun my/embark-cve-target-finder ()
+    (when-let ((button (and (not (minibufferp))
+                            (my/inside-regexp-in-line
+                             "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
+      `(url
+        ,(format "https://www.cve.org/CVERecord?id=%s"
+                 (match-string-no-properties 1))
+        ,(match-beginning 0) . ,(match-end 0))))
+  (add-hook 'embark-target-finders 'my/embark-cve-target-finder)
+
   (defun my/embark-commit-target-finder ()
     (require 'magit)
     (when-let ((_ (eq 'Git (vc-deduce-backend)))
@@ -2024,7 +2002,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'outline
     (define-keymap
       :keymap outline-minor-mode-map
-      ;; [C-tab] 'bicycle-cycle
       "<backtab>" 'bicycle-cycle-global)))
 
 
