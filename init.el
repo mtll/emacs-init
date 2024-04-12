@@ -1010,6 +1010,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'org
     (keymap-unset org-mode-map "C-'")
     (keymap-unset org-mode-map "C-,")
+    (keymap-set org-mode-map "M-s s" 'org-sparse-tree)
 
     (setf (alist-get "\\*Org Src.*" display-buffer-alist nil nil #'equal)
           '((display-buffer-same-window)))
