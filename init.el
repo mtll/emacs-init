@@ -1901,13 +1901,14 @@ see command `isearch-forward' for more information."
         ,(match-beginning 0) . ,(match-end 0))))
   (add-hook 'embark-target-finders 'my/embark-cve-target-finder)
 
-  (defun my/embark-commit-target-finder ()
-    (require 'magit)
-    (when-let ((_ (eq 'Git (vc-deduce-backend)))
-               (commit (or (magit-thing-at-point 'git-revision t)
-                           (magit-branch-or-commit-at-point))))
-      `(git-commit ,commit)))
-  (add-hook 'embark-target-finders 'my/embark-commit-target-finder)
+  (with-eval-after-load 'magit
+    (defun my/embark-commit-target-finder ()
+      (require 'vc)
+      (when-let ((_ (eq 'Git (vc-deduce-backend)))
+                 (commit (or (magit-thing-at-point 'git-revision t)
+                             (magit-branch-or-commit-at-point))))
+        `(git-commit ,commit)))
+    (add-hook 'embark-target-finders 'my/embark-commit-target-finder))
 
   (setf (alist-get 'git-commit embark-default-action-overrides)
         'magit-show-commit)
