@@ -2934,11 +2934,11 @@ see command `isearch-forward' for more information."
 
 ;;;; diff-hl
 
-;; (elpaca diff-hl
-;;   (setq diff-hl-draw-borders nil
-;;         diff-hl-update-async t)
-;;   (global-diff-hl-mode -1)
-;;   (add-hook 'dired-mode-hook #'diff-hl-dired-mode))
+(elpaca diff-hl
+  (setq diff-hl-draw-borders nil
+        diff-hl-update-async t)
+  (global-diff-hl-mode -1)
+  (add-hook 'dired-mode-hook #'diff-hl-dired-mode))
 
 
 ;;;; teco
