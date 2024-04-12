@@ -1749,6 +1749,9 @@ see command `isearch-forward' for more information."
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)
 
+    (keymap-set embark-file-map "O" 'find-file-other-frame)
+    (keymap-set embark-buffer-map "O" 'display-buffer-other-frame)
+
     (with-eval-after-load 'bicycle
       (keymap-set embark-heading-map "RET" #'bicycle-cycle)
       (keymap-set embark-org-heading-map "RET" #'bicycle-cycle))
