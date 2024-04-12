@@ -269,15 +269,7 @@
                                           outline-navigation-repeat-map)))
 
   (pcase-dolist (`(,_ . ,def) (cdr outline-navigation-repeat-map))
-    (put def 'repeat-map nil))
-
-  (defun narrow-to-heading ()
-    (interactive)
-    (save-mark-and-excursion
-      (outline-mark-subtree)
-      ;; Must be called interactively if we want zones.el to add it.
-      (funcall-interactively #'narrow-to-region (region-beginning) (region-end))))
-  (keymap-set outline-minor-mode-map "C-x n h" #'narrow-to-heading))
+    (put def 'repeat-map nil)))
 
 
 ;;;; line numbers
@@ -333,10 +325,10 @@
                         (string-join
                          (mapcar (lambda (string)
                                    (regexp-quote string))
-                                 (isearch-escapable-split-on-char string ","))
+                                 (isearch-escapable-split-on-char string "."))
                          ".+?"))
                       (isearch-escapable-split-on-char string "&"))
-              "\\(?:\\s_\\|\\w\\)*?"))
+              "\\(?:\\s_\\|\\w\\)*"))
            (isearch-escapable-split-on-char string " "))
    search-whitespace-regexp))
 
@@ -357,7 +349,7 @@ See command `isearch-forward' for more information."
              (call-interactively #'multi-isearch-buffers))
             (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
                              #'isearch-wildcards-compile)))))
-  (define-key global-map [remap isearch-forward] 'isearch-forward-wildcard)
+  (keymap-global-set "<remap> <isearch-forward>" 'isearch-forward-wildcard)
 
   (defun isearch-backward-wildcard (&optional arg no-recursive-edit)
     "do incremental search backward.
@@ -370,7 +362,7 @@ see command `isearch-forward' for more information."
              (call-interactively #'multi-isearch-buffers))
             (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
                              #'isearch-wildcards-compile)))))
-  (define-key global-map [remap isearch-backward] 'isearch-backward-wildcard))
+  (keymap-global-set "<remap> <isearch-backward>" 'isearch-backward-wildcard))
 
 (defun isearch-repeat-direction ()
   (interactive)
@@ -1066,6 +1058,8 @@ see command `isearch-forward' for more information."
            `((bg-main "#f7eee1")
              (cursor "#7d0002")
              (bg-region "#f1d5d0")
+             (fg-active-argument "#930c93")
+             (bg-active-argument "#f4caf4")
              (fg-region unspecified)
              (fg-completion-match-0 "#353b44")
              (bg-completion-match-0 "#c5dfff")
@@ -1083,6 +1077,8 @@ see command `isearch-forward' for more information."
 
     (custom-set-faces
      `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+     `(transient-argument ((t :inherit font-lock-string-face :weight bold
+                              :foreground "#930c93" :background "#f4caf4")))
      `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
      `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))))
 
@@ -2934,11 +2930,11 @@ see command `isearch-forward' for more information."
 
 ;;;; diff-hl
 
-(elpaca diff-hl
-  (setq diff-hl-draw-borders nil
-        diff-hl-update-async t)
-  (global-diff-hl-mode -1)
-  (add-hook 'dired-mode-hook #'diff-hl-dired-mode))
+;; (elpaca diff-hl
+;;   (setq diff-hl-draw-borders nil
+;;         diff-hl-update-async t)
+;;   (global-diff-hl-mode -1)
+;;   (add-hook 'dired-mode-hook #'diff-hl-dired-mode))
 
 
 ;;;; teco

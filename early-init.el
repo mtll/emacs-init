@@ -49,6 +49,8 @@
           (seq-concatenate
            'list
            `((bg-main "#fff5e8")
+             (fg-active-argument "#930c93")
+             (bg-active-argument "#f4caf4")
              (cursor "#00517d")
              (bg-region "#f7dbd6")
              (fg-region unspecified)
@@ -62,13 +64,13 @@
              (bg-completion-match-3 "#bef1da")
              (bg-search-lazy bg-magenta-subtle)
              (bg-search-current bg-yellow-intense))
-           modus-themes-preset-overrides-warmer)))
+           modus-themes-preset-overrides-warmer))
 
-  (load-theme 'modus-operandi-tinted t)
+    (load-theme 'modus-operandi-tinted t)
 
-  (custom-set-faces
-   `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
-   `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
-   `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900")))))
+    (custom-set-faces
+     `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+     `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
+     `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))))
 
 (provide 'early-init)
