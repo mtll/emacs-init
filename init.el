@@ -50,7 +50,7 @@
 
 (setq even-window-sizes nil
       comment-empty-lines t
-      scroll-conservatively 4
+      scroll-conservatively 0
       scroll-preserve-screen-position t
       delete-active-region nil
       fill-column 72
@@ -170,25 +170,25 @@
   "C-c C-l" #'pp-eval-last-sexp
   "C-c C-r" #'eval-region)
 
-(defun my/show-trailing-whitespace ()
+(defun david-show-trailing-whitespace ()
   (setq show-trailing-whitespace t))
-(add-hook 'prog-mode 'my/show-trailing-whitespace)
+(add-hook 'prog-mode 'david-show-trailing-whitespace)
 
-(defun my/quit-other-window-for-scrolling ()
+(defun david-quit-other-window-for-scrolling ()
   (interactive)
   (with-selected-window (other-window-for-scrolling)
     (quit-window)))
-(keymap-global-set "C-M-S-u" 'my/quit-other-window-for-scrolling)
+(keymap-global-set "C-M-S-u" 'david-quit-other-window-for-scrolling)
 (keymap-global-set "C-M-S-i" #'scroll-other-window-down)
 (keymap-global-set "C-M-S-k" #'scroll-other-window)
 (keymap-global-set "C-M-S-." #'end-of-buffer-other-window)
 (keymap-global-set "C-M-S-," #'beginning-of-buffer-other-window)
 
-(defun my/select-other-window-for-scrolling ()
+(defun david-select-other-window-for-scrolling ()
   (interactive)
   (when-let ((win (other-window-for-scrolling)))
     (select-window win)))
-(keymap-global-set "C-M-S-o" #'my/select-other-window-for-scrolling)
+(keymap-global-set "C-M-S-o" #'david-select-other-window-for-scrolling)
 
 (defun kill-frame-and-buffer ()
   (interactive)
@@ -219,21 +219,21 @@
 
 (find-function-setup-keys)
 
-(defun my/forward-page ()
+(defun david-forward-page ()
   (interactive)
   (when (looking-at page-delimiter)
     (forward-char))
   (forward-page)
   (beginning-of-line))
 
-(defun my/backward-page ()
+(defun david-backward-page ()
   (interactive)
   (when (looking-at page-delimiter)
     (forward-char))
   (backward-page)
   (beginning-of-line))
 
-(defun my/inside-regexp-in-line (regexp)
+(defun david-inside-regexp-in-line (regexp)
   (let ((pt (point))
         result)
     (save-excursion
@@ -390,9 +390,9 @@ see command `isearch-forward' for more information."
 (tab-bar-mode 1)
 (tab-bar-history-mode 1)
 
-(defun my/tab-bar-new-message (&rest _)
+(defun david-tab-bar-new-message (&rest _)
   (message "Added new tab at %s" tab-bar-new-tab-to))
-(advice-add 'tab-bar-new-tab-to :after #'my/tab-bar-new-message)
+(advice-add 'tab-bar-new-tab-to :after #'david-tab-bar-new-message)
 
 
 ;;;; diary / calendar
@@ -480,7 +480,7 @@ see command `isearch-forward' for more information."
 
   (recentf-mode 1)
 
-  (defvar my/recentf-autosave
+  (defvar david-recentf-autosave
     (run-with-idle-timer
      4 t (lambda ()
            (when recentf-mode
@@ -503,6 +503,12 @@ see command `isearch-forward' for more information."
     (diminish 'outline-minor-mode " OL")))
 
 
+;;;; ibuffer
+
+(with-eval-after-load 'ibuffer
+  (keymap-set ibuffer-mode-map "f" ibuffer--filter-map))
+
+
 ;;;; dired
 
 (with-eval-after-load 'dired
@@ -512,7 +518,9 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap dired-mode-map
-    "/" 'dired-undo))
+    "/" 'dired-undo
+    "C-<tab>" 'dired-maybe-insert-subdir
+    "<backtab>" 'dired-kill-subdir))
 
 
 ;;;; eldoc
@@ -573,10 +581,10 @@ see command `isearch-forward' for more information."
 
 (elpaca expreg
   (with-eval-after-load 'conn-mode
-    (defun my/expreg-ad (&rest _)
+    (defun david-expreg-ad (&rest _)
       (unless conn-emacs-state
         (activate-mark t)))
-    (advice-add 'expreg-expand :before #'my/expreg-ad)
+    (advice-add 'expreg-expand :before #'david-expreg-ad)
 
     (with-eval-after-load 'treesit-auto
       (defvar-keymap conn-expreg-repeat-map
@@ -792,10 +800,10 @@ see command `isearch-forward' for more information."
                                   "--header-insertion=never")
         lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
 
-  (defun my/lsp-mode-setup-completion ()
+  (defun david-lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
           '(orderless))) ;; Configure orderless
-  (add-hook 'lsp-completion-mode-hook #'my/lsp-mode-setup-completion)
+  (add-hook 'lsp-completion-mode-hook #'david-lsp-mode-setup-completion)
 
   (with-eval-after-load 'lsp-mode
     (define-keymap
@@ -1238,8 +1246,8 @@ see command `isearch-forward' for more information."
                                        (?l . forward-line)))
 
   (with-eval-after-load 'isearch+
-    (defun my/supress-in-macro () executing-kbd-macro)
-    (advice-add 'isearchp-highlight-lighter :before-until 'my/supress-in-macro)
+    (defun david-supress-in-macro () executing-kbd-macro)
+    (advice-add 'isearchp-highlight-lighter :before-until 'david-supress-in-macro)
 
     (keymap-unset isearch-mode-map "C-t")
     (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
@@ -1270,7 +1278,7 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
     (cl-pushnew 'conn-org-tree-edit-state-lighter-face spacious-padding--mode-line-faces)
 
-    (defun my/spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
+    (defun david-spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
       (when (facep face)
         (let* ((original-bg (face-background face nil fallback))
                (subtle-bg (face-background 'default))
@@ -1288,7 +1296,7 @@ see command `isearch-forward' for more information."
                     :color ,subtle-bg
                     :style nil)))))))
     (advice-add 'spacious-padding-set-face-box-padding :override
-                'my/spacious-padding-set-face-box-padding)
+                'david-spacious-padding-set-face-box-padding)
 
     (spacious-padding-mode 1)))
 
@@ -1324,17 +1332,17 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
   (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
   (keymap-set conn-global-map "C-z" 'conn-other-place-prefix)
-  (keymap-set conn-global-map "C-t" 'tab-bar-new-tab)
+  (keymap-set conn-global-map "C-t" tab-prefix-map)
   (keymap-set conn-global-map "M-," 'conn-wincontrol)
   (keymap-set conn-global-map "C-," 'embark-dwim)
   (keymap-set conn-global-map "C-." 'conn-embark-alt-dwim)
 
-  (defun my/space-after-point (N)
+  (defun david-space-after-point (N)
     (interactive "p")
     (save-excursion
       (let ((last-command-event ?\ ))
         (self-insert-command N))))
-  (keymap-global-set "S-SPC" 'my/space-after-point)
+  (keymap-global-set "S-SPC" 'david-space-after-point)
 
   (with-eval-after-load 'embark
     (keymap-set conn-state-map "TAB" 'embark-act)
@@ -1362,13 +1370,12 @@ see command `isearch-forward' for more information."
                      :files ("extensions/conn-embark.el"))
   (require 'conn-embark)
 
-  (conn-embark-dwim-keys 1)
   (conn-complete-keys-prefix-help-command 1)
 
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
   (keymap-global-unset "S-<down-mouse-1>")
 
-  (defun my/embark-dwim-mouse (event)
+  (defun david-embark-dwim-mouse (event)
     (interactive "e")
     (mouse-minibuffer-check event)
     (let* ((start-posn (event-start event))
@@ -1378,9 +1385,9 @@ see command `isearch-forward' for more information."
         (with-current-buffer (window-buffer start-window)
           (goto-char start-point)
           (embark-dwim)))))
-  (keymap-set conn-global-map "S-<mouse-1>" 'my/embark-dwim-mouse)
+  (keymap-set conn-global-map "S-<mouse-1>" 'david-embark-dwim-mouse)
 
-  (defun my/embark-alt-dwim-mouse (event)
+  (defun david-embark-alt-dwim-mouse (event)
     (interactive "e")
     (mouse-minibuffer-check event)
     (let* ((start-posn (event-start event))
@@ -1390,7 +1397,7 @@ see command `isearch-forward' for more information."
         (with-current-buffer (window-buffer start-window)
           (goto-char start-point)
           (conn-embark-alt-dwim)))))
-  (keymap-set conn-global-map "S-<mouse-3>" 'my/embark-alt-dwim-mouse)
+  (keymap-set conn-global-map "S-<mouse-3>" 'david-embark-alt-dwim-mouse)
 
   (keymap-set conn-global-map "<mouse-2>" 'xref-go-back)
 
@@ -1437,10 +1444,10 @@ see command `isearch-forward' for more information."
 
 (elpaca expand-region
   (with-eval-after-load 'conn-mode
-    (defun my/expand-region-ad (&rest _)
+    (defun david-expand-region-ad (&rest _)
       (unless conn-emacs-state
         (activate-mark t)))
-    (advice-add 'er/expand-region :before #'my/expand-region-ad)
+    (advice-add 'er/expand-region :before #'david-expand-region-ad)
 
     (define-keymap
       :keymap conn-common-map
@@ -1469,53 +1476,6 @@ see command `isearch-forward' for more information."
       (ialign (region-beginning) (region-end)))
 
     (keymap-set embark-region-map "a" 'embark-ialign)))
-
-
-;;;; bookmark+
-
-;; (elpaca (bookmark+ :host github
-;;                    :repo "emacsmirror/bookmark-plus"
-;;                    :main "bookmark+.el")
-;;   (require 'bookmark+)
-;;
-;;   (setq bmkp-bookmark-map-prefix-keys '("x")
-;;         bookmark-default-file "/home/dave/.emacs.d/var/bmkp/current-bookmarks.el"
-;;         bmkp-last-as-first-bookmark-file nil
-;;         bmkp-prompt-for-tags-flag t
-;;         bookmark-version-control t
-;;         delete-old-versions t
-;;         bookmark-save-flag 1)
-;;
-;;   (defun bmkp-org-bookmark-store-link-1 ()
-;;     (when (eq major-mode #'bookmark-bmenu-mode)
-;;       (bmkp-org-bookmark-store-link)))
-;;
-;;   (defun bmkp-org-bookmark-store-link ()
-;;     (interactive)
-;;     (require 'org)
-;;     (let* ((bmk  (bmkp-completing-read-lax (format "Org link for bookmark")))
-;;            (link (format "bmk:%s" bmk))
-;;            (desc (read-string "Description: ")))
-;;       (org-link-store-props :type "bmk"
-;;                             :link link
-;;                             :description desc)
-;;       link))
-;;
-;;   (defun bmkp-org-bookmark-link (bmk)
-;;     (interactive (list (bmkp-completing-read-lax (format "Org link for bookmark"))))
-;;     (require 'org)
-;;     (insert (org-link-make-string (format "bmk:%s" bmk)
-;;                                   (let ((desc (read-string "Description: ")))
-;;                                     (unless (string= desc "")
-;;                                       desc)))))
-;;
-;;   (keymap-set bookmark-map "k" #'bmkp-org-bookmark-link)
-;;   (keymap-set bookmark-map "K" #'bmkp-org-bookmark-store-link)
-;;
-;;   (with-eval-after-load 'org
-;;     (org-link-set-parameters "bmk"
-;;                              :follow #'bookmark-jump
-;;                              :store #'bmkp-org-bookmark-store-link-1)))
 
 
 ;;;; dired+
@@ -1556,8 +1516,8 @@ see command `isearch-forward' for more information."
     "k" 'avy-goto-line
     "l" 'avy-goto-end-of-line
     "z" 'avy-resume
-    "Y" 'my/avy-toggle-insertion-style
-    "C-y" 'my/avy-toggle-insertion-style
+    "Y" 'david-avy-toggle-insertion-style
+    "C-y" 'david-avy-toggle-insertion-style
     "i" 'avy-goto-char-in-line)
 
   (with-eval-after-load 'avy
@@ -1614,13 +1574,13 @@ see command `isearch-forward' for more information."
         t)
       (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark))
 
-    (defun my/avy-toggle-insertion-style ()
+    (defun david-avy-toggle-insertion-style ()
       (interactive)
       (if (eq avy-line-insert-style 'above)
           (setq avy-line-insert-style 'below)
         (setq avy-line-insert-style 'above))
       (message "Avy line insertion style set to: %s" avy-line-insert-style))
-    (put 'my/avy-toggle-insertion-style 'repeat-map goto-map)))
+    (put 'david-avy-toggle-insertion-style 'repeat-map goto-map)))
 
 
 ;;;; all-the-icons
@@ -1715,8 +1675,8 @@ see command `isearch-forward' for more information."
   (defvar-keymap embark-consult-grep-map)
 
   (defvar-keymap embark-page-map
-    "RET" 'my/forward-page
-    "M-RET" 'my/backward-page
+    "RET" 'david-forward-page
+    "M-RET" 'david-backward-page
     "n" 'forward-page
     "p" 'backward-page
     "u" 'narrow-to-page
@@ -1727,13 +1687,13 @@ see command `isearch-forward' for more information."
     (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
     (keymap-set embark-page-map "o" 'ni-narrow-to-page-indirect-other-window))
 
-  (defvar-keymap my/embark-tab-map
+  (defvar-keymap david-embark-tab-map
     "d" 'embark-tab-delete
     "r" 'embark-tab-rename
     "t" 'embark-tab-detach)
 
   (with-eval-after-load 'embark
-    (cl-pushnew 'my/embark-tab-map (alist-get 'tab embark-keymap-alist))
+    (cl-pushnew 'david-embark-tab-map (alist-get 'tab embark-keymap-alist))
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
@@ -1866,67 +1826,67 @@ see command `isearch-forward' for more information."
 ;;;;; embark buttons
 
 (with-eval-after-load 'embark
-  (defun my/embark-gh-issue-finder ()
+  (defun david-embark-gh-issue-finder ()
     (when-let ((button (and (not (minibufferp))
-                            (my/inside-regexp-in-line
+                            (david-inside-regexp-in-line
                              "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
       `(url
         ,(format "www.github.com/%s/issues/%s"
                  (match-string-no-properties 1)
                  (match-string-no-properties 2))
         ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my/embark-gh-issue-finder)
+  (add-hook 'embark-target-finders 'david-embark-gh-issue-finder)
 
-  (defun my/embark-gnu-bug-finder ()
+  (defun david-embark-gnu-bug-finder ()
     (when-let ((button (and (not (minibufferp))
-                            (my/inside-regexp-in-line
+                            (david-inside-regexp-in-line
                              "bug#\\([0-9]*\\)"))))
       `(url
         ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
                  (match-string-no-properties 1))
         ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my/embark-gnu-bug-finder)
+  (add-hook 'embark-target-finders 'david-embark-gnu-bug-finder)
 
-  (defun my/embark-cve-target-finder ()
+  (defun david-embark-cve-target-finder ()
     (when-let ((button (and (not (minibufferp))
-                            (my/inside-regexp-in-line
+                            (david-inside-regexp-in-line
                              "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
       `(url
         ,(format "https://www.cve.org/CVERecord?id=%s"
                  (match-string-no-properties 1))
         ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my/embark-cve-target-finder)
+  (add-hook 'embark-target-finders 'david-embark-cve-target-finder)
 
   (with-eval-after-load 'magit
-    (defun my/embark-commit-target-finder ()
+    (defun david-embark-commit-target-finder ()
       (require 'vc)
       (when-let ((_ (eq 'Git (vc-deduce-backend)))
                  (commit (or (magit-thing-at-point 'git-revision t)
                              (magit-branch-or-commit-at-point))))
         `(git-commit ,commit)))
-    (add-hook 'embark-target-finders 'my/embark-commit-target-finder))
+    (add-hook 'embark-target-finders 'david-embark-commit-target-finder))
 
   (setf (alist-get 'git-commit embark-default-action-overrides)
         'magit-show-commit)
 
-  (defvar my/button-target-functions nil)
+  (defvar david-button-target-functions nil)
 
-  (defun my/embark-button-target ()
-    (when (my/inside-regexp-in-line "<\\[\\([^:]+\\):\\(.*\\)\\]>")
+  (defun david-embark-button-target ()
+    (when (david-inside-regexp-in-line "<\\[\\([^:]+\\):\\(.*\\)\\]>")
       (when-let ((tar (run-hook-with-args-until-success
-                       'my/button-target-functions
+                       'david-button-target-functions
                        (match-string 1) (match-string 2))))
         (append tar (cons (match-beginning 1) (match-end 2))))))
-  (add-hook 'embark-target-finders 'my/embark-button-target)
+  (add-hook 'embark-target-finders 'david-embark-button-target)
 
-  (defun my/bookmark-button (type bookmark)
+  (defun david-bookmark-button (type bookmark)
     (require 'bookmark)
     (when (and (equal type "bmk")
                (bookmark-get-bookmark bookmark t))
       `(bookmark ,bookmark)))
-  (add-hook 'my/button-target-functions 'my/bookmark-button)
+  (add-hook 'david-button-target-functions 'david-bookmark-button)
 
-  (defun my/insert-bookmark-button (bmk)
+  (defun david-insert-bookmark-button (bmk)
     (interactive (list (bookmark-completing-read "Bookmark: ")))
     (insert "<[bmk:" bmk "]>")))
 
@@ -1960,9 +1920,9 @@ see command `isearch-forward' for more information."
                     "TAB" #'corfu-complete
                     "M-SPC" #'corfu-insert-separator))
 
-  (defun my/corfu-auto-on ()
+  (defun david-corfu-auto-on ()
     (setq-local corfu-auto t))
-  (add-hook 'prog-mode-hook 'my/corfu-auto-on)
+  (add-hook 'prog-mode-hook 'david-corfu-auto-on)
 
   (with-eval-after-load 'corfu
     (defun corfu-sep-and-start ()
@@ -2079,9 +2039,9 @@ see command `isearch-forward' for more information."
         read-file-name-completion-ignore-case nil
         read-buffer-completion-ignore-case nil)
 
-  (defun my/quote-region-for-consult (string)
+  (defun david-quote-region-for-consult (string)
     (concat "=" (string-replace " " "\\ " string)))
-  (setq conn-completion-region-quote-function 'my/quote-region-for-consult)
+  (setq conn-completion-region-quote-function 'david-quote-region-for-consult)
 
   (defun flex-first-if-completing (pattern index _total)
     (when (and (= index 0) completion-in-region-mode)
@@ -2590,9 +2550,9 @@ see command `isearch-forward' for more information."
     "C-M-<return>" #'vertico-exit-input
     "C-j" #'vertico-quick-jump
     "C-S-j" #'vertico-quick-exit
-    "C-w" #'my/vertico-copy-or-kill)
+    "C-w" #'david-vertico-copy-or-kill)
 
-  (defun my/vertico-copy-or-kill (beg end)
+  (defun david-vertico-copy-or-kill (beg end)
     (interactive (list (region-beginning) (region-end)))
     (if (or (use-region-p) (not transient-mark-mode))
         (call-interactively #'kill-region)
@@ -2619,7 +2579,7 @@ see command `isearch-forward' for more information."
                (name (and (symbolp alias) (symbol-name alias))))
       (format #(" (%s)" 1 5 (face marginalia-function)) name)))
 
-  (defun my/marginalia-annotate-binding (cand)
+  (defun david-marginalia-annotate-binding (cand)
     "Annotate command CAND with keybinding."
     (when-let ((sym (intern-soft cand))
                (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
@@ -2630,7 +2590,7 @@ see command `isearch-forward' for more information."
     Similar to `marginalia-annotate-symbol', but does not show symbol class."
     (when-let (sym (intern-soft cand))
       (concat
-       (my/marginalia-annotate-binding cand)
+       (david-marginalia-annotate-binding cand)
        (marginalia-annotate-alias cand)
        (marginalia--documentation (marginalia--function-doc sym)))))
   (cl-pushnew #'marginalia-annotate-command-with-alias
