@@ -48,7 +48,8 @@
 
 ;;;; emacs
 
-(setq even-window-sizes nil
+(setq recenter-positions '(top middle bottom)
+      even-window-sizes nil
       comment-empty-lines t
       scroll-conservatively 0
       scroll-preserve-screen-position t
@@ -118,6 +119,7 @@
 (electric-pair-mode 1)
 (undelete-frame-mode 1)
 (context-menu-mode 1)
+(save-place-mode 1)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-z")
@@ -295,7 +297,11 @@
 
 ;;;; isearch
 
-(setq isearch-lazy-count t)
+(setq isearch-lazy-count t
+      isearch-allow-motion t)
+
+(keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
+(keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 
 (defun isearch-kill-region (&optional arg)
   (interactive "P")
@@ -709,16 +715,13 @@ see command `isearch-forward' for more information."
   ;; TODO: use local embark-keymap-alist instead
   (defun slime-setup-embark ()
     (require 'embark)
-    (setq-local embark-expression-map (define-keymap
-                                        :parent embark-expression-map
-                                        "RET" 'slime-interactive-eval)
-                embark-defun-map (define-keymap
-                                   :parent embark-defun-map
-                                   "RET" 'slime-eval-defun)
-                embark-identifier-map (define-keymap
-                                        :parent embark-identifier-map
-                                        "RET" 'slime-edit-definition
-                                        "M-RET" 'slime-hyperdoc-lookup)))
+    (require 'conn-embark)
+    (make-local-variable 'embark-default-action-overrides)
+    (make-local-variable 'conn-embark-alt-default-action-overrides)
+    (setf (alist-get 'expression embark-default-action-overrides) 'slime-interactive-eval
+          (alist-get 'defun embark-default-action-overrides) 'slime-eval-defun
+          (alist-get 'identifier embark-default-action-overrides) 'slime-edit-definition
+          (alist-get 'identifier conn-embark-alt-default-action-overrides) 'slime-hyperdoc-lookup))
   (add-hook 'slime-mode-hook #'slime-setup-embark)
   (add-hook 'slime-repl-mode-hook #'slime-setup-embark)
 
@@ -990,8 +993,6 @@ see command `isearch-forward' for more information."
 (elpaca org
   (run-with-idle-timer 1.5 nil (lambda () (require 'org)))
 
-  ;; (setopt org-use-speed-commands t)
-
   (setq org-agenda-include-diary t
         org-src-window-setup 'plain
         org-startup-truncated nil
@@ -1228,44 +1229,44 @@ see command `isearch-forward' for more information."
 
 ;;;; isearch+
 
-(elpaca (isearch+ :host github
-                  :repo "emacsmirror/isearch-plus"
-                  :main "isearch+.el")
-  (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
-
-  (setq isearchp-dimming-color "#cddfcc"
-        isearchp-lazy-dim-filter-failures-flag nil
-        isearchp-restrict-to-region-flag nil
-        isearchp-deactivate-region-flag nil
-        isearchp-initiate-edit-commands nil
-        isearchp-movement-unit-alist '((?w . forward-word)
-                                       (?s . forward-sexp)
-                                       (?i . forward-list)
-                                       (?s . forward-sentence)
-                                       (?c . forward-char)
-                                       (?l . forward-line)))
-
-  (with-eval-after-load 'isearch+
-    (defun david-supress-in-macro () executing-kbd-macro)
-    (advice-add 'isearchp-highlight-lighter :before-until 'david-supress-in-macro)
-
-    (keymap-unset isearch-mode-map "C-t")
-    (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
-    (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
-    (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
-    (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
-    (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
-    (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
-    (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
-    (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
-    (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
-    (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
+;; (elpaca (isearch+ :host github
+;;                   :repo "emacsmirror/isearch-plus"
+;;                   :main "isearch+.el")
+;;   (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
+;; 
+;;   (setq isearchp-dimming-color "#cddfcc"
+;;         isearchp-lazy-dim-filter-failures-flag nil
+;;         isearchp-restrict-to-region-flag nil
+;;         isearchp-deactivate-region-flag nil
+;;         isearchp-initiate-edit-commands nil
+;;         isearchp-movement-unit-alist '((?w . forward-word)
+;;                                        (?s . forward-sexp)
+;;                                        (?i . forward-list)
+;;                                        (?s . forward-sentence)
+;;                                        (?c . forward-char)
+;;                                        (?l . forward-line)))
+;; 
+;;   (with-eval-after-load 'isearch+
+;;     (defun david-supress-in-macro () executing-kbd-macro)
+;;     (advice-add 'isearchp-highlight-lighter :before-until 'david-supress-in-macro)
+;; 
+;;     (keymap-unset isearch-mode-map "C-t")
+;;     (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
+;;     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
+;;     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
+;;     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
+;;     (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
+;;     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
+;;     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
+;;     (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
+;;     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
+;;     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
 ;;;;; isearch-prop
 
-(elpaca (isearch-prop :host github :repo "emacsmirror/isearch-prop")
-  (with-eval-after-load 'isearch+
-    (require 'isearch-prop)))
+;; (elpaca (isearch-prop :host github :repo "emacsmirror/isearch-prop")
+;;   (with-eval-after-load 'isearch+
+;;     (require 'isearch-prop)))
 
 
 ;;;; spacious padding
@@ -1330,12 +1331,12 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
-  (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
-  (keymap-set conn-global-map "C-z" 'conn-other-place-prefix)
-  (keymap-set conn-global-map "C-t" tab-prefix-map)
-  (keymap-set conn-global-map "M-," 'conn-wincontrol)
-  (keymap-set conn-global-map "C-," 'embark-dwim)
-  (keymap-set conn-global-map "C-." 'conn-embark-alt-dwim)
+  (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
+  (keymap-set conn-mode-map "C-z" 'conn-other-place-prefix)
+  (keymap-set conn-mode-map "C-t" tab-prefix-map)
+  (keymap-set conn-mode-map "M-," 'conn-wincontrol)
+  (keymap-set conn-mode-map "C-," 'embark-dwim)
+  (keymap-set conn-mode-map "C-." 'conn-embark-alt-dwim)
 
   (defun david-space-after-point (N)
     (interactive "p")
@@ -1363,67 +1364,68 @@ see command `isearch-forward' for more information."
   (keymap-set conn-region-map "o" 'conn-consult-line-region)
   (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
   (keymap-set conn-region-map "h" 'conn-consult-region-search-map)
-  (keymap-set conn-global-map "M-s T" 'conn-consult-thing))
+  (keymap-set conn-mode-map "M-s T" 'conn-consult-thing))
 
 (elpaca (conn-embark :host github
                      :repo "mtll/conn-mode"
                      :files ("extensions/conn-embark.el"))
-  (require 'conn-embark)
-
-  (conn-complete-keys-prefix-help-command 1)
-
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
-  (keymap-global-unset "S-<down-mouse-1>")
 
-  (defun david-embark-dwim-mouse (event)
-    (interactive "e")
-    (mouse-minibuffer-check event)
-    (let* ((start-posn (event-start event))
-           (start-point (posn-point start-posn))
-           (start-window (posn-window start-posn)))
-      (with-selected-window start-window
-        (with-current-buffer (window-buffer start-window)
-          (goto-char start-point)
-          (embark-dwim)))))
-  (keymap-set conn-global-map "S-<mouse-1>" 'david-embark-dwim-mouse)
+  (with-eval-after-load 'embark
+    (require 'conn-embark)
 
-  (defun david-embark-alt-dwim-mouse (event)
-    (interactive "e")
-    (mouse-minibuffer-check event)
-    (let* ((start-posn (event-start event))
-           (start-point (posn-point start-posn))
-           (start-window (posn-window start-posn)))
-      (with-selected-window start-window
-        (with-current-buffer (window-buffer start-window)
-          (goto-char start-point)
-          (conn-embark-alt-dwim)))))
-  (keymap-set conn-global-map "S-<mouse-3>" 'david-embark-alt-dwim-mouse)
+    (conn-complete-keys-prefix-help-command 1)
+    (keymap-global-unset "S-<down-mouse-1>")
 
-  (keymap-set conn-global-map "<mouse-2>" 'xref-go-back)
+    (defun david-embark-dwim-mouse (event)
+      (interactive "e")
+      (mouse-minibuffer-check event)
+      (let* ((start-posn (event-start event))
+             (start-point (posn-point start-posn))
+             (start-window (posn-window start-posn)))
+        (with-selected-window start-window
+          (with-current-buffer (window-buffer start-window)
+            (goto-char start-point)
+            (embark-dwim)))))
+    (keymap-set conn-mode-map "S-<mouse-1>" 'david-embark-dwim-mouse)
 
-  (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
+    (defun david-embark-alt-dwim-mouse (event)
+      (interactive "e")
+      (mouse-minibuffer-check event)
+      (let* ((start-posn (event-start event))
+             (start-point (posn-point start-posn))
+             (start-window (posn-window start-posn)))
+        (with-selected-window start-window
+          (with-current-buffer (window-buffer start-window)
+            (goto-char start-point)
+            (conn-embark-alt-dwim)))))
+    (keymap-set conn-mode-map "S-<mouse-3>" 'david-embark-alt-dwim-mouse)
 
-  (define-keymap
-    :keymap embark-general-map
-    "R" 'conn-embark-replace-region
-    "~" 'conn-dot-region)
+    (keymap-set conn-mode-map "<mouse-2>" 'xref-go-back)
 
-  (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
-  (keymap-unset embark-expression-map "D")
-  (keymap-unset embark-defun-map "D"))
+    (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
+
+    (define-keymap
+      :keymap embark-general-map
+      "R" 'conn-embark-replace-region
+      "~" 'conn-dot-region)
+
+    (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
+    (keymap-unset embark-expression-map "D")
+    (keymap-unset embark-defun-map "D")))
 
 (elpaca (conn-avy :host github
                   :repo "mtll/conn-mode"
                   :files ("extensions/conn-avy.el"))
-  (keymap-set conn-global-map "C-j" 'avy-goto-char-timer)
+  (keymap-set conn-mode-map "C-j" 'avy-goto-char-timer)
   (with-eval-after-load 'avy
     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
-(elpaca (conn-isearch+ :host github
-                       :repo "mtll/conn-mode"
-                       :files ("extensions/conn-isearch+.el"))
-  (with-eval-after-load 'isearch+
-    (require 'conn-isearch+)))
+;; (elpaca (conn-isearch+ :host github
+;;                        :repo "mtll/conn-mode"
+;;                        :files ("extensions/conn-isearch+.el"))
+;;   (with-eval-after-load 'isearch+
+;;     (require 'conn-isearch+)))
 
 (elpaca (conn-calc :host github
                    :repo "mtll/conn-mode"
@@ -1549,18 +1551,18 @@ see command `isearch-forward' for more information."
       "Jump to one of the current isearch candidates."
       (interactive)
       (avy-with avy-isearch
-        (let ((avy-background nil)
-              (avy-case-fold-search case-fold-search))
-          (prog1
-              (avy-process
-               (avy--regex-candidates
-                (cond
-                 ((functionp isearch-regexp-function)
-                  (funcall isearch-regexp-function isearch-string))
-                 (isearch-regexp-function (word-search-regexp isearch-string))
-                 (isearch-regexp isearch-string)
-                 (t (regexp-quote isearch-string)))))
-            (isearch-done)))))
+                (let ((avy-background nil)
+                      (avy-case-fold-search case-fold-search))
+                  (prog1
+                      (avy-process
+                       (avy--regex-candidates
+                        (cond
+                         ((functionp isearch-regexp-function)
+                          (funcall isearch-regexp-function isearch-string))
+                         (isearch-regexp-function (word-search-regexp isearch-string))
+                         (isearch-regexp isearch-string)
+                         (t (regexp-quote isearch-string)))))
+                    (isearch-done)))))
     (keymap-set isearch-mode-map "C-j" #'avy-isearch)
 
     (with-eval-after-load 'embark
@@ -1642,6 +1644,9 @@ see command `isearch-forward' for more information."
 ;;;; embark
 
 (elpaca embark
+  (with-eval-after-load 'consult
+    (require 'embark))
+
   (setq embark-quit-after-action t
         embark-indicators '(embark-minimal-indicator
                             embark-highlight-indicator
@@ -1655,8 +1660,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-TAB" 'embark-act)
   (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
-
-  (keymap-set embark-region-map "RET" 'copy-region-as-kill)
 
   (defun embark-act-persist ()
     (interactive)
@@ -1682,11 +1685,6 @@ see command `isearch-forward' for more information."
     "u" 'narrow-to-page
     "m" 'mark-page)
 
-  (with-eval-after-load 'narrow-indirect
-    (keymap-set embark-region-map "N" 'ni-narrow-to-region-indirect-other-window)
-    (keymap-set embark-defun-map  "N" 'ni-narrow-to-defun-indirect-other-window)
-    (keymap-set embark-page-map "o" 'ni-narrow-to-page-indirect-other-window))
-
   (defvar-keymap david-embark-tab-map
     "d" 'embark-tab-delete
     "r" 'embark-tab-rename
@@ -1696,6 +1694,7 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'david-embark-tab-map (alist-get 'tab embark-keymap-alist))
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
+    (keymap-set embark-region-map "RET" 'copy-region-as-kill)
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
@@ -2039,9 +2038,11 @@ see command `isearch-forward' for more information."
         read-file-name-completion-ignore-case nil
         read-buffer-completion-ignore-case nil)
 
-  (defun david-quote-region-for-consult (string)
-    (concat "=" (string-replace " " "\\ " string)))
-  (setq conn-completion-region-quote-function 'david-quote-region-for-consult)
+  (defun david-quote-region-for-orderless (string)
+    (concat
+     (string (car (rassq 'orderless-literal orderless-affix-dispatch-alist)))
+     (string-replace " " "\\ " string)))
+  (setq conn-completion-region-quote-function 'david-quote-region-for-orderless)
 
   (defun flex-first-if-completing (pattern index _total)
     (when (and (= index 0) completion-in-region-mode)
@@ -2088,6 +2089,8 @@ see command `isearch-forward' for more information."
 ;;;; consult
 
 (elpaca consult
+  (run-with-timer 1 nil 'require 'consult)
+
   (setq consult-async-min-input 3
         consult-yank-rotate t
         consult-narrow-key "M-N"
