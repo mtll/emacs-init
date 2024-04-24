@@ -48,7 +48,8 @@
 
 ;;;; emacs
 
-(setq recenter-positions '(top middle bottom)
+(setq mark-even-if-inactive nil
+      recenter-positions '(top middle bottom)
       even-window-sizes nil
       comment-empty-lines t
       scroll-conservatively 0
@@ -137,6 +138,8 @@
 (keymap-global-set "C-S-w"           #'delete-region)
 (keymap-global-set "C-S-o"           #'other-window)
 (keymap-global-set "<f2>"            #'other-window)
+(keymap-global-set "C-z"             #'transient-resume)
+(keymap-global-set "<escape>"        #'exit-recursive-edit)
 
 (put 'other-window 'repeat-map nil)
 
@@ -302,6 +305,7 @@
 
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
+(keymap-set isearch-mode-map "C-z"   'transient-resume)
 
 (defun isearch-kill-region (&optional arg)
   (interactive "P")
@@ -343,32 +347,31 @@ Turning on wildcards turns off regexp mode.")
 (put 'isearch-wildcards-compile 'isearch-message-prefix
      (propertize "Wildcard " 'face 'minibuffer-prompt))
 
-(with-eval-after-load 'isearch+
-  (defun isearch-forward-wildcard (&optional arg no-recursive-edit)
-    "Do incremental search forward.
+(defun isearch-forward-wildcard (&optional arg no-recursive-edit)
+  "Do incremental search forward.
 See command `isearch-forward' for more information."
-    (interactive "P\np")
-    (let ((numarg  (prefix-numeric-value arg)))
-      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-             (call-interactively #'multi-isearch-buffers))
-            (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
-                             #'isearch-wildcards-compile)))))
-  (keymap-global-set "<remap> <isearch-forward>" 'isearch-forward-wildcard)
+  (interactive "P\np")
+  (let ((numarg  (prefix-numeric-value arg)))
+    (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+           (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+          ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+           (call-interactively #'multi-isearch-buffers))
+          (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
+                           #'isearch-wildcards-compile)))))
+(keymap-global-set "<remap> <isearch-forward>" 'isearch-forward-wildcard)
 
-  (defun isearch-backward-wildcard (&optional arg no-recursive-edit)
-    "do incremental search backward.
+(defun isearch-backward-wildcard (&optional arg no-recursive-edit)
+  "do incremental search backward.
 see command `isearch-forward' for more information."
-    (interactive "p\np")
-    (let ((numarg  (prefix-numeric-value arg)))
-      (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-             (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-            ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-             (call-interactively #'multi-isearch-buffers))
-            (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
-                             #'isearch-wildcards-compile)))))
-  (keymap-global-set "<remap> <isearch-backward>" 'isearch-backward-wildcard))
+  (interactive "p\np")
+  (let ((numarg  (prefix-numeric-value arg)))
+    (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+           (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+          ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+           (call-interactively #'multi-isearch-buffers))
+          (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
+                           #'isearch-wildcards-compile)))))
+(keymap-global-set "<remap> <isearch-backward>" 'isearch-backward-wildcard)
 
 (defun isearch-repeat-direction ()
   (interactive)
@@ -541,7 +544,7 @@ see command `isearch-forward' for more information."
 
 (elpaca transient
   (setq transient-enable-popup-navigation nil
-        transient-mode-line-format 2))
+        transient-mode-line-format nil))
 
 
 ;;; Packages
@@ -586,21 +589,7 @@ see command `isearch-forward' for more information."
 ;;;; Expreg
 
 (elpaca expreg
-  (with-eval-after-load 'conn-mode
-    (defun david-expreg-ad (&rest _)
-      (unless conn-emacs-state
-        (activate-mark t)))
-    (advice-add 'expreg-expand :before #'david-expreg-ad)
-
-    (with-eval-after-load 'treesit-auto
-      (defvar-keymap conn-expreg-repeat-map
-        :repeat t
-        "H" 'expreg-expand
-        "h" 'expreg-contract)
-
-      (dolist (mode global-treesit-auto-modes)
-        (keymap-set (conn-get-mode-map 'conn-state mode) "B" 'expreg-expand)
-        (keymap-set (conn-get-mode-map 'conn-dot-state mode) "B" 'expreg-contract)))))
+  (require 'expreg))
 
 
 ;;;; helpful
@@ -1123,7 +1112,7 @@ see command `isearch-forward' for more information."
   (define-key global-map [remap open-line] 'crux-smart-open-line)
   (keymap-global-set "C-S-k" 'crux-kill-line-backwards)
 
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
 
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
@@ -1223,7 +1212,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'embark
     (keymap-set embark-region-map "z" #'zz-add-zone))
 
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (keymap-set conn-state-map "X" 'zz-narrow)))
 
 
@@ -1272,13 +1261,13 @@ see command `isearch-forward' for more information."
 ;;;; spacious padding
 
 (elpaca spacious-padding
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (require 'spacious-padding)
     (cl-pushnew 'conn-state-lighter-face spacious-padding--mode-line-faces)
     (cl-pushnew 'conn-emacs-state-lighter-face spacious-padding--mode-line-faces)
     (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
     (cl-pushnew 'conn-org-tree-edit-state-lighter-face spacious-padding--mode-line-faces)
-
+    
     (defun david-spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
       (when (facep face)
         (let* ((original-bg (face-background face nil fallback))
@@ -1302,9 +1291,12 @@ see command `isearch-forward' for more information."
     (spacious-padding-mode 1)))
 
 
-;;;; conn-mode
+;;;; conn
 
-(elpaca (conn-mode :host github :repo "mtll/conn-mode")
+(elpaca (conn :host github
+              :protocol ssh
+              :depth nil
+              :repo "mtll/conn")
   (setq conn-state-buffer-colors t
         conn-wincontrol-initial-help nil
         conn-lighter ""
@@ -1322,9 +1314,12 @@ see command `isearch-forward' for more information."
   (conn-hide-mark-cursor 'conn-view-state)
 
   (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
+  (set-default-conn-state '("\\*Edit Macro\\*") 'conn-state)
 
+  (keymap-global-set "C-x m" 'conn-kmacro-prefix)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-c a" 'conn-wincontrol)
+  (keymap-global-set "C-c q" 'conn-edit-map)
   (keymap-global-set "C-x ," 'global-subword-mode)
   (keymap-global-set "<f9>" 'conn-wincontrol)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
@@ -1332,11 +1327,11 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
   (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
-  (keymap-set conn-mode-map "C-z" 'conn-other-place-prefix)
   (keymap-set conn-mode-map "C-t" tab-prefix-map)
   (keymap-set conn-mode-map "M-," 'conn-wincontrol)
   (keymap-set conn-mode-map "C-," 'embark-dwim)
   (keymap-set conn-mode-map "C-." 'conn-embark-alt-dwim)
+  (keymap-set conn-mode-map "C-<backspace>" 'conn-kill-whole-line)
 
   (defun david-space-after-point (N)
     (interactive "p")
@@ -1358,7 +1353,7 @@ see command `isearch-forward' for more information."
 ;;;;; Conn Extensions
 
 (elpaca (conn-consult :host github
-                      :repo "mtll/conn-mode"
+                      :repo "mtll/conn"
                       :files ("extensions/conn-consult.el"))
   (with-eval-after-load 'consult (require 'conn-consult))
   (keymap-set conn-region-map "o" 'conn-consult-line-region)
@@ -1367,7 +1362,7 @@ see command `isearch-forward' for more information."
   (keymap-set conn-mode-map "M-s T" 'conn-consult-thing))
 
 (elpaca (conn-embark :host github
-                     :repo "mtll/conn-mode"
+                     :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
 
@@ -1415,20 +1410,28 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-defun-map "D")))
 
 (elpaca (conn-avy :host github
-                  :repo "mtll/conn-mode"
+                  :repo "mtll/conn"
                   :files ("extensions/conn-avy.el"))
   (keymap-set conn-mode-map "C-j" 'avy-goto-char-timer)
   (with-eval-after-load 'avy
+    (require 'conn-avy)
+    (setf (alist-get ?. avy-dispatch-alist) 'conn-avy-action-dot)
     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
-;; (elpaca (conn-isearch+ :host github
-;;                        :repo "mtll/conn-mode"
-;;                        :files ("extensions/conn-isearch+.el"))
-;;   (with-eval-after-load 'isearch+
-;;     (require 'conn-isearch+)))
+(elpaca (conn-expand-region :host github
+                            :repo "mtll/conn"
+                            :files ("extensions/conn-expand-region.el"))
+  (with-eval-after-load 'expand-region
+    (require 'conn-expand-region)))
+
+(elpaca (conn-expreg :host github
+                     :repo "mtll/conn"
+                     :files ("extensions/conn-expreg.el"))
+  (with-eval-after-load 'expreg
+    (require 'conn-expreg)))
 
 (elpaca (conn-calc :host github
-                   :repo "mtll/conn-mode"
+                   :repo "mtll/conn"
                    :files ("extensions/conn-calc.el"))
   (keymap-global-set "C-x =" 'calc-dispatch)
 
@@ -1436,7 +1439,7 @@ see command `isearch-forward' for more information."
     (conn-calc-shim 1)))
 
 (elpaca (conn-evil-treesit-obj :host github
-                               :repo "mtll/conn-mode"
+                               :repo "mtll/conn"
                                :files ("extensions/conn-evil-treesit-obj.el"))
   (with-eval-after-load 'evil-textobj-tree-sitter
     (require 'conn-evil-treesit-obj)))
@@ -1445,20 +1448,7 @@ see command `isearch-forward' for more information."
 ;;;; Expand Region
 
 (elpaca expand-region
-  (with-eval-after-load 'conn-mode
-    (defun david-expand-region-ad (&rest _)
-      (unless conn-emacs-state
-        (activate-mark t)))
-    (advice-add 'er/expand-region :before #'david-expand-region-ad)
-
-    (define-keymap
-      :keymap conn-common-map
-      "H" 'er/expand-region)
-
-    (defvar-keymap conn-expand-region-repeat-map
-      :repeat t
-      "H" 'er/expand-region
-      "h" 'er/contract-region)))
+  (require 'expand-region))
 
 
 ;;;; evil text objects
@@ -1470,7 +1460,7 @@ see command `isearch-forward' for more information."
 ;;;; ialign
 
 (elpaca ialign
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (keymap-set conn-region-map "a i" 'ialign))
 
   (with-eval-after-load 'embark
@@ -1929,7 +1919,16 @@ see command `isearch-forward' for more information."
       (completion-at-point)
       (corfu-insert-separator))
 
-    (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start))
+    (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start)
+
+    (with-eval-after-load 'conn
+      (defun david-corfu-off ()
+        (global-corfu-mode -1))
+      (add-hook 'conn-macro-dispatch-start-hook 'david-corfu-off)
+
+      (defun david-corfu-on ()
+        (global-corfu-mode 1))
+      (add-hook 'conn-macro-dispatch-end-hook 'david-corfu-on)))
 
   (with-eval-after-load 'lsp-mode
     (defun wrap-lsp-capf ()
@@ -1985,7 +1984,7 @@ see command `isearch-forward' for more information."
 (elpaca gif-screencast
   (setq gif-screencast-scale-factor 0.5)
 
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (keymap-global-set "M-<f2>" 'gif-screencast-start-or-stop)))
 
 
@@ -2351,7 +2350,7 @@ see command `isearch-forward' for more information."
         :keymap embark-consult-location-map
         "M-RET" 'consult-org-link-location)))
 
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (keymap-set conn-edit-map "e" 'consult-keep-lines)))
 
 ;;;;; consult-dir
@@ -2359,7 +2358,7 @@ see command `isearch-forward' for more information."
 (elpaca consult-dir
   (keymap-global-set "C-x C-d" 'consult-dir)
 
-  (with-eval-after-load 'conn-mode
+  (with-eval-after-load 'conn
     (keymap-set conn-state-map "D" 'consult-dir))
 
   (with-eval-after-load 'vertico
