@@ -140,6 +140,7 @@
 (keymap-global-set "<f2>"            #'other-window)
 (keymap-global-set "C-z"             #'transient-resume)
 (keymap-global-set "<escape>"        #'exit-recursive-edit)
+(keymap-global-set "C-h A"           #'describe-char)
 
 (put 'other-window 'repeat-map nil)
 
@@ -1159,61 +1160,61 @@ see command `isearch-forward' for more information."
 
 ;;;; zones
 
-(elpaca zones
-  (cl-defstruct (izone-register)
-    (buffer nil :read-only t)
-    (izones nil :read-only t))
-
-  (cl-defmethod register-val-jump-to ((val izone-register) _arg)
-    (if (eq (izone-register-buffer val) (current-buffer))
-        (set zz-izones-var (izone-register-izones val))
-      (user-error "Izones not for this buffer.")))
-
-  (cl-defmethod register-val-describe ((val izone-register) _arg)
-    (princ (format "%s izones in %s\n"
-                   (length (izone-register-izones val))
-                   (izone-register-buffer val))))
-
-  (defun izones-to-register (register)
-    (interactive (list (register-read-with-preview "izones to register: ")))
-    (require 'zones)
-    (set-register register
-                  (make-izone-register
-                   :buffer (current-buffer)
-                   :izones (symbol-value zz-izones-var))))
-
-  (define-keymap
-    :keymap narrow-map
-    "q" #'zz-delete-zone
-    "*" #'zz-replace-regexp-zones
-    "/" #'zz-replace-string-zones
-    "%" #'zz-map-query-replace-regexp-zones
-    "j" #'izones-to-register
-    "1" #'zz-coalesce-zones)
-
-  (with-eval-after-load 'isearch+
-    (defun isearch-in-zone-p (beg end)
-      (catch 'res
-        (pcase-dolist (`(,_ ,zbeg ,zend) (symbol-value zz-izones-var))
-          (when (and (<= zbeg beg) (<= end zend)) (throw 'res t)))))
-    (cl-pushnew '("[zone]" isearch-in-zone-p "[ZZ]")
-                isearchp-current-filter-preds-alist
-                :test #'equal))
-
-  (with-eval-after-load 'isearch+
-    (define-keymap
-      :keymap narrow-map
-      "b" #'isearchp-zones-forward
-      "B" #'isearchp-zones-backward))
-
-  (with-eval-after-load 'bookmark+
-    (keymap-global-set "C-x r z" 'bmkp-set-izones-bookmark))
-
-  (with-eval-after-load 'embark
-    (keymap-set embark-region-map "z" #'zz-add-zone))
-
-  (with-eval-after-load 'conn
-    (keymap-set conn-state-map "X" 'zz-narrow)))
+;; (elpaca zones
+;;   (cl-defstruct (izone-register)
+;;     (buffer nil :read-only t)
+;;     (izones nil :read-only t))
+;;
+;;   (cl-defmethod register-val-jump-to ((val izone-register) _arg)
+;;     (if (eq (izone-register-buffer val) (current-buffer))
+;;         (set zz-izones-var (izone-register-izones val))
+;;       (user-error "Izones not for this buffer.")))
+;;
+;;   (cl-defmethod register-val-describe ((val izone-register) _arg)
+;;     (princ (format "%s izones in %s\n"
+;;                    (length (izone-register-izones val))
+;;                    (izone-register-buffer val))))
+;;
+;;   (defun izones-to-register (register)
+;;     (interactive (list (register-read-with-preview "izones to register: ")))
+;;     (require 'zones)
+;;     (set-register register
+;;                   (make-izone-register
+;;                    :buffer (current-buffer)
+;;                    :izones (symbol-value zz-izones-var))))
+;;
+;;   (define-keymap
+;;     :keymap narrow-map
+;;     "q" #'zz-delete-zone
+;;     "*" #'zz-replace-regexp-zones
+;;     "/" #'zz-replace-string-zones
+;;     "%" #'zz-map-query-replace-regexp-zones
+;;     "j" #'izones-to-register
+;;     "1" #'zz-coalesce-zones)
+;;
+;;   (with-eval-after-load 'isearch+
+;;     (defun isearch-in-zone-p (beg end)
+;;       (catch 'res
+;;         (pcase-dolist (`(,_ ,zbeg ,zend) (symbol-value zz-izones-var))
+;;           (when (and (<= zbeg beg) (<= end zend)) (throw 'res t)))))
+;;     (cl-pushnew '("[zone]" isearch-in-zone-p "[ZZ]")
+;;                 isearchp-current-filter-preds-alist
+;;                 :test #'equal))
+;;
+;;   (with-eval-after-load 'isearch+
+;;     (define-keymap
+;;       :keymap narrow-map
+;;       "b" #'isearchp-zones-forward
+;;       "B" #'isearchp-zones-backward))
+;;
+;;   (with-eval-after-load 'bookmark+
+;;     (keymap-global-set "C-x r z" 'bmkp-set-izones-bookmark))
+;;
+;;   (with-eval-after-load 'embark
+;;     (keymap-set embark-region-map "z" #'zz-add-zone))
+;;
+;;   (with-eval-after-load 'conn
+;;     (keymap-set conn-state-map "X" 'zz-narrow)))
 
 
 ;;;; isearch+
@@ -1222,7 +1223,7 @@ see command `isearch-forward' for more information."
 ;;                   :repo "emacsmirror/isearch-plus"
 ;;                   :main "isearch+.el")
 ;;   (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
-;; 
+;;
 ;;   (setq isearchp-dimming-color "#cddfcc"
 ;;         isearchp-lazy-dim-filter-failures-flag nil
 ;;         isearchp-restrict-to-region-flag nil
@@ -1234,11 +1235,11 @@ see command `isearch-forward' for more information."
 ;;                                        (?s . forward-sentence)
 ;;                                        (?c . forward-char)
 ;;                                        (?l . forward-line)))
-;; 
+;;
 ;;   (with-eval-after-load 'isearch+
 ;;     (defun david-supress-in-macro () executing-kbd-macro)
 ;;     (advice-add 'isearchp-highlight-lighter :before-until 'david-supress-in-macro)
-;; 
+;;
 ;;     (keymap-unset isearch-mode-map "C-t")
 ;;     (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
 ;;     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
@@ -1260,35 +1261,35 @@ see command `isearch-forward' for more information."
 
 ;;;; spacious padding
 
-(elpaca spacious-padding
-  (with-eval-after-load 'conn
-    (require 'spacious-padding)
-    (cl-pushnew 'conn-state-lighter-face spacious-padding--mode-line-faces)
-    (cl-pushnew 'conn-emacs-state-lighter-face spacious-padding--mode-line-faces)
-    (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
-    (cl-pushnew 'conn-org-tree-edit-state-lighter-face spacious-padding--mode-line-faces)
-    
-    (defun david-spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
-      (when (facep face)
-        (let* ((original-bg (face-background face nil fallback))
-               (subtle-bg (face-background 'default))
-               (subtlep (and subtle-key spacious-padding-subtle-mode-line))
-               (bg (if subtlep subtle-bg original-bg))
-               (face-width (spacious-padding--get-face-width face)))
-          `(,@(when subtlep
-                (list
-                 :background bg
-                 :overline (spacious-padding--get-face-overline-color face fallback subtle-key)))
-            ,@(unless (eq face-width 0)
-                (list
-                 :box
-                 `( :line-width ,face-width
-                    :color ,subtle-bg
-                    :style nil)))))))
-    (advice-add 'spacious-padding-set-face-box-padding :override
-                'david-spacious-padding-set-face-box-padding)
-
-    (spacious-padding-mode 1)))
+;; (elpaca spacious-padding
+;;   (with-eval-after-load 'conn
+;;     (require 'spacious-padding)
+;;     (cl-pushnew 'conn-state-lighter-face spacious-padding--mode-line-faces)
+;;     (cl-pushnew 'conn-emacs-state-lighter-face spacious-padding--mode-line-faces)
+;;     (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
+;;     (cl-pushnew 'conn-org-edit-state-lighter-face spacious-padding--mode-line-faces)
+;;
+;;     (defun david-spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
+;;       (when (facep face)
+;;         (let* ((original-bg (face-background face nil fallback))
+;;                (subtle-bg (face-background 'default))
+;;                (subtlep (and subtle-key spacious-padding-subtle-mode-line))
+;;                (bg (if subtlep subtle-bg original-bg))
+;;                (face-width (spacious-padding--get-face-width face)))
+;;           `(,@(when subtlep
+;;                 (list
+;;                  :background bg
+;;                  :overline (spacious-padding--get-face-overline-color face fallback subtle-key)))
+;;             ,@(unless (eq face-width 0)
+;;                 (list
+;;                  :box
+;;                  `( :line-width ,face-width
+;;                     :color ,subtle-bg
+;;                     :style nil)))))))
+;;     (advice-add 'spacious-padding-set-face-box-padding :override
+;;                 'david-spacious-padding-set-face-box-padding)
+;;
+;;     (spacious-padding-mode 1)))
 
 
 ;;;; conn
@@ -1299,16 +1300,16 @@ see command `isearch-forward' for more information."
               :repo "mtll/conn")
   (setq conn-state-buffer-colors t
         conn-wincontrol-initial-help nil
-        conn-lighter ""
+        conn-lighter " C "
         conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type 'box
-        conn-mark-idle-timer 0.05)
+        conn-mark-idle-timer 0.05
+        conn-read-string-timeout 0.35)
 
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
-  (conn-mode-line-indicator-mode 1)
   (conn-cursor-colors 1)
 
   (conn-hide-mark-cursor 'conn-view-state)
@@ -1316,22 +1317,28 @@ see command `isearch-forward' for more information."
   (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
   (set-default-conn-state '("\\*Edit Macro\\*") 'conn-state)
 
+  (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
+
   (keymap-global-set "C-x m" 'conn-kmacro-prefix)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-c a" 'conn-wincontrol)
   (keymap-global-set "C-c q" 'conn-edit-map)
+  (keymap-global-set "C-c r" 'conn-region-map)
   (keymap-global-set "C-x ," 'global-subword-mode)
-  (keymap-global-set "<f9>" 'conn-wincontrol)
+  (keymap-global-set "M-\\"  'conn-dispatch-prefix)
+  (keymap-set conn-emacs-state-map "C-j"  'conn-thing-dispatch)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
-  (keymap-set (conn-get-transition-map 'conn-org-tree-edit-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
+  (keymap-set (conn-get-transition-map 'conn-org-edit-state) "<f8>" 'conn-state)
+  (keymap-set (conn-get-transition-map 'conn-state) "<f7>" 'conn-org-edit-state)
   (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
   (keymap-set conn-mode-map "C-t" tab-prefix-map)
   (keymap-set conn-mode-map "M-," 'conn-wincontrol)
   (keymap-set conn-mode-map "C-," 'embark-dwim)
   (keymap-set conn-mode-map "C-." 'conn-embark-alt-dwim)
   (keymap-set conn-mode-map "C-<backspace>" 'conn-kill-whole-line)
+  (keymap-set isearch-mode-map "<backtab>" 'conn-isearch-dot-match)
 
   (defun david-space-after-point (N)
     (interactive "p")
@@ -1365,9 +1372,12 @@ see command `isearch-forward' for more information."
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
+  (keymap-set conn-org-edit-state-map "e" 'conn-embark-dwim-either)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
+
+    (keymap-set embark-heading-map "N" 'conn-narrow-indirect-to-heading)
 
     (conn-complete-keys-prefix-help-command 1)
     (keymap-global-unset "S-<down-mouse-1>")
@@ -1409,14 +1419,15 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")))
 
-(elpaca (conn-avy :host github
-                  :repo "mtll/conn"
-                  :files ("extensions/conn-avy.el"))
-  (keymap-set conn-mode-map "C-j" 'avy-goto-char-timer)
-  (with-eval-after-load 'avy
-    (require 'conn-avy)
-    (setf (alist-get ?. avy-dispatch-alist) 'conn-avy-action-dot)
-    (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
+;; (elpaca (conn-avy :host github
+;;                   :repo "mtll/conn"
+;;                   :files ("extensions/conn-avy.el"))
+;;   (keymap-set conn-mode-map "C-j" 'conn-avy-dispatch)
+;;   (with-eval-after-load 'avy
+;;     (require 'conn-avy)
+;;     (setf (alist-get ?, avy-dispatch-alist) 'conn-avy-action-dot)
+;;     (setf (alist-get ?t avy-dispatch-alist) 'conn-avy-action-transpose)
+;;     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
 
 (elpaca (conn-expand-region :host github
                             :repo "mtll/conn"
@@ -1479,100 +1490,99 @@ see command `isearch-forward' for more information."
 
 ;;;; avy
 
-(elpaca avy
-  (setq avy-single-candidate-jump nil
-        avy-timeout-seconds 0.45
-        avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?n ?o ?p ?q ?r ?s ?u ?v ?x)
-        avy-line-insert-style 'below)
-
-  (setq avy-dispatch-alist '((?w  .  avy-action-kill-move)
-                             (?d  .  avy-action-kill-stay)
-                             (?t  .  avy-action-teleport)
-                             (?c  .  avy-action-copy)
-                             (?y  .  avy-action-yank)
-                             (?Y  .  avy-action-yank-line)
-                             (?\\ .  avy-action-zap-to-char)))
-
-  (with-eval-after-load 'ace-window
-    ;; stops ace-window from breaking when minibuffer indicator is enabled
-    (defun avy-process-disable-aw-update (&rest app)
-      (cl-letf (((symbol-function 'aw-update) #'ignore))
-        (apply app)))
-    (advice-add #'avy-process :around 'avy-process-disable-aw-update))
-
-  (define-keymap
-    :keymap goto-map
-    "j" 'avy-goto-char-timer
-    "o" 'avy-goto-word-or-subword-1
-    "m" 'avy-goto-symbol-1
-    "k" 'avy-goto-line
-    "l" 'avy-goto-end-of-line
-    "z" 'avy-resume
-    "Y" 'david-avy-toggle-insertion-style
-    "C-y" 'david-avy-toggle-insertion-style
-    "i" 'avy-goto-char-in-line)
-
-  (with-eval-after-load 'avy
-    (dolist (cmd '(avy-goto-char
-                   avy-goto-char
-                   avy-goto-char-2
-                   avy-isearch
-                   avy-goto-line
-                   avy-goto-subword-0
-                   avy-goto-subword-1
-                   avy-goto-word-0
-                   avy-goto-word-1
-                   avy-copy-line
-                   avy-copy-region
-                   avy-move-line
-                   avy-move-region
-                   avy-kill-whole-line
-                   avy-kill-region
-                   avy-kill-ring-save-whole-line
-                   avy-kill-ring-save-region))
-      (setf (alist-get cmd avy-orders-alist) #'avy-order-closest))
-
-    (defun avy-enable-single-candidate-jump (fn &rest args)
-      (let ((avy-single-candidate-jump t))
-        (apply fn args)))
-    (advice-add 'avy-goto-char-in-line :around #'avy-enable-single-candidate-jump)
-
-    (defun avy-isearch ()
-      "Jump to one of the current isearch candidates."
-      (interactive)
-      (avy-with avy-isearch
-                (let ((avy-background nil)
-                      (avy-case-fold-search case-fold-search))
-                  (prog1
-                      (avy-process
-                       (avy--regex-candidates
-                        (cond
-                         ((functionp isearch-regexp-function)
-                          (funcall isearch-regexp-function isearch-string))
-                         (isearch-regexp-function (word-search-regexp isearch-string))
-                         (isearch-regexp isearch-string)
-                         (t (regexp-quote isearch-string)))))
-                    (isearch-done)))))
-    (keymap-set isearch-mode-map "C-j" #'avy-isearch)
-
-    (with-eval-after-load 'embark
-      (defun avy-action-embark (pt)
-        (unwind-protect
-            (save-excursion
-              (goto-char pt)
-              (embark-act))
-          (select-window
-           (cdr (ring-ref avy-ring 0))))
-        t)
-      (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark))
-
-    (defun david-avy-toggle-insertion-style ()
-      (interactive)
-      (if (eq avy-line-insert-style 'above)
-          (setq avy-line-insert-style 'below)
-        (setq avy-line-insert-style 'above))
-      (message "Avy line insertion style set to: %s" avy-line-insert-style))
-    (put 'david-avy-toggle-insertion-style 'repeat-map goto-map)))
+;; (elpaca avy
+;;   (setq avy-single-candidate-jump nil
+;;         avy-timeout-seconds 0.45
+;;         avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?n ?o ?p ?q ?r ?s ?u ?v ?w ?x)
+;;         avy-line-insert-style 'below)
+;;
+;;   (setq avy-dispatch-alist '((?d  .  conn-avy-action-kill-stay)
+;;                              (?\[  . conn-avy-action-teleport)
+;;                              (?c  .  conn-avy-action-copy)
+;;                              (?y  .  conn-avy-action-yank)
+;;                              (?Y  .  avy-action-yank-line)
+;;                              (?\\ .  avy-action-zap-to-char)))
+;;
+;;   (with-eval-after-load 'ace-window
+;;     ;; stops ace-window from breaking when minibuffer indicator is enabled
+;;     (defun avy-process-disable-aw-update (&rest app)
+;;       (cl-letf (((symbol-function 'aw-update) #'ignore))
+;;         (apply app)))
+;;     (advice-add #'avy-process :around 'avy-process-disable-aw-update))
+;;
+;;   (define-keymap
+;;     :keymap goto-map
+;;     "j" 'avy-goto-char-timer
+;;     "o" 'avy-goto-word-or-subword-1
+;;     "m" 'avy-goto-symbol-1
+;;     "k" 'avy-goto-line
+;;     "l" 'avy-goto-end-of-line
+;;     "z" 'avy-resume
+;;     "Y" 'david-avy-toggle-insertion-style
+;;     "C-y" 'david-avy-toggle-insertion-style
+;;     "i" 'avy-goto-char-in-line)
+;;
+;;   (with-eval-after-load 'avy
+;;     (dolist (cmd '(avy-goto-char
+;;                    avy-goto-char
+;;                    avy-goto-char-2
+;;                    avy-isearch
+;;                    avy-goto-line
+;;                    avy-goto-subword-0
+;;                    avy-goto-subword-1
+;;                    avy-goto-word-0
+;;                    avy-goto-word-1
+;;                    avy-copy-line
+;;                    avy-copy-region
+;;                    avy-move-line
+;;                    avy-move-region
+;;                    avy-kill-whole-line
+;;                    avy-kill-region
+;;                    avy-kill-ring-save-whole-line
+;;                    avy-kill-ring-save-region))
+;;       (setf (alist-get cmd avy-orders-alist) #'avy-order-closest))
+;;
+;;     (defun avy-enable-single-candidate-jump (fn &rest args)
+;;       (let ((avy-single-candidate-jump t))
+;;         (apply fn args)))
+;;     (advice-add 'avy-goto-char-in-line :around #'avy-enable-single-candidate-jump)
+;;
+;;     (defun avy-isearch ()
+;;       "Jump to one of the current isearch candidates."
+;;       (interactive)
+;;       (avy-with avy-isearch
+;;                 (let ((avy-background nil)
+;;                       (avy-case-fold-search case-fold-search))
+;;                   (prog1
+;;                       (avy-process
+;;                        (avy--regex-candidates
+;;                         (cond
+;;                          ((functionp isearch-regexp-function)
+;;                           (funcall isearch-regexp-function isearch-string))
+;;                          (isearch-regexp-function (word-search-regexp isearch-string))
+;;                          (isearch-regexp isearch-string)
+;;                          (t (regexp-quote isearch-string)))))
+;;                     (isearch-done)))))
+;;     (keymap-set isearch-mode-map "C-j" #'avy-isearch)
+;;
+;;     (with-eval-after-load 'embark
+;;       (defun avy-action-embark (pt)
+;;         (unwind-protect
+;;             (save-excursion
+;;               (goto-char pt)
+;;               (embark-act))
+;;           (select-window
+;;            (cdr (ring-ref avy-ring 0))))
+;;         t)
+;;       (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark))
+;;
+;;     (defun david-avy-toggle-insertion-style ()
+;;       (interactive)
+;;       (if (eq avy-line-insert-style 'above)
+;;           (setq avy-line-insert-style 'below)
+;;         (setq avy-line-insert-style 'above))
+;;       (message "Avy line insertion style set to: %s" avy-line-insert-style))
+;;     (put 'david-avy-toggle-insertion-style 'repeat-map goto-map)))
 
 
 ;;;; all-the-icons
@@ -1979,15 +1989,6 @@ see command `isearch-forward' for more information."
 (elpaca keycast)
 
 
-;;;; gif-screencase
-
-(elpaca gif-screencast
-  (setq gif-screencast-scale-factor 0.5)
-
-  (with-eval-after-load 'conn
-    (keymap-global-set "M-<f2>" 'gif-screencast-start-or-stop)))
-
-
 ;;;; wgrep
 
 (elpaca wgrep)
@@ -2379,7 +2380,7 @@ see command `isearch-forward' for more information."
 
 (elpaca (consult-extras :host github :repo "mtll/consult-extras")
   (keymap-global-set "C-h o" 'consult-symbol)
-  (keymap-set goto-map "y" 'consult-all-marks)
+  (keymap-set search-map "y" 'consult-all-marks)
   (with-eval-after-load 'consult
     (require 'consult-extras)))
 
