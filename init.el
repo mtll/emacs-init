@@ -274,6 +274,33 @@
               (make-composed-keymap (list outline-editing-repeat-map
                                           outline-navigation-repeat-map)))
 
+  (define-keymap
+    :keymap outline-mode-prefix-map
+    "@" 'outline-mark-subtree
+    "n" 'outline-next-visible-heading
+    "p" 'outline-previous-visible-heading
+    "i" 'outline-show-children
+    "s" 'outline-show-subtree
+    "d" 'outline-hide-subtree
+    "u" 'outline-up-heading
+    "f" 'outline-forward-same-level
+    "b" 'outline-backward-same-level
+    "t" 'outline-hide-body
+    "a" 'outline-show-all
+    "c" 'outline-hide-entry
+    "e" 'outline-show-entry
+    "l" 'outline-hide-leaves
+    "k" 'outline-show-branches
+    "q" 'outline-hide-sublevels
+    "o" 'outline-hide-other
+    "^" 'outline-move-subtree-up
+    "v" 'outline-move-subtree-down
+    "m" 'outline-insert-heading
+    ">" 'outline-promote
+    ">" 'outline-demote)
+
+  (setopt outline-minor-mode-prefix (kbd "C-c u"))
+
   (pcase-dolist (`(,_ . ,def) (cdr outline-navigation-repeat-map))
     (put def 'repeat-map nil)))
 
@@ -981,7 +1008,7 @@ see command `isearch-forward' for more information."
 ;;;; org
 
 (elpaca org
-  (run-with-idle-timer 1.5 nil (lambda () (require 'org)))
+  (run-with-idle-timer 3 nil (lambda () (require 'org)))
 
   (setq org-agenda-include-diary t
         org-src-window-setup 'plain
@@ -1893,10 +1920,8 @@ see command `isearch-forward' for more information."
 ;;;; corfu
 
 (elpaca corfu
-  (run-with-timer
-   0.33 nil (lambda ()
-              (global-corfu-mode 1)
-              (corfu-echo-mode 1)))
+  (global-corfu-mode 1)
+  (corfu-echo-mode 1)
 
   (setq corfu-quit-at-boundary 'separator
         corfu-quit-no-match 'separator
@@ -2089,7 +2114,7 @@ see command `isearch-forward' for more information."
 ;;;; consult
 
 (elpaca consult
-  (run-with-timer 1 nil 'require 'consult)
+  (require 'consult)
 
   (setq consult-async-min-input 3
         consult-yank-rotate t
