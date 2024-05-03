@@ -48,7 +48,8 @@
 
 ;;;; emacs
 
-(setq mark-even-if-inactive nil
+(setq hi-lock-auto-select-face t
+      mark-even-if-inactive t
       recenter-positions '(top middle bottom)
       even-window-sizes nil
       comment-empty-lines t
@@ -78,6 +79,7 @@
       dired-listing-switches "-alFh --dired --group-directories-first"
       enable-recursive-minibuffers t
       ediff-split-window-function #'ediff-split-fn
+      ediff-floating-control-frame nil
       uniquify-buffer-name-style 'post-forward
       uniquify-separator " | "
       uniquify-after-kill-buffer-p t
@@ -270,10 +272,6 @@
 (add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
 
 (with-eval-after-load 'outline
-  (keymap-set outline-minor-mode-map "C-c u"
-              (make-composed-keymap (list outline-editing-repeat-map
-                                          outline-navigation-repeat-map)))
-
   (define-keymap
     :keymap outline-mode-prefix-map
     "@" 'outline-mark-subtree
@@ -297,7 +295,7 @@
     "v" 'outline-move-subtree-down
     "m" 'outline-insert-heading
     ">" 'outline-promote
-    ">" 'outline-demote)
+    "<" 'outline-demote)
 
   (setopt outline-minor-mode-prefix (kbd "C-c u"))
 
@@ -674,6 +672,13 @@ see command `isearch-forward' for more information."
     (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
     (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
 
+    (keymap-set paredit-mode-map "C-S-l" 'paredit-forward-slurp-sexp)
+    (keymap-set paredit-mode-map "C-S-o" 'paredit-forward-barf-sexp)
+    (keymap-set paredit-mode-map "C-S-j" 'paredit-backward-slurp-sexp)
+    (keymap-set paredit-mode-map "C-S-u" 'paredit-backward-barf-sexp)
+    (keymap-set paredit-mode-map "C-S-i" 'paredit-convolute-sexp)
+    (keymap-set paredit-mode-map "C-S-k" 'paredit-join-sexps)
+
     (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
       (or endp
           (cond ((eq (char-syntax delimiter) ?\()
@@ -1008,7 +1013,7 @@ see command `isearch-forward' for more information."
 ;;;; org
 
 (elpaca org
-  (run-with-idle-timer 3 nil (lambda () (require 'org)))
+  (require 'org)
 
   (setq org-agenda-include-diary t
         org-src-window-setup 'plain
@@ -1139,6 +1144,7 @@ see command `isearch-forward' for more information."
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
   (keymap-global-set "C-S-k" 'crux-kill-line-backwards)
+  (keymap-global-set "C-c S" 'crux-visit-shell-buffer)
 
   (with-eval-after-load 'conn
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
@@ -1246,38 +1252,38 @@ see command `isearch-forward' for more information."
 
 ;;;; isearch+
 
-;; (elpaca (isearch+ :host github
-;;                   :repo "emacsmirror/isearch-plus"
-;;                   :main "isearch+.el")
-;;   (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
-;;
-;;   (setq isearchp-dimming-color "#cddfcc"
-;;         isearchp-lazy-dim-filter-failures-flag nil
-;;         isearchp-restrict-to-region-flag nil
-;;         isearchp-deactivate-region-flag nil
-;;         isearchp-initiate-edit-commands nil
-;;         isearchp-movement-unit-alist '((?w . forward-word)
-;;                                        (?s . forward-sexp)
-;;                                        (?i . forward-list)
-;;                                        (?s . forward-sentence)
-;;                                        (?c . forward-char)
-;;                                        (?l . forward-line)))
-;;
-;;   (with-eval-after-load 'isearch+
-;;     (defun david-supress-in-macro () executing-kbd-macro)
-;;     (advice-add 'isearchp-highlight-lighter :before-until 'david-supress-in-macro)
-;;
-;;     (keymap-unset isearch-mode-map "C-t")
-;;     (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
-;;     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
-;;     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
-;;     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
-;;     (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
-;;     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
-;;     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
-;;     (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
-;;     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
-;;     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
+(elpaca (isearch+ :host github
+                  :repo "emacsmirror/isearch-plus"
+                  :main "isearch+.el")
+  (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
+
+  (setq isearchp-dimming-color "#cddfcc"
+        isearchp-lazy-dim-filter-failures-flag nil
+        isearchp-restrict-to-region-flag nil
+        isearchp-deactivate-region-flag nil
+        isearchp-initiate-edit-commands nil
+        isearchp-movement-unit-alist '((?w . forward-word)
+                                       (?s . forward-sexp)
+                                       (?i . forward-list)
+                                       (?s . forward-sentence)
+                                       (?c . forward-char)
+                                       (?l . forward-line)))
+
+  (with-eval-after-load 'isearch+
+    (defun david-supress-in-macro () executing-kbd-macro)
+    (advice-add 'isearchp-highlight-lighter :before-until 'david-supress-in-macro)
+
+    (keymap-unset isearch-mode-map "C-t")
+    (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
+    (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
+    (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
+    (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
+    (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
+    (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
+    (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
+    (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
+    (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
+    (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
 ;;;;; isearch-prop
 
@@ -1351,7 +1357,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c a" 'conn-wincontrol)
   (keymap-global-set "C-c q" 'conn-edit-map)
   (keymap-global-set "C-c r" 'conn-region-map)
-  (keymap-global-set "C-x ," 'global-subword-mode)
+  (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-dispatch-prefix)
   (keymap-set conn-emacs-state-map "C-j"  'conn-thing-dispatch)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
@@ -1361,7 +1367,6 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-state) "<f7>" 'conn-org-edit-state)
   (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
   (keymap-set conn-mode-map "C-t" tab-prefix-map)
-  (keymap-set conn-mode-map "M-," 'conn-wincontrol)
   (keymap-set conn-mode-map "C-," 'embark-dwim)
   (keymap-set conn-mode-map "C-." 'conn-embark-alt-dwim)
   (keymap-set conn-mode-map "C-<backspace>" 'conn-kill-whole-line)
@@ -1467,6 +1472,12 @@ see command `isearch-forward' for more information."
                      :files ("extensions/conn-expreg.el"))
   (with-eval-after-load 'expreg
     (require 'conn-expreg)))
+
+(elpaca (conn-isearch+ :host github
+                     :repo "mtll/conn"
+                     :files ("extensions/conn-isearch+.el"))
+  (with-eval-after-load 'isearch+
+    (require 'conn-isearch+)))
 
 (elpaca (conn-calc :host github
                    :repo "mtll/conn"
@@ -1627,7 +1638,7 @@ see command `isearch-forward' for more information."
 ;;;; magit
 
 (elpaca magit
-  (keymap-global-set "C-c m g" 'magit-file-dispatch)
+  (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
 
