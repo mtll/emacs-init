@@ -849,7 +849,7 @@ see command `isearch-forward' for more information."
 
 (elpaca j-mode
   (setq j-console-cmd
-        (locate-file "j9.4/jconsole.sh" exec-path
+        (locate-file "j9.5/jconsole.sh" exec-path
                      nil #'file-executable-p)))
 
 
@@ -1365,11 +1365,11 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
   (keymap-set (conn-get-transition-map 'conn-org-edit-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f7>" 'conn-org-edit-state)
-  (keymap-set conn-mode-map "S-<return>" 'conn-open-line-and-indent)
-  (keymap-set conn-mode-map "C-t" tab-prefix-map)
-  (keymap-set conn-mode-map "C-," 'embark-dwim)
-  (keymap-set conn-mode-map "C-." 'conn-embark-alt-dwim)
-  (keymap-set conn-mode-map "C-<backspace>" 'conn-kill-whole-line)
+  (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
+  (keymap-global-set "C-t" tab-prefix-map)
+  (keymap-global-set "C-," 'embark-dwim)
+  (keymap-global-set "C-." 'conn-embark-alt-dwim)
+  (keymap-global-set "C-<backspace>" 'conn-kill-whole-line)
   (keymap-set isearch-mode-map "<backtab>" 'conn-isearch-dot-match)
 
   (defun david-space-after-point (N)
@@ -1398,7 +1398,7 @@ see command `isearch-forward' for more information."
   (keymap-set conn-region-map "o" 'conn-consult-line-region)
   (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
   (keymap-set conn-region-map "h" 'conn-consult-region-search-map)
-  (keymap-set conn-mode-map "M-s T" 'conn-consult-thing))
+  (keymap-global-set "M-s T" 'conn-consult-thing))
 
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
@@ -1424,7 +1424,7 @@ see command `isearch-forward' for more information."
           (with-current-buffer (window-buffer start-window)
             (goto-char start-point)
             (embark-dwim)))))
-    (keymap-set conn-mode-map "S-<mouse-1>" 'david-embark-dwim-mouse)
+    (keymap-global-set "S-<mouse-1>" 'david-embark-dwim-mouse)
 
     (defun david-embark-alt-dwim-mouse (event)
       (interactive "e")
@@ -1436,9 +1436,9 @@ see command `isearch-forward' for more information."
           (with-current-buffer (window-buffer start-window)
             (goto-char start-point)
             (conn-embark-alt-dwim)))))
-    (keymap-set conn-mode-map "S-<mouse-3>" 'david-embark-alt-dwim-mouse)
+    (keymap-global-set "S-<mouse-3>" 'david-embark-alt-dwim-mouse)
 
-    (keymap-set conn-mode-map "<mouse-2>" 'xref-go-back)
+    (keymap-global-set "<mouse-2>" 'xref-go-back)
 
     (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
 
@@ -1454,7 +1454,7 @@ see command `isearch-forward' for more information."
 ;; (elpaca (conn-avy :host github
 ;;                   :repo "mtll/conn"
 ;;                   :files ("extensions/conn-avy.el"))
-;;   (keymap-set conn-mode-map "C-j" 'conn-avy-dispatch)
+;;   (keymap-global-set "C-j" 'conn-avy-dispatch)
 ;;   (with-eval-after-load 'avy
 ;;     (require 'conn-avy)
 ;;     (setf (alist-get ?, avy-dispatch-alist) 'conn-avy-action-dot)
@@ -2957,3 +2957,10 @@ see command `isearch-forward' for more information."
 ;;;; ef-themes
 
 (elpaca ef-themes)
+
+
+;;;; casual
+
+(elpaca casual
+  (with-eval-after-load 'calc
+    (keymap-set calc-mode-map "M-o" 'casual-main-menu)))
