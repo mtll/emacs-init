@@ -557,6 +557,37 @@ see command `isearch-forward' for more information."
     "<backtab>" 'dired-kill-subdir))
 
 
+;;;; query replace
+
+(with-eval-after-load 'replace
+  (defun my-query-replace-insert-sep ()
+    (interactive)
+    (when query-replace-from-to-separator
+      (let ((separator-string
+             (when query-replace-from-to-separator
+               ;; Check if the first non-whitespace char is displayable
+               (if (char-displayable-p
+                    (string-to-char (string-replace
+                                     " " "" query-replace-from-to-separator)))
+                   query-replace-from-to-separator
+                 " -> "))))
+        (insert (propertize separator-string
+                            'display separator-string
+                            'face 'minibuffer-prompt
+                            'separator t)))))
+
+  (defun my--query-replace-read-advice (&rest app)
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (use-local-map
+           (define-keymap
+             :parent (current-local-map)
+             "C-M-j" 'my-query-replace-insert-sep)))
+      (apply app)))
+
+  (advice-add 'query-replace-read-from :around 'my--query-replace-read-advice))
+
+
 ;;;; eldoc
 
 (with-eval-after-load 'diminish
@@ -670,9 +701,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
 
   (push '(help-mode . helpful-mode) major-mode-remap-alist)
-
-  ;; (with-eval-after-load 'conn-embark
-  ;;   (keymap-set conn-embark-alt-symbol-map "M-RET" 'helpful-symbol))
 
   (with-eval-after-load 'helpful
     (fset 'helpful--source #'ignore))
@@ -1189,7 +1217,6 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
-
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
@@ -1374,7 +1401,6 @@ see command `isearch-forward' for more information."
               :repo "mtll/conn")
   (setq conn-state-buffer-colors t
         conn-wincontrol-initial-help nil
-        conn-lighter " C "
         conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type 'box
@@ -1391,6 +1417,8 @@ see command `isearch-forward' for more information."
   (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
   (set-default-conn-state '("\\*Edit Macro\\*") 'conn-state)
 
+  (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
+  
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
   (keymap-global-set "C-x m" 'conn-kmacro-prefix)
@@ -1401,6 +1429,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c r" 'conn-region-map)
   (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
+  (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
   (keymap-set conn-emacs-state-map "C-j"  'conn-thing-dispatch)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
@@ -1456,13 +1485,65 @@ see command `isearch-forward' for more information."
                      :files ("extensions/conn-embark.el"))
   (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
   (keymap-set conn-org-edit-state-map "e" 'conn-embark-dwim-either)
+  (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
 
+    (defcustom conn-embark-alt-default-action-overrides
+      '((defun . comment-defun)
+        (identifier . xref-find-references))
+      "`embark-default-action-overrides' for alternate actions."
+      :type '(alist :key-type (choice (symbol :tag "Type")
+                                      (cons (symbol :tag "Type")
+                                            (symbol :tag "Command")))
+                    :value-type (function :tag "Default action"))
+      :group 'conn-embark)
+
+    (defcustom conn-embark-alt-key "M-RET"
+      "Key for embark-alt-dwim."
+      :type 'string
+      :group 'conn-embark)
+
+    (defun conn-embark-alt--default-action (type)
+      "`embark--default-action' for alt actions"
+      (or (alist-get (cons type embark--command) conn-embark-alt-default-action-overrides
+                     nil nil #'equal)
+          (alist-get type conn-embark-alt-default-action-overrides)
+          (alist-get t conn-embark-alt-default-action-overrides)
+          (keymap-lookup (embark--raw-action-keymap type) conn-embark-alt-key)))
+
+    (defun conn-embark-alt-dwim (&optional arg)
+      "alternate `embark-dwim'."
+      (interactive "P")
+      (if-let ((targets (embark--targets)))
+          (let* ((target
+                  (or (nth
+                       (if (or (null arg) (minibufferp))
+                           0
+                         (mod (prefix-numeric-value arg) (length targets)))
+                       targets)))
+                 (type (plist-get target :type))
+                 (default-action (conn-embark-alt--default-action type))
+                 (action (or (command-remapping default-action) default-action)))
+            (unless action
+              (user-error "No alt action for %s targets" type))
+            (when (and arg (minibufferp)) (setq embark--toggle-quit t))
+            (embark--act action
+                         (if (and (eq default-action embark--command)
+                                  (not (memq default-action
+                                             embark-multitarget-actions)))
+                             (embark--orig-target target)
+                           target)
+                         (embark--quit-p action)))
+        (user-error "No target found.")))
+
+    (defun conn-embark-dwim-either (&optional arg)
+      (interactive "P")
+      (if arg (conn-embark-alt-dwim) (embark-dwim)))
+
     (keymap-set embark-heading-map "N" 'conn-narrow-indirect-to-heading)
 
-    (conn-complete-keys-prefix-help-command 1)
     (keymap-global-unset "S-<down-mouse-1>")
 
     (defun david-embark-dwim-mouse (event)
@@ -1557,10 +1638,6 @@ see command `isearch-forward' for more information."
   (require 'evil-textobj-tree-sitter))
 
 
-
-(elpaca (casual-dired :host github :repo "kickingvegas/casual-dired"))
-
-
 ;;;; ialign
 
 (elpaca ialign
@@ -1578,7 +1655,8 @@ see command `isearch-forward' for more information."
 
 (elpaca (dired+ :host github
                 :repo "emacsmirror/dired-plus"
-                :main "dired+.el"))
+                :main "dired+.el")
+  (require 'dired+))
 
 
 ;;;; avy
@@ -1747,11 +1825,13 @@ see command `isearch-forward' for more information."
         embark-prompter 'embark-keymap-prompter
         embark-cycle-key "<tab>"
         embark-help-key "?"
-        embark-confirm-act-all nil)
+        embark-confirm-act-all nil
+        prefix-help-command 'embark-prefix-help-command)
 
   (keymap-global-set "M-." 'embark-act)
   (keymap-global-set "C-TAB" 'embark-act)
   (keymap-global-set "C-<tab>" 'embark-act)
+  (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
   (defun embark-act-persist ()
@@ -1796,7 +1876,6 @@ see command `isearch-forward' for more information."
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
-    (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)
 
     (keymap-set embark-file-map "O" 'find-file-other-frame)
     (keymap-set embark-buffer-map "O" 'display-buffer-other-frame)
@@ -3019,3 +3098,9 @@ see command `isearch-forward' for more information."
 (elpaca casual
   (with-eval-after-load 'calc
     (keymap-set calc-mode-map "M-o" 'casual-main-menu)))
+
+
+;;;; pgmacs
+
+(elpaca (pgmacs :host github
+                :repo "emarsden/pgmacs"))
