@@ -1082,8 +1082,6 @@ see command `isearch-forward' for more information."
 ;;;; org
 
 (elpaca org
-  (require 'org)
-
   (setq org-agenda-include-diary t
         org-src-window-setup 'plain
         org-startup-truncated nil
@@ -1677,7 +1675,8 @@ see command `isearch-forward' for more information."
 
     (with-eval-after-load 'bicycle
       (keymap-set embark-heading-map "RET" #'bicycle-cycle)
-      (keymap-set embark-org-heading-map "RET" #'bicycle-cycle))
+      (with-eval-after-load 'org
+        (keymap-set embark-org-heading-map "RET" #'bicycle-cycle)))
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
@@ -2343,11 +2342,11 @@ see command `isearch-forward' for more information."
 
 ;;;;; consult-extras
 
-(elpaca (consult-extras :host github :repo "mtll/consult-extras")
-  (keymap-global-set "C-h o" 'consult-symbol)
-  (keymap-set search-map "y" 'consult-all-marks)
-  (with-eval-after-load 'consult
-    (require 'consult-extras)))
+;; (elpaca (consult-extras :host github :repo "mtll/consult-extras")
+;;   (keymap-global-set "C-h o" 'consult-symbol)
+;;   (keymap-set search-map "y" 'consult-all-marks)
+;;   (with-eval-after-load 'consult
+;;     (require 'consult-extras)))
 
 ;;;;; consult-project-extras
 
