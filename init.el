@@ -596,9 +596,12 @@ see command `isearch-forward' for more information."
 (setq eldoc-echo-area-prefer-doc-buffer t)
 
 
+;;; Packages
+
+
 ;;;; Transient
 
-(elpaca transient
+(elpaca (transient :ref "753de90")
   (setq transient-enable-popup-navigation nil
         transient-mode-line-format nil)
 
@@ -643,9 +646,6 @@ see command `isearch-forward' for more information."
         ("E" "Process" ibuffer-filter-by-process :transient t)]])
 
     (keymap-set ibuffer-mode-map "/" 'my-ibuffer-filter-prefix)))
-
-
-;;; Packages
 
 ;;;; treesit-auto
 
@@ -1320,7 +1320,7 @@ see command `isearch-forward' for more information."
   (set-default-conn-state '("\\*Edit Macro\\*") 'conn-state)
 
   (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
-  
+
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
   (keymap-global-set "C-x m" 'conn-kmacro-prefix)
@@ -1498,8 +1498,8 @@ see command `isearch-forward' for more information."
     (require 'conn-expreg)))
 
 (elpaca (conn-isearch+ :host github
-                     :repo "mtll/conn"
-                     :files ("extensions/conn-isearch+.el"))
+                       :repo "mtll/conn"
+                       :files ("extensions/conn-isearch+.el"))
   (with-eval-after-load 'isearch+
     (require 'conn-isearch+)))
 
@@ -2053,7 +2053,7 @@ see command `isearch-forward' for more information."
 
 ;;;; consult
 
-(elpaca consult
+(elpaca (consult :ref "d8888bb")
   (require 'consult)
 
   (setq consult-async-min-input 3
@@ -2360,7 +2360,8 @@ see command `isearch-forward' for more information."
 
 ;;;; vertico
 
-(elpaca (vertico :files (:defaults "extensions/*"))
+(elpaca (vertico :files (:defaults "extensions/*")
+                 :ref "1def56a")
   (setq resize-mini-windows t
         vertico-preselect 'first
         vertico-buffer-hide-prompt nil
@@ -2542,28 +2543,25 @@ see command `isearch-forward' for more information."
 
   (defun marginalia-annotate-alias (cand)
     "Annotate CAND with the function it aliases."
-    (let ((sym (intern-soft cand))
-          (alias (and sym (car (last (function-alias-p sym t)))))
-          (name (and alias (symbolp alias) (symbol-name alias)))))
-    (when name (format #(" (%s)" 1 5 (face marginalia-function)) name)))
+    (when-let ((sym (intern-soft cand))
+               (alias (car (last (function-alias-p sym t))))
+               (name (and (symbolp alias) (symbol-name alias))))
+      (format #(" (%s)" 1 5 (face marginalia-function)) name)))
 
   (defun david-marginalia-annotate-binding (cand)
     "Annotate command CAND with keybinding."
-    (let ((sym (intern-soft cand))
-          (key (and sym (commandp sym)
-                    (where-is-internal sym nil 'first-only)))))
-    (when key
+    (when-let ((sym (intern-soft cand))
+               (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
       (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
 
   (defun marginalia-annotate-command-with-alias (cand)
     "Annotate command CAND with its documentation string.
     Similar to `marginalia-annotate-symbol', but does not show symbol class."
-    (let ((sym (intern-soft cand)))
-      (when sym
-        (concat
-         (david-marginalia-annotate-binding cand)
-         (marginalia-annotate-alias cand)
-         (marginalia--documentation (marginalia--function-doc sym))))))
+    (when-let ((sym (intern-soft cand)))
+      (concat
+       (david-marginalia-annotate-binding cand)
+       (marginalia-annotate-alias cand)
+       (marginalia--documentation (marginalia--function-doc sym)))))
   (cl-pushnew #'marginalia-annotate-command-with-alias
               (alist-get 'command marginalia-annotator-registry))
 
