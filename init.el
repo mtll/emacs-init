@@ -678,10 +678,10 @@ see command `isearch-forward' for more information."
 
 ;;;; info+
 
-(elpaca (info+ :host github
-               :repo "emacsmirror/info-plus")
-  (with-eval-after-load 'info
-    (require 'info+)))
+;; (elpaca (info+ :host github
+;;                :repo "emacsmirror/info-plus")
+;;   (with-eval-after-load 'info
+;;     (require 'info+)))
 
 
 ;;;; Expreg
@@ -1259,65 +1259,6 @@ see command `isearch-forward' for more information."
   (elpaca posframe))
 
 
-;;;; zones
-
-;; (elpaca zones
-;;   (cl-defstruct (izone-register)
-;;     (buffer nil :read-only t)
-;;     (izones nil :read-only t))
-;;
-;;   (cl-defmethod register-val-jump-to ((val izone-register) _arg)
-;;     (if (eq (izone-register-buffer val) (current-buffer))
-;;         (set zz-izones-var (izone-register-izones val))
-;;       (user-error "Izones not for this buffer.")))
-;;
-;;   (cl-defmethod register-val-describe ((val izone-register) _arg)
-;;     (princ (format "%s izones in %s\n"
-;;                    (length (izone-register-izones val))
-;;                    (izone-register-buffer val))))
-;;
-;;   (defun izones-to-register (register)
-;;     (interactive (list (register-read-with-preview "izones to register: ")))
-;;     (require 'zones)
-;;     (set-register register
-;;                   (make-izone-register
-;;                    :buffer (current-buffer)
-;;                    :izones (symbol-value zz-izones-var))))
-;;
-;;   (define-keymap
-;;     :keymap narrow-map
-;;     "q" #'zz-delete-zone
-;;     "*" #'zz-replace-regexp-zones
-;;     "/" #'zz-replace-string-zones
-;;     "%" #'zz-map-query-replace-regexp-zones
-;;     "j" #'izones-to-register
-;;     "1" #'zz-coalesce-zones)
-;;
-;;   (with-eval-after-load 'isearch+
-;;     (defun isearch-in-zone-p (beg end)
-;;       (catch 'res
-;;         (pcase-dolist (`(,_ ,zbeg ,zend) (symbol-value zz-izones-var))
-;;           (when (and (<= zbeg beg) (<= end zend)) (throw 'res t)))))
-;;     (cl-pushnew '("[zone]" isearch-in-zone-p "[ZZ]")
-;;                 isearchp-current-filter-preds-alist
-;;                 :test #'equal))
-;;
-;;   (with-eval-after-load 'isearch+
-;;     (define-keymap
-;;       :keymap narrow-map
-;;       "b" #'isearchp-zones-forward
-;;       "B" #'isearchp-zones-backward))
-;;
-;;   (with-eval-after-load 'bookmark+
-;;     (keymap-global-set "C-x r z" 'bmkp-set-izones-bookmark))
-;;
-;;   (with-eval-after-load 'embark
-;;     (keymap-set embark-region-map "z" #'zz-add-zone))
-;;
-;;   (with-eval-after-load 'conn
-;;     (keymap-set conn-state-map "X" 'zz-narrow)))
-
-
 ;;;; isearch+
 
 (elpaca (isearch+ :host github
@@ -1352,45 +1293,6 @@ see command `isearch-forward' for more information."
     (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
-
-;;;;; isearch-prop
-
-;; (elpaca (isearch-prop :host github :repo "emacsmirror/isearch-prop")
-;;   (with-eval-after-load 'isearch+
-;;     (require 'isearch-prop)))
-
-
-;;;; spacious padding
-
-;; (elpaca spacious-padding
-;;   (with-eval-after-load 'conn
-;;     (require 'spacious-padding)
-;;     (cl-pushnew 'conn-state-lighter-face spacious-padding--mode-line-faces)
-;;     (cl-pushnew 'conn-emacs-state-lighter-face spacious-padding--mode-line-faces)
-;;     (cl-pushnew 'conn-dot-state-lighter-face spacious-padding--mode-line-faces)
-;;     (cl-pushnew 'conn-org-edit-state-lighter-face spacious-padding--mode-line-faces)
-;;
-;;     (defun david-spacious-padding-set-face-box-padding (face fallback &optional subtle-key)
-;;       (when (facep face)
-;;         (let* ((original-bg (face-background face nil fallback))
-;;                (subtle-bg (face-background 'default))
-;;                (subtlep (and subtle-key spacious-padding-subtle-mode-line))
-;;                (bg (if subtlep subtle-bg original-bg))
-;;                (face-width (spacious-padding--get-face-width face)))
-;;           `(,@(when subtlep
-;;                 (list
-;;                  :background bg
-;;                  :overline (spacious-padding--get-face-overline-color face fallback subtle-key)))
-;;             ,@(unless (eq face-width 0)
-;;                 (list
-;;                  :box
-;;                  `( :line-width ,face-width
-;;                     :color ,subtle-bg
-;;                     :style nil)))))))
-;;     (advice-add 'spacious-padding-set-face-box-padding :override
-;;                 'david-spacious-padding-set-face-box-padding)
-;;
-;;     (spacious-padding-mode 1)))
 
 
 ;;;; conn
@@ -1583,16 +1485,6 @@ see command `isearch-forward' for more information."
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")))
 
-;; (elpaca (conn-avy :host github
-;;                   :repo "mtll/conn"
-;;                   :files ("extensions/conn-avy.el"))
-;;   (keymap-global-set "C-j" 'conn-avy-dispatch)
-;;   (with-eval-after-load 'avy
-;;     (require 'conn-avy)
-;;     (setf (alist-get ?, avy-dispatch-alist) 'conn-avy-action-dot)
-;;     (setf (alist-get ?t avy-dispatch-alist) 'conn-avy-action-transpose)
-;;     (keymap-set goto-map "C-," 'conn-avy-goto-dot)))
-
 (elpaca (conn-expand-region :host github
                             :repo "mtll/conn"
                             :files ("extensions/conn-expand-region.el"))
@@ -1653,107 +1545,10 @@ see command `isearch-forward' for more information."
 
 ;;;; dired+
 
-(elpaca (dired+ :host github
-                :repo "emacsmirror/dired-plus"
-                :main "dired+.el")
-  (require 'dired+))
-
-
-;;;; avy
-
-;; (elpaca avy
-;;   (setq avy-single-candidate-jump nil
-;;         avy-timeout-seconds 0.45
-;;         avy-keys '(?a ?b ?f ?g ?i ?j ?k ?l ?m ?n ?o ?p ?q ?r ?s ?u ?v ?w ?x)
-;;         avy-line-insert-style 'below)
-;;
-;;   (setq avy-dispatch-alist '((?d  .  conn-avy-action-kill-stay)
-;;                              (?\[  . conn-avy-action-teleport)
-;;                              (?c  .  conn-avy-action-copy)
-;;                              (?y  .  conn-avy-action-yank)
-;;                              (?Y  .  avy-action-yank-line)
-;;                              (?\\ .  avy-action-zap-to-char)))
-;;
-;;   (with-eval-after-load 'ace-window
-;;     ;; stops ace-window from breaking when minibuffer indicator is enabled
-;;     (defun avy-process-disable-aw-update (&rest app)
-;;       (cl-letf (((symbol-function 'aw-update) #'ignore))
-;;         (apply app)))
-;;     (advice-add #'avy-process :around 'avy-process-disable-aw-update))
-;;
-;;   (define-keymap
-;;     :keymap goto-map
-;;     "j" 'avy-goto-char-timer
-;;     "o" 'avy-goto-word-or-subword-1
-;;     "m" 'avy-goto-symbol-1
-;;     "k" 'avy-goto-line
-;;     "l" 'avy-goto-end-of-line
-;;     "z" 'avy-resume
-;;     "Y" 'david-avy-toggle-insertion-style
-;;     "C-y" 'david-avy-toggle-insertion-style
-;;     "i" 'avy-goto-char-in-line)
-;;
-;;   (with-eval-after-load 'avy
-;;     (dolist (cmd '(avy-goto-char
-;;                    avy-goto-char
-;;                    avy-goto-char-2
-;;                    avy-isearch
-;;                    avy-goto-line
-;;                    avy-goto-subword-0
-;;                    avy-goto-subword-1
-;;                    avy-goto-word-0
-;;                    avy-goto-word-1
-;;                    avy-copy-line
-;;                    avy-copy-region
-;;                    avy-move-line
-;;                    avy-move-region
-;;                    avy-kill-whole-line
-;;                    avy-kill-region
-;;                    avy-kill-ring-save-whole-line
-;;                    avy-kill-ring-save-region))
-;;       (setf (alist-get cmd avy-orders-alist) #'avy-order-closest))
-;;
-;;     (defun avy-enable-single-candidate-jump (fn &rest args)
-;;       (let ((avy-single-candidate-jump t))
-;;         (apply fn args)))
-;;     (advice-add 'avy-goto-char-in-line :around #'avy-enable-single-candidate-jump)
-;;
-;;     (defun avy-isearch ()
-;;       "Jump to one of the current isearch candidates."
-;;       (interactive)
-;;       (avy-with avy-isearch
-;;                 (let ((avy-background nil)
-;;                       (avy-case-fold-search case-fold-search))
-;;                   (prog1
-;;                       (avy-process
-;;                        (avy--regex-candidates
-;;                         (cond
-;;                          ((functionp isearch-regexp-function)
-;;                           (funcall isearch-regexp-function isearch-string))
-;;                          (isearch-regexp-function (word-search-regexp isearch-string))
-;;                          (isearch-regexp isearch-string)
-;;                          (t (regexp-quote isearch-string)))))
-;;                     (isearch-done)))))
-;;     (keymap-set isearch-mode-map "C-j" #'avy-isearch)
-;;
-;;     (with-eval-after-load 'embark
-;;       (defun avy-action-embark (pt)
-;;         (unwind-protect
-;;             (save-excursion
-;;               (goto-char pt)
-;;               (embark-act))
-;;           (select-window
-;;            (cdr (ring-ref avy-ring 0))))
-;;         t)
-;;       (setf (alist-get ?\C-i avy-dispatch-alist) #'avy-action-embark))
-;;
-;;     (defun david-avy-toggle-insertion-style ()
-;;       (interactive)
-;;       (if (eq avy-line-insert-style 'above)
-;;           (setq avy-line-insert-style 'below)
-;;         (setq avy-line-insert-style 'above))
-;;       (message "Avy line insertion style set to: %s" avy-line-insert-style))
-;;     (put 'david-avy-toggle-insertion-style 'repeat-map goto-map)))
+;; (elpaca (dired+ :host github
+;;                 :repo "emacsmirror/dired-plus"
+;;                 :main "dired+.el")
+;;   (require 'dired+))
 
 
 ;;;; all-the-icons
@@ -2747,25 +2542,28 @@ see command `isearch-forward' for more information."
 
   (defun marginalia-annotate-alias (cand)
     "Annotate CAND with the function it aliases."
-    (when-let ((sym (intern-soft cand))
-               (alias (car (last (function-alias-p sym t))))
-               (name (and (symbolp alias) (symbol-name alias))))
-      (format #(" (%s)" 1 5 (face marginalia-function)) name)))
+    (let ((sym (intern-soft cand))
+          (alias (and sym (car (last (function-alias-p sym t)))))
+          (name (and alias (symbolp alias) (symbol-name alias)))))
+    (when name (format #(" (%s)" 1 5 (face marginalia-function)) name)))
 
   (defun david-marginalia-annotate-binding (cand)
     "Annotate command CAND with keybinding."
-    (when-let ((sym (intern-soft cand))
-               (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
+    (let ((sym (intern-soft cand))
+          (key (and sym (commandp sym)
+                    (where-is-internal sym nil 'first-only)))))
+    (when key
       (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
 
   (defun marginalia-annotate-command-with-alias (cand)
     "Annotate command CAND with its documentation string.
     Similar to `marginalia-annotate-symbol', but does not show symbol class."
-    (when-let (sym (intern-soft cand))
-      (concat
-       (david-marginalia-annotate-binding cand)
-       (marginalia-annotate-alias cand)
-       (marginalia--documentation (marginalia--function-doc sym)))))
+    (let ((sym (intern-soft cand)))
+      (when sym
+        (concat
+         (david-marginalia-annotate-binding cand)
+         (marginalia-annotate-alias cand)
+         (marginalia--documentation (marginalia--function-doc sym))))))
   (cl-pushnew #'marginalia-annotate-command-with-alias
               (alist-get 'command marginalia-annotator-registry))
 
@@ -2778,17 +2576,18 @@ see command `isearch-forward' for more information."
     "Align annotations of CANDS according to `marginalia-align'."
     (cl-loop
      for (cand . ann) in cands do
-     (when-let (align (text-property-any 0 (length ann) 'marginalia--align t ann))
-       (setq marginalia--cand-width-max
-             (max marginalia--cand-width-max
-                  (* (ceiling (+ (string-width cand)
-                                 (compat-call string-width ann 0 align))
-                              marginalia--cand-width-step)
-                     marginalia--cand-width-step)))))
+     (let ((align (text-property-any 0 (length ann) 'marginalia--align t ann)))
+       (when align
+         (setq marginalia--cand-width-max
+               (max marginalia--cand-width-max
+                    (* (ceiling (+ (string-width cand)
+                                   (compat-call string-width ann 0 align))
+                                marginalia--cand-width-step)
+                       marginalia--cand-width-step))))))
     (cl-loop
      for (cand . ann) in cands collect
-     (progn
-       (when-let (align (text-property-any 0 (length ann) 'marginalia--align t ann))
+     (let ((align (text-property-any 0 (length ann) 'marginalia--align t ann)))
+       (when align
          (put-text-property
           align (1+ align) 'display
           `(space :align-to
@@ -3102,5 +2901,5 @@ see command `isearch-forward' for more information."
 
 ;;;; pgmacs
 
-(elpaca (pgmacs :host github
-                :repo "emarsden/pgmacs"))
+;; (elpaca (pgmacs :host github
+;;                 :repo "emarsden/pgmacs"))
