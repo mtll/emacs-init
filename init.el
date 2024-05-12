@@ -52,7 +52,6 @@
       mark-even-if-inactive t
       recenter-positions '(top middle bottom)
       even-window-sizes nil
-      comment-empty-lines t
       scroll-conservatively 0
       scroll-preserve-screen-position t
       delete-active-region nil
@@ -259,8 +258,10 @@
 
 ;;;; strokes
 
-(require 'strokes)
-
+(strokes-mode 1)
+(with-eval-after-load 'diminish
+  (diminish 'strokes-mode))
+(load "~/.emacs.d/strokes" t t)
 (keymap-global-set "M-<down-mouse-1>" 'strokes-do-stroke)
 
 
@@ -1161,7 +1162,7 @@ see command `isearch-forward' for more information."
           (seq-concatenate
            'list
            `((bg-main "#f7eee1")
-             (cursor "#7d0002")
+             ;; (cursor "#7d0002")
              (bg-region "#f1d5d0")
              (fg-active-argument "#930c93")
              (bg-active-argument "#f4caf4")
