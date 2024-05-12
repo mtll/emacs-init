@@ -143,6 +143,11 @@
 (keymap-global-set "<escape>"        #'exit-recursive-edit)
 (keymap-global-set "C-h A"           #'describe-char)
 
+(keymap-global-set "<right>" 'next-buffer)
+(keymap-global-set "<left>" 'previous-buffer)
+(keymap-global-set "<up>" 'tab-next)
+(keymap-global-set "<down>" 'tab-previous)
+
 (put 'other-window 'repeat-map nil)
 
 (keymap-set help-map "M-k" #'describe-keymap)
@@ -1360,6 +1365,7 @@ see command `isearch-forward' for more information."
   (keymap-set conn-emacs-state-map "C-t" 'conn-C-x-t-keys)
   (keymap-set isearch-mode-map "<backtab>" 'conn-isearch-dot-match)
   (keymap-set isearch-mode-map "C-," 'conn-dispatch-isearch)
+  (keymap-set conn-state-map "B" 'ibuffer)
 
   (defun my-space-after-point (N)
     (interactive "p")
@@ -2091,6 +2097,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <execute-extended-command-for-buffer>" 'consult-mode-command)
   (keymap-global-set "C-x k" 'kill-this-buffer)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
+  (keymap-global-set "<remap> <repeat-complex-command>" 'consult-complex-command)
   (keymap-global-set "C-h i" 'consult-info)
   (keymap-global-set "C-h TAB" 'info)
 
