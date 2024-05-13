@@ -1229,6 +1229,9 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
+    (keymap-set conn-misc-edit-map "m" 'crux-smart-open-line)
+    (keymap-set conn-misc-edit-map "n" 'crux-smart-open-line-above)
+
 
     (define-keymap
       :keymap conn-edit-map
@@ -1352,7 +1355,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
   (keymap-global-set "C-," 'embark-dwim)
   (keymap-global-set "C-." 'conn-embark-alt-dwim)
-  (keymap-global-set "C-<backspace>" 'conn-kill-whole-line)
+  (keymap-global-set "C-<backspace>" 'kill-whole-line)
   (keymap-global-set "C-0" 'delete-window)
   (keymap-global-set "C-1" 'delete-other-windows)
   (keymap-global-set "C-2" 'split-window-below)
@@ -1398,8 +1401,8 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
-  (keymap-set conn-state-map "e" 'conn-embark-dwim-either)
-  (keymap-set conn-org-edit-state-map "e" 'conn-embark-dwim-either)
+  (keymap-set conn-state-map "," 'conn-embark-dwim-either)
+  (keymap-set conn-org-edit-state-map "," 'conn-embark-dwim-either)
   (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
   (with-eval-after-load 'embark
@@ -2100,6 +2103,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <repeat-complex-command>" 'consult-complex-command)
   (keymap-global-set "C-h i" 'consult-info)
   (keymap-global-set "C-h TAB" 'info)
+  (keymap-global-set "<remap> <imenu>" 'consult-imenu)
+  (keymap-global-set "M-g I" 'consult-imenu-multi)
 
   (keymap-set minibuffer-local-map "M-r" 'consult-history)
 
@@ -2107,7 +2112,6 @@ see command `isearch-forward' for more information."
     :keymap search-map
     "p" 'consult-page
     "K" 'consult-kmacro
-    "N" 'consult-ripgrep-n
     "w" 'consult-man
     "e" 'consult-isearch-history
     "t" 'consult-outline
@@ -2120,7 +2124,6 @@ see command `isearch-forward' for more information."
     "L" 'consult-locate
     "v" 'consult-focus-lines
     "k" 'consult-keep-lines
-    "i" 'consult-imenu
     "I" 'consult-imenu-multi)
 
   (keymap-set goto-map "g" 'consult-goto-line)
@@ -2154,40 +2157,6 @@ see command `isearch-forward' for more information."
           (if (eq consult-async-min-input most-positive-fixnum)
               (or (and arg (prefix-numeric-value arg)) 3)
             most-positive-fixnum)))
-
-  (defun consult--ripgrep-n-make-builder (paths)
-    (let* ((cmd (consult--build-args consult-ripgrep-args))
-           (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
-      (lambda (input)
-        (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-                     (flags (append cmd opts))
-                     (ignore-case
-                      (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
-                           (or (member "-i" flags) (member "--ignore-case" flags)
-                               (and (or (member "-S" flags) (member "--smart-case" flags))
-                                    (let (case-fold-search)
-                                      ;; Case insensitive if there are no uppercase letters
-                                      (not (string-match-p "[[:upper:]]" arg))))))))
-          (if (or (member "-F" flags) (member "--fixed-strings" flags))
-              (let ((res (consult--split-escaped arg)))
-                (cons (append `("rgn" ,(car flags)
-                                ,(string-join (append (cdr flags) '("-m" "1")) " "))
-                              (cdr res) '("--") (list (car res)) paths)
-                      (apply-partially #'consult--highlight-regexps
-                                       (list (regexp-quote arg)) ignore-case)))
-            (pcase-let ((`(,res . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
-              (when res
-                (cons (append `("rgn" ,(car flags)
-                                ,(string-join (append (cdr flags)
-                                                      (and (eq type 'pcre) '("-P"))
-                                                      '("-m" "1"))
-                                              " "))
-                              (cdr res) '("--") (list (car res)) paths)
-                      hl))))))))
-
-  (defun consult-ripgrep-n (&optional dir initial)
-    (interactive "P")
-    (consult--grep "Ripgrep N" #'consult--ripgrep-n-make-builder dir initial))
 
   (defun consult--page-candidates ()
     "Return alist of outline headings and positions."
