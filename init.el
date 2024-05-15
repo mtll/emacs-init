@@ -143,11 +143,6 @@
 (keymap-global-set "<escape>"        #'exit-recursive-edit)
 (keymap-global-set "C-h A"           #'describe-char)
 
-(keymap-global-set "<right>" 'next-buffer)
-(keymap-global-set "<left>" 'previous-buffer)
-(keymap-global-set "<up>" 'tab-next)
-(keymap-global-set "<down>" 'tab-previous)
-
 (put 'other-window 'repeat-map nil)
 
 (keymap-set help-map "M-k" #'describe-keymap)
@@ -513,13 +508,6 @@ see command `isearch-forward' for more information."
   (diminish 'auto-revert-mode))
 
 
-;;;; face-remap
-
-(with-eval-after-load 'face-remap
-  (with-eval-after-load 'diminish
-    (diminish 'buffer-face-mode)))
-
-
 ;;;; recentf
 
 (with-eval-after-load 'no-littering
@@ -614,7 +602,7 @@ see command `isearch-forward' for more information."
 
 ;;;; Transient
 
-(elpaca (transient :ref "753de90")
+(elpaca transient
   (setq transient-enable-popup-navigation nil
         transient-mode-line-format nil)
 
@@ -1315,8 +1303,7 @@ see command `isearch-forward' for more information."
               :protocol ssh
               :depth nil
               :repo "mtll/conn")
-  (setq conn-state-buffer-colors t
-        conn-wincontrol-initial-help nil
+  (setq conn-wincontrol-initial-help nil
         conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type 'box
@@ -1326,7 +1313,6 @@ see command `isearch-forward' for more information."
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
-  (conn-cursor-colors 1)
 
   (conn-hide-mark-cursor 'conn-view-state)
 
@@ -1522,16 +1508,14 @@ see command `isearch-forward' for more information."
 (elpaca (conn-calc :host github
                    :repo "mtll/conn"
                    :files ("extensions/conn-calc.el"))
-  (keymap-global-set "C-x =" 'calc-dispatch)
-
   (with-eval-after-load 'calc
-    (conn-calc-shim 1)))
+    (require 'conn-calc)
+    (keymap-global-set "C-x =" 'calc-dispatch)))
 
 (elpaca (conn-evil-treesit-obj :host github
                                :repo "mtll/conn"
                                :files ("extensions/conn-evil-treesit-obj.el"))
-  (with-eval-after-load 'evil-textobj-tree-sitter
-    (require 'conn-evil-treesit-obj)))
+  (require 'conn-evil-treesit-obj))
 
 
 ;;;; Expand Region
@@ -2071,7 +2055,7 @@ see command `isearch-forward' for more information."
 
 ;;;; consult
 
-(elpaca (consult :ref "d8888bb")
+(elpaca consult
   (require 'consult)
 
   (setq consult-async-min-input 3
@@ -2345,8 +2329,7 @@ see command `isearch-forward' for more information."
 
 ;;;; vertico
 
-(elpaca (vertico :files (:defaults "extensions/*")
-                 :ref "1def56a")
+(elpaca (vertico :files (:defaults "extensions/*"))
   (setq resize-mini-windows t
         vertico-preselect 'first
         vertico-buffer-hide-prompt nil
