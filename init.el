@@ -651,9 +651,10 @@ see command `isearch-forward' for more information."
 ;;;; treesit-auto
 
 (elpaca treesit-auto
-  (require 'treesit-auto)
-  (setq treesit-auto-install 'prompt)
-  (global-treesit-auto-mode 1))
+  (with-eval-after-load 'treesit
+    (require 'treesit-auto)
+    (setq treesit-auto-install 'prompt)
+    (global-treesit-auto-mode 1)))
 
 
 ;;;; Compat
@@ -687,8 +688,7 @@ see command `isearch-forward' for more information."
 
 ;;;; Expreg
 
-(elpaca expreg
-  (require 'expreg))
+(elpaca expreg)
 
 
 ;;;; helpful
@@ -854,7 +854,9 @@ see command `isearch-forward' for more information."
 
 ;;;; rustic
 
-(elpaca rustic (setq rustic-lsp-client 'lsp-mode))
+(elpaca (rustic :host github
+                :repo "emacs-rustic/rustic")
+  (setq rustic-lsp-client 'lsp-mode))
 
 
 ;;;; erlang
@@ -1332,7 +1334,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
-  (keymap-set conn-emacs-state-map "C-j"  'conn-thing-dispatch)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
@@ -1340,12 +1341,12 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-transition-map 'conn-state) "<f7>" 'conn-org-edit-state)
   (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
   (keymap-global-set "C-," 'embark-dwim)
-  (keymap-global-set "C-." 'conn-embark-alt-dwim)
   (keymap-global-set "C-<backspace>" 'kill-whole-line)
   (keymap-global-set "C-0" 'delete-window)
   (keymap-global-set "C-1" 'delete-other-windows)
   (keymap-global-set "C-2" 'split-window-below)
   (keymap-global-set "C-3" 'split-window-right)
+  (keymap-global-set "C-." 'conn-dispatch-on-things)
   (keymap-set conn-emacs-state-map "C-4" 'conn-C-x-4-keys)
   (keymap-set conn-emacs-state-map "C-5" 'conn-C-x-5-keys)
   (keymap-global-set "C-6" 'conn-swap-buffers)
@@ -1490,14 +1491,12 @@ see command `isearch-forward' for more information."
 (elpaca (conn-expand-region :host github
                             :repo "mtll/conn"
                             :files ("extensions/conn-expand-region.el"))
-  (with-eval-after-load 'expand-region
-    (require 'conn-expand-region)))
+  (cl-pushnew 'conn-er-expansions conn-expansion-functions))
 
 (elpaca (conn-expreg :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-expreg.el"))
-  (with-eval-after-load 'expreg
-    (require 'conn-expreg)))
+  (cl-pushnew 'conn-expreg-expansions conn-expansion-functions))
 
 (elpaca (conn-isearch+ :host github
                        :repo "mtll/conn"
@@ -1515,19 +1514,18 @@ see command `isearch-forward' for more information."
 (elpaca (conn-evil-treesit-obj :host github
                                :repo "mtll/conn"
                                :files ("extensions/conn-evil-treesit-obj.el"))
-  (require 'conn-evil-treesit-obj))
+  (with-eval-after-load 'treesit
+    (require 'conn-evil-treesit-obj)))
 
 
 ;;;; Expand Region
 
-(elpaca expand-region
-  (require 'expand-region))
+(elpaca expand-region)
 
 
 ;;;; evil text objects
 
-(elpaca evil-textobj-tree-sitter
-  (require 'evil-textobj-tree-sitter))
+(elpaca evil-textobj-tree-sitter)
 
 
 ;;;; ialign
@@ -1573,8 +1571,8 @@ see command `isearch-forward' for more information."
 
 ;;;; flycheck
 
-;; (elpaca flycheck
-;;   (setq lsp-diagnostics-flycheck-default-level 'warning))
+(elpaca flycheck
+  (setq lsp-diagnostics-flycheck-default-level 'warning))
 
 
 ;;;; cape
@@ -1676,10 +1674,9 @@ see command `isearch-forward' for more information."
     (keymap-set embark-file-map "O" 'find-file-other-frame)
     (keymap-set embark-buffer-map "O" 'display-buffer-other-frame)
 
-    (with-eval-after-load 'bicycle
-      (keymap-set embark-heading-map "RET" #'bicycle-cycle)
-      (with-eval-after-load 'org
-        (keymap-set embark-org-heading-map "RET" #'bicycle-cycle)))
+    (keymap-set embark-heading-map "RET" #'bicycle-cycle)
+    (with-eval-after-load 'org
+      (keymap-set embark-org-heading-map "RET" #'bicycle-cycle))
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
@@ -1987,8 +1984,8 @@ see command `isearch-forward' for more information."
                                          (?! . orderless-without-literal)
                                          (?, . orderless-initialism))
         completion-styles '(orderless basic)
-        orderless-kwd-prefix ?~
-        orderless-kwd-separator "~="
+        orderless-kwd-prefix ?&
+        orderless-kwd-separator "&="
         orderless-matching-styles '(orderless-literal
                                     orderless-regexp)
         orderless-style-dispatchers '(orderless-kwd-dispatch
@@ -2056,8 +2053,6 @@ see command `isearch-forward' for more information."
 ;;;; consult
 
 (elpaca consult
-  (require 'consult)
-
   (setq consult-async-min-input 3
         consult-yank-rotate t
         consult-narrow-key "M-N"
@@ -2577,8 +2572,8 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-i" 'tempel-complete)
-  (keymap-global-set "M-I" 'tempel-insert-region)
+  (keymap-global-set "M-I" 'tempel-complete)
+  (keymap-global-set "M-i" 'tempel-insert)
 
   (defun tempel-insert-region ()
     (interactive)
