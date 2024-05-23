@@ -1312,6 +1312,12 @@ see command `isearch-forward' for more information."
         conn-mark-idle-timer 0.05
         conn-read-string-timeout 0.35)
 
+  (defun conn-mark-emacs-state-hook ()
+    (when conn-emacs-state
+      (conn--push-ephemeral-mark (point))))
+
+  (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
+
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
