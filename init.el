@@ -71,14 +71,14 @@
       read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       translate-upper-case-key-bindings nil
-      show-paren-context-when-offscreen 'child-frame
+      show-paren-context-when-offscreen 'overlay
       sentence-end-double-space t
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
       dired-listing-switches "-alFh --dired --group-directories-first"
       enable-recursive-minibuffers t
       ediff-split-window-function #'ediff-split-fn
-      ediff-floating-control-frame nil
+      ediff-window-setup-function #'ediff-setup-windows-plain
       uniquify-buffer-name-style 'post-forward
       uniquify-separator " | "
       uniquify-after-kill-buffer-p t
@@ -140,8 +140,8 @@
 (keymap-global-set "C-S-o"           #'other-window)
 (keymap-global-set "<f2>"            #'other-window)
 (keymap-global-set "C-z"             #'transient-resume)
-(keymap-global-set "<escape>"        #'exit-recursive-edit)
 (keymap-global-set "C-h A"           #'describe-char)
+(keymap-global-set "C-x j"           #'dired-jump)
 
 (put 'other-window 'repeat-map nil)
 
@@ -258,11 +258,12 @@
 
 ;;;; strokes
 
-(strokes-mode 1)
-(with-eval-after-load 'diminish
-  (diminish 'strokes-mode))
-(load "~/.emacs.d/strokes" t t)
-(keymap-global-set "M-<down-mouse-1>" 'strokes-do-stroke)
+(when (window-system)
+  (strokes-mode 1)
+  (with-eval-after-load 'diminish
+    (diminish 'strokes-mode))
+  (load "~/.emacs.d/strokes" t t)
+  (keymap-global-set "M-<down-mouse-1>" 'strokes-do-stroke))
 
 
 ;;;; bookmarks
@@ -909,7 +910,10 @@ see command `isearch-forward' for more information."
 
 ;;;;; lsp-ui
 
-(elpaca lsp-ui)
+(elpaca lsp-ui
+  (with-eval-after-load 'lsp
+    (add-hook 'lsp-mode-hook 'lsp-ui-mode)
+    (keymap-set lsp-mode-map "M-g m" 'lsp-ui-imenu)))
 
 
 ;;;; dap-mode
@@ -1157,7 +1161,7 @@ see command `isearch-forward' for more information."
           (seq-concatenate
            'list
            `((bg-main "#f7eee1")
-             ;; (cursor "#7d0002")
+             (cursor "#7d0002")
              (bg-region "#f1d5d0")
              (fg-active-argument "#930c93")
              (bg-active-argument "#f4caf4")
@@ -1363,6 +1367,10 @@ see command `isearch-forward' for more information."
   (keymap-set isearch-mode-map "C-," 'conn-dispatch-isearch)
   (keymap-set conn-state-map "B" 'ibuffer)
 
+  (dolist (state '(conn-state conn-emacs-state 'conn-dot-state))
+    (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
+                "<escape>" 'exit-recursive-edit))
+
   (defun my-space-after-point (N)
     (interactive "p")
     (save-excursion
@@ -1370,12 +1378,11 @@ see command `isearch-forward' for more information."
         (self-insert-command N))))
   (keymap-global-set "S-SPC" 'my-space-after-point)
 
-  (with-eval-after-load 'embark
-    (keymap-set conn-state-map "TAB" 'embark-act)
-    (keymap-set conn-state-map "<tab>" 'embark-act)
-    (keymap-set conn-state-map "M-<tab>" 'indent-region)
-    (keymap-unset conn-state-transition-map "M-TAB")
-    (keymap-unset conn-state-transition-map "M-<tab>"))
+  (keymap-set conn-state-map "TAB" 'embark-act)
+  (keymap-set conn-state-map "<tab>" 'embark-act)
+  (keymap-set conn-state-map "M-<tab>" 'indent-region)
+  (keymap-unset conn-state-transition-map "M-TAB")
+  (keymap-unset conn-state-transition-map "M-<tab>")
 
   (with-eval-after-load 'vertico
     (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
@@ -2838,7 +2845,7 @@ see command `isearch-forward' for more information."
 
 ;;;; teco
 
-;; (elpaca teco)
+(elpaca teco)
 
 
 ;;;; dumb-jump
@@ -2870,3 +2877,7 @@ see command `isearch-forward' for more information."
 
 ;; (elpaca (pgmacs :host github
 ;;                 :repo "emarsden/pgmacs"))
+
+;;;; eat
+
+(elpaca eat)
