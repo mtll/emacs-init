@@ -77,7 +77,6 @@
       read-minibuffer-restore-windows nil
       dired-listing-switches "-alFh --dired --group-directories-first"
       enable-recursive-minibuffers t
-      ediff-split-window-function #'ediff-split-fn
       ediff-window-setup-function #'ediff-setup-windows-plain
       uniquify-buffer-name-style 'post-forward
       uniquify-separator " | "
@@ -89,10 +88,6 @@
       undo-strong-limit 16000000
       undo-outer-limit 32000000
       read-process-output-max (ash 1 18)
-      mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
-                                       ((meta))
-                                       ((control meta) . global-text-scale)
-                                       ((control) . text-scale))
       mouse-wheel-progressive-speed nil
       register-separator ?+
       history-delete-duplicates t
@@ -109,6 +104,11 @@
                               delete-space-after
                               delete-space-before
                               restore))
+
+(setopt mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
+                                         ((meta))
+                                         ((control meta) . global-text-scale)
+                                         ((control) . text-scale)))
 
 (setq-default indent-tabs-mode nil)
 
@@ -329,7 +329,7 @@
 ;;;; dictionary
 
 (require 'dictionary)
-(setq dictionary-server "localhost")
+(setopt dictionary-server "localhost")
 (keymap-global-set "C-c t d" #'dictionary-lookup-definition)
 
 
@@ -427,9 +427,10 @@ see command `isearch-forward' for more information."
 
 ;;;; tab-bar-mode
 
-(setq tab-bar-show nil
-      tab-bar-tab-name-function 'tab-bar-tab-name-all
-      tab-bar-new-tab-choice t)
+(setopt tab-bar-show nil
+        tab-bar-tab-name-function 'tab-bar-tab-name-all)
+
+(setq tab-bar-new-tab-choice t)
 
 (tab-bar-mode 1)
 (tab-bar-history-mode 1)
@@ -493,8 +494,9 @@ see command `isearch-forward' for more information."
 ;;;; repeat
 
 (setq repeat-exit-timeout nil
-      repeat-keep-prefix nil
       repeat-on-final-keystroke t)
+
+(setopt repeat-keep-prefix nil)
 
 (repeat-mode 1)
 
@@ -503,7 +505,7 @@ see command `isearch-forward' for more information."
 
 ;;;; autorevert
 
-(setq auto-revert-interval .01)
+(setopt auto-revert-interval .01)
 (global-auto-revert-mode 1)
 (with-eval-after-load 'diminish
   (diminish 'auto-revert-mode))
@@ -986,7 +988,7 @@ see command `isearch-forward' for more information."
 (elpaca cdlatex
   (add-hook 'latex-mode-hook #'cdlatex-mode)
   (add-hook 'org-mode-hook #'org-cdlatex-mode)
-  (setf cdlatex-math-symbol-alist
+  (setq cdlatex-math-symbol-alist
         '(( ?a  ("\\alpha"))
           ( ?A  ("\\forall"         "\\aleph"))
           ( ?b  ("\\beta"))
@@ -1157,26 +1159,26 @@ see command `isearch-forward' for more information."
   (elpaca modus-themes
     (require 'modus-themes)
 
-    (setq modus-themes-common-palette-overrides
-          (seq-concatenate
-           'list
-           `((bg-main "#f7eee1")
-             (cursor "#7d0002")
-             (bg-region "#f1d5d0")
-             (fg-active-argument "#930c93")
-             (bg-active-argument "#f4caf4")
-             (fg-region unspecified)
-             (fg-completion-match-0 "#353b44")
-             (bg-completion-match-0 "#c5dfff")
-             (fg-completion-match-1 "#384231")
-             (bg-completion-match-1 "#cdf3b5")
-             (fg-completion-match-2 "#3b3544")
-             (bg-completion-match-2 "#d1baf1")
-             (fg-completion-match-3 "#313c37")
-             (bg-completion-match-3 "#bef1da")
-             (bg-search-lazy bg-magenta-subtle)
-             (bg-search-current bg-yellow-intense))
-           modus-themes-preset-overrides-warmer))
+    (setopt modus-themes-common-palette-overrides
+            (seq-concatenate
+             'list
+             `((bg-main "#f7eee1")
+               (cursor "#7d0002")
+               (bg-region "#f1d5d0")
+               (fg-active-argument "#930c93")
+               (bg-active-argument "#f4caf4")
+               (fg-region unspecified)
+               (fg-completion-match-0 "#353b44")
+               (bg-completion-match-0 "#c5dfff")
+               (fg-completion-match-1 "#384231")
+               (bg-completion-match-1 "#cdf3b5")
+               (fg-completion-match-2 "#3b3544")
+               (bg-completion-match-2 "#d1baf1")
+               (fg-completion-match-3 "#313c37")
+               (bg-completion-match-3 "#bef1da")
+               (bg-search-lazy bg-magenta-subtle)
+               (bg-search-current bg-yellow-intense))
+             modus-themes-preset-overrides-warmer))
 
     (load-theme 'modus-operandi-tinted t)
 
@@ -1278,7 +1280,6 @@ see command `isearch-forward' for more information."
         isearchp-lazy-dim-filter-failures-flag nil
         isearchp-restrict-to-region-flag nil
         isearchp-deactivate-region-flag nil
-        isearchp-initiate-edit-commands nil
         isearchp-movement-unit-alist '((?w . forward-word)
                                        (?s . forward-sexp)
                                        (?i . forward-list)
@@ -1286,12 +1287,14 @@ see command `isearch-forward' for more information."
                                        (?c . forward-char)
                                        (?l . forward-line)))
 
+  (setopt isearchp-initiate-edit-commands nil)
+
   (with-eval-after-load 'isearch+
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
 
     (keymap-unset isearch-mode-map "C-t")
-    (keymap-set isearch-mode-map "C-;" 'isearchp-property-forward)
+    (keymap-set isearch-mode-map "C-;" 'isearchp-filter-map)
     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
@@ -1997,8 +2000,8 @@ see command `isearch-forward' for more information."
                                          (?! . orderless-without-literal)
                                          (?, . orderless-initialism))
         completion-styles '(orderless basic)
-        orderless-kwd-prefix ?&
-        orderless-kwd-separator "&="
+        orderless-kwd-prefix ?`
+        orderless-kwd-separator "`="
         orderless-matching-styles '(orderless-literal
                                     orderless-regexp)
         orderless-style-dispatchers '(orderless-kwd-dispatch
