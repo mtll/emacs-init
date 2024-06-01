@@ -1369,6 +1369,8 @@ see command `isearch-forward' for more information."
   (keymap-set isearch-mode-map "<backtab>" 'conn-isearch-dot-match)
   (keymap-set isearch-mode-map "C-," 'conn-dispatch-isearch)
   (keymap-set conn-state-map "B" 'ibuffer)
+  (keymap-set search-map "f" 'isearch-forward)
+  (keymap-set search-map "b" 'isearch-backward)
 
   (dolist (state '(conn-state conn-emacs-state 'conn-dot-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -2494,9 +2496,9 @@ see command `isearch-forward' for more information."
     "M-<backspace>" #'vertico-directory-delete-word
     "M-DEL" #'vertico-directory-up
     "M-RET" #'vertico-exit-input
-    "C-M-j" #'vertico-exit-input
+    "C-M-j" #'vertico-quick-jump
     "C-M-<return>" #'vertico-exit-input
-    "C-j" #'vertico-quick-jump
+    "C-j" #'vertico-exit-input
     "C-S-j" #'vertico-quick-exit
     "C-w" #'my-vertico-copy-or-kill)
 
