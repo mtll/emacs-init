@@ -161,7 +161,7 @@
   :keymap ctl-x-map
   "s"   #'save-buffer
   "C-s" #'save-some-buffers
-  "f"   #'find-file)
+  "f"   #'project-find-file)
 
 (define-keymap
   :keymap window-prefix-map
@@ -2495,6 +2495,7 @@ see command `isearch-forward' for more information."
     "DEL" #'vertico-directory-delete-char
     "M-<backspace>" #'vertico-directory-delete-word
     "M-DEL" #'vertico-directory-up
+    "C-l" #'vertico-directory-up
     "M-RET" #'vertico-exit-input
     "C-M-j" #'vertico-quick-jump
     "C-M-<return>" #'vertico-exit-input
@@ -2871,18 +2872,12 @@ see command `isearch-forward' for more information."
 (elpaca ef-themes)
 
 
-;;;; casual
-
-(elpaca casual
-  (with-eval-after-load 'calc
-    (keymap-set calc-mode-map "M-o" 'casual-main-menu)))
-
-
 ;;;; pgmacs
 
 ;; (elpaca (pgmacs :host github
 ;;                 :repo "emarsden/pgmacs"))
 
+
 ;;;; eat
 
 (elpaca eat)
