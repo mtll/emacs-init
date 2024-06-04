@@ -1107,6 +1107,12 @@ see command `isearch-forward' for more information."
   (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
+    (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
+             (keymap-unset org-mode-map (concat "C-c " (string c)) t)
+             (keymap-unset org-mode-map (concat "C-c " (upcase (string c))) t)
+             (keymap-unset outline-mode-map (concat "C-c " (string c)) t)
+             (keymap-unset outline-mode-map (concat "C-c " (upcase (string c))) t))
+
     (keymap-unset org-mode-map "C-'")
     (keymap-unset org-mode-map "C-,")
     (keymap-set org-mode-map "M-s s" 'org-sparse-tree)
@@ -2671,12 +2677,13 @@ see command `isearch-forward' for more information."
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
+  (setq denote-file-type 'text)
+
   (with-eval-after-load 'denote
     (require 'denote-org-extras)
     (denote-rename-buffer-mode 1))
 
   (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
-  (keymap-global-set "C-c n d" #'denote-dired-directory)
   (keymap-global-set "C-c n n" #'denote)
   (keymap-global-set "C-c n s" #'denote-signature)
   (keymap-global-set "C-c n a" #'denote-keywords-add)
@@ -2686,9 +2693,16 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c n B" #'denote-find-backlink)
   (keymap-global-set "C-c n l" #'denote-find-link)
 
+  (defun my-denote-org ()
+    (interactive)
+    (let ((denote-file-type 'org))
+      (call-interactively 'denote)))
+  (keymap-global-set "C-c n o" #'my-denote-org)
+
   (defun denote-dired-directory ()
     (interactive)
     (dired denote-directory))
+  (keymap-global-set "C-c n d" #'denote-dired-directory)
 
   (with-eval-after-load 'org-capture
     (add-to-list 'org-capture-templates
