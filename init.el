@@ -2680,7 +2680,11 @@ see command `isearch-forward' for more information."
   (setq denote-file-type 'text)
 
   (with-eval-after-load 'denote
-    (require 'denote-org-extras)
+    (require 'denote-silo-extras)
+    (with-eval-after-load 'org
+      (require 'denote-org-extras)
+      (setq org-agenda-files (append denote-silo-extras-directories
+                                     org-agenda-files)))
     (denote-rename-buffer-mode 1))
 
   (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
@@ -2722,12 +2726,7 @@ see command `isearch-forward' for more information."
         (xref--show-xrefs
          (apply-partially #'xref-matches-in-files id
                           (denote-directory-files nil :omit-current :text-only))
-         nil))))
-
-  (with-eval-after-load 'denote
-    (require 'denote-silo-extras)
-    (setq org-agenda-files (append denote-silo-extras-directories
-                                   org-agenda-files))))
+         nil)))))
 
 ;;;;; consult notes
 
