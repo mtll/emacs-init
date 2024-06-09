@@ -1097,14 +1097,26 @@ see command `isearch-forward' for more information."
         org-insert-mode-line-in-empty-file t
         org-confirm-babel-evaluate nil
         org-fold-core-style 'overlays
-        org-startup-indented nil)
+        org-startup-indented nil
+        org-agenda-files (list "~/Documents/notes/agenda.org"))
 
   (keymap-global-set "C-c p" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
   (keymap-global-set "C-c l" 'org-insert-link-global)
+  (keymap-global-set "C-c a" 'org-agenda)
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   (add-hook 'org-mode-hook 'abbrev-mode)
+
+  (with-eval-after-load 'org-capture
+    (add-to-list 'org-capture-templates
+                 '("a" "New agenda item" entry
+                   (file "~/Documents/notes/agenda.org")
+                   "* TODO %?"
+                   :no-save t
+                   :immediate-finish nil
+                   :kill-buffer t
+                   :jump-to-captured t)))
 
   (with-eval-after-load 'org
     (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
@@ -1231,8 +1243,8 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
-    (keymap-set conn-misc-edit-map "m" 'crux-smart-open-line)
-    (keymap-set conn-misc-edit-map "n" 'crux-smart-open-line-above)
+    ;; (keymap-set conn-misc-edit-map "m" 'crux-smart-open-line)
+    ;; (keymap-set conn-misc-edit-map "n" 'crux-smart-open-line-above)
 
 
     (define-keymap
@@ -1312,6 +1324,11 @@ see command `isearch-forward' for more information."
     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
 
+;;;; elixir-ts
+
+(elpaca elixir-ts-mode)
+
+
 ;;;; conn
 
 (elpaca (conn :host github
@@ -1331,14 +1348,21 @@ see command `isearch-forward' for more information."
 
   (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
 
-  (add-hook 'view-mode-hook #'conn-emacs-state)
+  ;; (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
 
   (conn-hide-mark-cursor 'conn-view-state)
 
-  (set-default-conn-state '("COMMIT_EDITMSG.*" "^\\*Echo.*") 'conn-emacs-state)
-  (set-default-conn-state '("\\*Edit Macro\\*") 'conn-state)
+  (add-to-list 'conn-buffer-default-state-alist
+               (cons "^\\*Echo.*" 'conn-emacs-state))
+  (add-to-list 'conn-buffer-default-state-alist
+               (cons "COMMIT_EDITMSG.*" 'conn-emacs-state))
+  (add-to-list 'conn-buffer-default-state-alist
+               (cons "\\*Edit Macro\\*" 'conn-state))
+  (add-to-list 'conn-buffer-default-state-alist
+               (cons (lambda (buffer _arg) (bound-and-true-p org-capture-mode))
+                     'conn-state))
 
   (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
 
@@ -1346,7 +1370,7 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-x m" 'conn-kmacro-prefix)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
-  (keymap-global-set "C-c a" 'conn-wincontrol)
+  (keymap-global-set "C-c w" 'conn-wincontrol)
   (keymap-global-set "M-n" 'conn-wincontrol)
   (keymap-global-set "C-c q" 'conn-edit-map)
   (keymap-global-set "C-c r" 'conn-region-map)
@@ -1416,6 +1440,11 @@ see command `isearch-forward' for more information."
   (keymap-set conn-org-edit-state-map "," 'conn-embark-dwim-either)
   (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
+  (defun conn-embark-dwim-either (&optional arg)
+    (interactive "P")
+    (require 'embark)
+    (if arg (conn-embark-alt-dwim) (embark-dwim)))
+
   (with-eval-after-load 'embark
     (require 'conn-embark)
 
@@ -1466,10 +1495,6 @@ see command `isearch-forward' for more information."
                            target)
                          (embark--quit-p action)))
         (user-error "No target found.")))
-
-    (defun conn-embark-dwim-either (&optional arg)
-      (interactive "P")
-      (if arg (conn-embark-alt-dwim) (embark-dwim)))
 
     (keymap-set embark-heading-map "N" 'conn-narrow-indirect-to-heading)
 
@@ -2682,9 +2707,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'denote
     (require 'denote-silo-extras)
     (with-eval-after-load 'org
-      (require 'denote-org-extras)
-      (setq org-agenda-files (append denote-silo-extras-directories
-                                     org-agenda-files)))
+      (require 'denote-org-extras))
     (denote-rename-buffer-mode 1))
 
   (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
@@ -2699,6 +2722,8 @@ see command `isearch-forward' for more information."
 
   (defun my-denote-org ()
     (interactive)
+    (require 'denote)
+    (require 'org)
     (let ((denote-file-type 'org))
       (call-interactively 'denote)))
   (keymap-global-set "C-c n o" #'my-denote-org)
