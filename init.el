@@ -105,6 +105,11 @@
                               delete-space-before
                               restore))
 
+(defun my-kill-buffer ()
+  (interactive)
+  (kill-buffer (current-buffer)))
+(keymap-global-set "C-x k" 'my-kill-buffer)
+
 (setopt mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
                                          ((meta))
                                          ((control meta) . global-text-scale)
@@ -1348,7 +1353,7 @@ see command `isearch-forward' for more information."
 
   (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
 
-  ;; (add-hook 'view-mode-hook #'conn-emacs-state)
+  (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
 
@@ -1361,7 +1366,7 @@ see command `isearch-forward' for more information."
   (add-to-list 'conn-buffer-default-state-alist
                (cons "\\*Edit Macro\\*" 'conn-state))
   (add-to-list 'conn-buffer-default-state-alist
-               (cons (lambda (buffer _arg) (bound-and-true-p org-capture-mode))
+               (cons (lambda (buffer &rest _args) (bound-and-true-p org-capture-mode))
                      'conn-state))
 
   (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
@@ -2126,7 +2131,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <jump-to-register>" #'consult-register-load)
   (keymap-global-set "<remap> <switch-to-buffer>" 'consult-buffer)
   (keymap-global-set "<remap> <execute-extended-command-for-buffer>" 'consult-mode-command)
-  (keymap-global-set "C-x k" 'kill-this-buffer)
   (keymap-global-set "C-x M-:" 'consult-complex-command)
   (keymap-global-set "<remap> <repeat-complex-command>" 'consult-complex-command)
   (keymap-global-set "C-h i" 'consult-info)
@@ -2230,7 +2234,7 @@ see command `isearch-forward' for more information."
        :state (consult--location-state candidates))))
 
   (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
-  (advice-add #'register-preview :override #'consult-register-window)
+  (advice-add 'register-preview :override #'consult-register-window)
 
   (defun consult-goto-edit ()
     (interactive)
