@@ -1341,7 +1341,6 @@ see command `isearch-forward' for more information."
               :depth nil
               :repo "mtll/conn")
   (setq conn-wincontrol-initial-help nil
-        conn-dot-state-cursor-type 'box
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type 'box
         conn-mark-idle-timer 0.05
@@ -1383,10 +1382,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
-  (keymap-set (conn-get-transition-map 'conn-dot-state) "<f8>" 'conn-state)
-  (keymap-set (conn-get-transition-map 'conn-state) "<f8>" 'conn-dot-state)
   (keymap-set (conn-get-transition-map 'conn-org-edit-state) "<f8>" 'conn-state)
-  (keymap-set (conn-get-transition-map 'conn-state) "<f7>" 'conn-org-edit-state)
   (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
   (keymap-global-set "C-," 'embark-dwim)
   (keymap-global-set "C-<backspace>" 'kill-whole-line)
@@ -1407,7 +1403,7 @@ see command `isearch-forward' for more information."
   (keymap-set search-map "f" 'isearch-forward)
   (keymap-set search-map "b" 'isearch-backward)
 
-  (dolist (state '(conn-state conn-emacs-state 'conn-dot-state))
+  (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
                 "<escape>" 'exit-recursive-edit))
 
