@@ -1103,7 +1103,8 @@ see command `isearch-forward' for more information."
         org-confirm-babel-evaluate nil
         org-fold-core-style 'overlays
         org-startup-indented nil
-        org-agenda-files (list "~/Documents/notes/agenda.org"))
+        org-agenda-files (list "~/Documents/notes/")
+        org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'")
 
   (keymap-global-set "C-c p" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
@@ -1112,16 +1113,6 @@ see command `isearch-forward' for more information."
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   (add-hook 'org-mode-hook 'abbrev-mode)
-
-  (with-eval-after-load 'org-capture
-    (add-to-list 'org-capture-templates
-                 '("a" "New agenda item" entry
-                   (file "~/Documents/notes/agenda.org")
-                   "* TODO %?"
-                   :no-save t
-                   :immediate-finish nil
-                   :kill-buffer t
-                   :jump-to-captured t)))
 
   (with-eval-after-load 'org
     (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
