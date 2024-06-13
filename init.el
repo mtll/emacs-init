@@ -2693,7 +2693,8 @@ see command `isearch-forward' for more information."
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
-  (setq denote-file-type 'text)
+  (setq denote-file-type 'text
+        denote-history-completion-in-prompts nil)
 
   (with-eval-after-load 'denote
     (require 'denote-silo-extras)
@@ -2704,9 +2705,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n n" #'denote)
   (keymap-global-set "C-c n s" #'denote-signature)
-  (keymap-global-set "C-c n a" #'denote-keywords-add)
-  (keymap-global-set "C-c n r" #'denote-keywords-remove)
-  (keymap-global-set "C-c n w" #'denote-rename-file)
+  (keymap-global-set "C-c n k" #'denote-rename-file-keywords)
+  (keymap-global-set "C-c n r" #'denote-rename-file)
   (keymap-global-set "C-c n b" #'denote-backlinks)
   (keymap-global-set "C-c n B" #'denote-find-backlink)
   (keymap-global-set "C-c n l" #'denote-find-link)
@@ -2716,13 +2716,19 @@ see command `isearch-forward' for more information."
     (require 'denote)
     (require 'org)
     (let ((denote-file-type 'org))
-      (call-interactively 'denote)))
+      (call-interactively #'denote)))
   (keymap-global-set "C-c n o" #'my-denote-org)
 
   (defun denote-dired-directory ()
     (interactive)
     (dired denote-directory))
   (keymap-global-set "C-c n d" #'denote-dired-directory)
+
+  (with-eval-after-load 'consult
+    (defun my-denote-consult-find ()
+      (interactive)
+      (consult-find denote-directory))
+    (keymap-global-set "C-c n f" #'my-denote-consult-find))
 
   (with-eval-after-load 'org-capture
     (add-to-list 'org-capture-templates
@@ -2743,130 +2749,6 @@ see command `isearch-forward' for more information."
          (apply-partially #'xref-matches-in-files id
                           (denote-directory-files nil :omit-current :text-only))
          nil)))))
-
-;;;;; consult notes
-
-(elpaca consult-notes
-  (with-eval-after-load 'denote
-    (consult-notes-denote-mode 1)
-
-    ;; Less extra spacing between candidates and annotation
-    (setf (plist-get consult-notes-denote--source :items)
-          (lambda ()
-            (let* ((max-width 0)
-                   (cands (mapcar (lambda (f)
-                                    (let* ((id (denote-retrieve-filename-identifier f))
-                                           (title-1 (or (denote-retrieve-title-value f (denote-filetype-heuristics f))
-                                                        (denote-retrieve-filename-title f)))
-                                           (title (if consult-notes-denote-display-id
-                                                      (concat id " " title-1)
-                                                    title-1))
-                                           (dir (file-relative-name (file-name-directory f) denote-directory))
-                                           (keywords (denote-extract-keywords-from-path f)))
-                                      (let ((current-width (string-width title)))
-                                        (when (> current-width max-width)
-                                          (setq max-width (+ 5 current-width))))
-                                      (propertize title 'denote-path f 'denote-keywords keywords)))
-                                  (funcall consult-notes-denote-files-function))))
-              (mapcar (lambda (c)
-                        (let* ((keywords (get-text-property 0 'denote-keywords c))
-                               (path (get-text-property 0 'denote-path c))
-                               (dirs (thread-first
-                                       (file-name-directory path)
-                                       (file-relative-name denote-directory)
-                                       (directory-file-name))))
-                          (concat c
-                                  ;; align keywords
-                                  (propertize " " 'display `(space :align-to (+ left ,(+ 2 max-width))))
-                                  "  "
-                                  (format "%18s"
-                                          (if keywords
-                                              (concat (propertize "#" 'face 'consult-notes-name)
-                                                      (propertize (mapconcat 'identity keywords " ")
-                                                                  'face 'consult-notes-name))
-                                            ""))
-                                  (when consult-notes-denote-dir
-                                    (format "%18s" (propertize (concat "/" dirs) 'face 'consult-notes-name))))))
-                      cands)))))
-
-  (defun consult-denote ()
-    (interactive)
-    (require 'denote)
-    (require 'consult-notes)
-    (consult--read
-     (funcall (plist-get consult-notes-denote--source :items))
-     :category 'consult-denote
-     :lookup #'consult--lookup-member
-     :annotate (plist-get consult-notes-denote--source :annotate)
-     :prompt "Denotes: "
-     :state (consult-notes-denote--state)
-     :preview-key 'any
-     :history 'consult-denote-history
-     :add-history (seq-some #'thing-at-point '(region symbol))
-     :require-match t))
-  (keymap-global-set "C-c n f" 'consult-denote)
-
-  (defun consult-denote-headings (&optional files)
-    (interactive)
-    (let* ((consult--regexp-compiler #'consult--default-regexp-compiler)
-           (builder (consult--ripgrep-make-builder
-                     (or (when files (mapcar #'consult-notes-denote--file files))
-                         (denote-directory-files)))))
-      (consult--read
-       (consult--async-command builder
-         (consult--grep-format builder))
-       :preview-key 'any
-       :prompt "Heading: "
-       :lookup #'consult--lookup-member
-       :state (consult--grep-state)
-       :add-history (thing-at-point 'symbol)
-       :require-match t
-       :initial (concat "#" "^[*]+" "#")
-       :category 'consult-denote-heading
-       :group #'consult--prefix-group
-       :history '(:input consult--note-history)
-       :sort nil)))
-  (keymap-global-set "C-c n h" 'consult-denote-headings)
-
-  (with-eval-after-load 'embark
-    (add-to-list 'embark-multitarget-actions 'consult-denote-headings)
-
-    (setf (alist-get 'consult-denote embark-keymap-alist)
-          '(embark-consult-denote-map))
-
-    (defun embark-export-notes (notes)
-      "Create a Dired buffer listing NOTES."
-      (embark-export-dired (mapcar #'consult-notes-denote--file notes))
-      (denote-dired-mode 1))
-
-    (setf (alist-get 'consult-denote embark-exporters-alist)
-          #'embark-export-notes)
-
-    (defvar-keymap embark-consult-denote-map
-      :parent embark-general-map
-      "M-RET" 'denote-link
-      "h" 'consult-denote-headings
-      "E" 'embark-export)
-
-    (defun embark-consult-denote-heading-link (cand)
-      (when-let (cand
-                 (file-end (next-single-property-change 0 'face cand))
-                 (line-end (next-single-property-change (1+ file-end) 'face cand))
-                 (file (expand-file-name (substring-no-properties cand 0 file-end)))
-                 (file-text (denote--link-get-description file))
-                 (line (string-to-number (substring-no-properties cand (1+ file-end) line-end)))
-                 (heading-data (denote-org-extras--get-heading-and-id-from-line line file))
-                 (heading-text (car heading-data))
-                 (heading-id (cdr heading-data))
-                 (description (denote-link-format-heading-description file-text heading-text)))
-        (insert (denote-org-extras-format-link-with-heading file heading-id description))))
-
-    (defvar-keymap embark-consult-denote-heading-map
-      :parent embark-consult-grep-map
-      "M-RET" 'embark-consult-denote-heading-link)
-
-    (setf (alist-get 'consult-denote-heading embark-keymap-alist)
-          (list 'embark-consult-denote-heading-map))))
 
 
 ;;;; diff-hl
