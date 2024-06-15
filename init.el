@@ -1097,6 +1097,10 @@ see command `isearch-forward' for more information."
 
 (elpaca org
   (setq org-agenda-include-diary t
+        org-agenda-prefix-format '((agenda . " %i %?-12t% s")
+                                   (todo . " %i %-12:c")
+                                   (tags . " %i %-12:c")
+                                   (search . " %i %-12:c"))
         org-src-window-setup 'plain
         org-startup-truncated nil
         org-insert-mode-line-in-empty-file t
@@ -1552,21 +1556,17 @@ see command `isearch-forward' for more information."
     (require 'conn-calc)
     (keymap-global-set "C-x =" 'calc-dispatch)))
 
-(elpaca (conn-evil-treesit-obj :host github
-                               :repo "mtll/conn"
-                               :files ("extensions/conn-evil-treesit-obj.el"))
-  (with-eval-after-load 'treesit
-    (require 'conn-evil-treesit-obj)))
+(when (>= emacs-major-version 30)
+  (elpaca (conn-treesit :host github
+                        :repo "mtll/conn"
+                        :files ("extensions/conn-treesit.el"))
+    (with-eval-after-load 'treesit
+      (require 'conn-treesit))))
 
 
 ;;;; Expand Region
 
 (elpaca expand-region)
-
-
-;;;; evil text objects
-
-(elpaca evil-textobj-tree-sitter)
 
 
 ;;;; ialign
@@ -1811,23 +1811,23 @@ see command `isearch-forward' for more information."
       "h" nil
       "h o" 'consult-line
       "h f" 'consult-find
-      "h g" 'consult-git-grep
+      "h G" 'consult-git-grep
       "h O" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
       "h L" 'consult-line-multi
-      "h r" 'consult-ripgrep)
+      "h g" 'consult-ripgrep)
 
     (define-keymap
       :keymap embark-general-map
       "h l" 'consult-line
       "h f" 'consult-find
-      "h g" 'consult-git-grep
+      "h G" 'consult-git-grep
       "h O" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
       "h L" 'consult-line-multi
-      "h r" 'consult-ripgrep)))
+      "h g" 'consult-ripgrep)))
 
 ;;;;; embark buttons
 
@@ -2157,10 +2157,10 @@ see command `isearch-forward' for more information."
     (setq consult-ripgrep-args (concat consult-ripgrep-args " --multiline"))
 
     (consult-customize consult-completion-in-region :preview-key nil)
-    (consult-customize consult--source-bookmark :preview-key "C-j")
-    (consult-customize consult-bookmark :preview-key "C-j")
-    (consult-customize consult-buffer :preview-key "C-j")
-    (consult-customize consult-project-buffer :preview-key "C-j"))
+    (consult-customize consult--source-bookmark :preview-key "C-o")
+    (consult-customize consult-bookmark :preview-key "C-o")
+    (consult-customize consult-buffer :preview-key "C-o")
+    (consult-customize consult-project-buffer :preview-key "C-o"))
 
   (defun consult--orderless-regexp-compiler (input type &rest _config)
     (setq input (cdr (orderless-compile input)))
@@ -2344,14 +2344,6 @@ see command `isearch-forward' for more information."
     (keymap-set lsp-mode-map "M-s x" #'consult-lsp-symbols)
     (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
     (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
-
-;;;;; consult-extras
-
-;; (elpaca (consult-extras :host github :repo "mtll/consult-extras")
-;;   (keymap-global-set "C-h o" 'consult-symbol)
-;;   (keymap-set search-map "y" 'consult-all-marks)
-;;   (with-eval-after-load 'consult
-;;     (require 'consult-extras)))
 
 ;;;;; consult-project-extras
 
@@ -2702,14 +2694,9 @@ see command `isearch-forward' for more information."
       (require 'denote-org-extras))
     (denote-rename-buffer-mode 1))
 
-  (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
-  (keymap-global-set "C-c n n" #'denote)
-  (keymap-global-set "C-c n s" #'denote-signature)
-  (keymap-global-set "C-c n k" #'denote-rename-file-keywords)
-  (keymap-global-set "C-c n r" #'denote-rename-file)
-  (keymap-global-set "C-c n b" #'denote-backlinks)
-  (keymap-global-set "C-c n B" #'denote-find-backlink)
-  (keymap-global-set "C-c n l" #'denote-find-link)
+  (defun denote-dired-directory ()
+    (interactive)
+    (dired denote-directory))
 
   (defun my-denote-org ()
     (interactive)
@@ -2717,18 +2704,69 @@ see command `isearch-forward' for more information."
     (require 'org)
     (let ((denote-file-type 'org))
       (call-interactively #'denote)))
-  (keymap-global-set "C-c n o" #'my-denote-org)
 
-  (defun denote-dired-directory ()
-    (interactive)
-    (dired denote-directory))
+  (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
+  (keymap-global-set "C-c n t" #'denote)
+  (keymap-global-set "C-c n s" #'denote-signature)
+  (keymap-global-set "C-c n k" #'denote-rename-file-keywords)
+  (keymap-global-set "C-c n r" #'denote-rename-file)
+  (keymap-global-set "C-c n b" #'denote-backlinks)
+  (keymap-global-set "C-c n B" #'denote-find-backlink)
+  (keymap-global-set "C-c n l" #'denote-find-link)
+  (keymap-global-set "C-c n o" #'my-denote-org)
   (keymap-global-set "C-c n d" #'denote-dired-directory)
 
-  (with-eval-after-load 'consult
-    (defun my-denote-consult-find ()
-      (interactive)
-      (consult-find denote-directory))
-    (keymap-global-set "C-c n f" #'my-denote-consult-find))
+  (defun my-denote-consult-find ()
+    (interactive)
+    (require 'denote)
+    (require 'consult)
+    (consult-find denote-directory))
+  (keymap-global-set "C-c n f" #'my-denote-consult-find)
+
+  (defun my-consult-denote-ripgrep-make-builder (paths)
+  "Create ripgrep command line builder given PATHS."
+  (let* ((cmd (consult--build-args consult-ripgrep-args))
+         (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
+    (lambda (input)
+      (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                   (flags (append cmd opts))
+                   (ignore-case
+                    (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                         (or (member "-i" flags) (member "--ignore-case" flags)
+                             (and (or (member "-S" flags) (member "--smart-case" flags))
+                                  (let (case-fold-search)
+                                    ;; Case insensitive if there are no uppercase letters
+                                    (not (string-match-p "[[:upper:]]" arg))))))))
+        (if (or (member "-F" flags) (member "--fixed-strings" flags))
+            (cons (append cmd (list "-e" arg)
+                          (list "-torg" "-ttxt" "-tmarkdown" "-ttoml")
+                          opts paths)
+                  (apply-partially #'consult--highlight-regexps
+                                   (list (regexp-quote arg)) ignore-case))
+          (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
+            (when re
+              (cons (append cmd (and (eq type 'pcre) '("-P"))
+                            (list "-e" (consult--join-regexps re type))
+                            (list "-torg" "-ttxt" "-tmarkdown" "-ttoml")
+                            opts paths)
+                    hl))))))))
+
+  (defun my-denote-consult-ripgrep ()
+    (interactive)
+    (require 'denote)
+    (require 'consult)
+    (consult--grep "Notes" #'my-consult-denote-ripgrep-make-builder denote-directory nil))
+  (keymap-global-set "C-c n g" #'my-denote-consult-ripgrep)
+
+  (defun my-denote-consult-ripgrep-heading ()
+    (interactive)
+    (require 'denote)
+    (require 'consult)
+    (let ((plist (consult--async-split-style)))
+      (consult--grep "Notes" #'my-consult-denote-ripgrep-make-builder denote-directory
+                     (concat "^[*]+" (or (plist-get plist :separator)
+                                         (plist-get plist :initial))))))
+  (keymap-global-set "C-c n h" #'my-denote-consult-ripgrep-heading)
 
   (with-eval-after-load 'org-capture
     (add-to-list 'org-capture-templates
@@ -2749,15 +2787,6 @@ see command `isearch-forward' for more information."
          (apply-partially #'xref-matches-in-files id
                           (denote-directory-files nil :omit-current :text-only))
          nil)))))
-
-
-;;;; diff-hl
-
-;; (elpaca diff-hl
-;;   (setq diff-hl-draw-borders nil
-;;         diff-hl-update-async t)
-;;   (global-diff-hl-mode -1)
-;;   (add-hook 'dired-mode-hook #'diff-hl-dired-mode))
 
 
 ;;;; teco
