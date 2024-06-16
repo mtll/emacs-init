@@ -154,6 +154,7 @@
 
 (define-keymap
   :keymap goto-map
+  "o" #'pop-to-mark-command
   "," #'xref-go-back
   "." #'xref-go-forward)
 
@@ -1097,10 +1098,6 @@ see command `isearch-forward' for more information."
 
 (elpaca org
   (setq org-agenda-include-diary t
-        org-agenda-prefix-format '((agenda . " %i %?-12t% s")
-                                   (todo . " %i %-12:c")
-                                   (tags . " %i %-12:c")
-                                   (search . " %i %-12:c"))
         org-src-window-setup 'plain
         org-startup-truncated nil
         org-insert-mode-line-in-empty-file t
@@ -2266,7 +2263,7 @@ see command `isearch-forward' for more information."
        :default (car candidates)
        ;; Add `isearch-string' as initial input if starting from Isearch
        :state (consult--location-state candidates))))
-  (keymap-set search-map "F" 'consult-goto-edit)
+  (keymap-set goto-map "e" 'consult-goto-edit)
 
   (with-eval-after-load 'ibuffer
     (defun conn-consult-line-multi-ibuffer-marked ()
@@ -2686,7 +2683,13 @@ see command `isearch-forward' for more information."
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
   (setq denote-file-type 'text
-        denote-history-completion-in-prompts nil)
+        denote-history-completion-in-prompts nil
+        denote-org-front-matter "#+title:      %s
+#+date:       %s
+#+filetags:   %s
+#+identifier: %s
+#+category:   Denote
+\n")
 
   (with-eval-after-load 'denote
     (require 'denote-silo-extras)
