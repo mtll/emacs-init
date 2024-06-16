@@ -1097,7 +1097,8 @@ see command `isearch-forward' for more information."
 ;;;; org
 
 (elpaca org
-  (setq org-agenda-include-diary t
+  (setq org-agenda-start-on-weekday nil
+        org-agenda-include-diary t
         org-src-window-setup 'plain
         org-startup-truncated nil
         org-insert-mode-line-in-empty-file t
