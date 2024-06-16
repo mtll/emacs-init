@@ -1103,7 +1103,6 @@ see command `isearch-forward' for more information."
         org-startup-truncated nil
         org-insert-mode-line-in-empty-file t
         org-confirm-babel-evaluate nil
-        org-fold-core-style 'overlays
         org-startup-indented nil
         org-agenda-files (list "~/Documents/notes/")
         org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'")
@@ -1335,9 +1334,11 @@ see command `isearch-forward' for more information."
               :repo "mtll/conn")
   (setq conn-wincontrol-initial-help nil
         conn-state-cursor-type 'box
-        conn-emacs-state-cursor-type 'box
+        conn-emacs-state-cursor-type '(hbar . 18)
         conn-mark-idle-timer 0.05
         conn-read-string-timeout 0.35)
+
+  (setq-default cursor-type '(hbar . 20))
 
   (defun conn-mark-emacs-state-hook ()
     (when conn-emacs-state
@@ -2724,7 +2725,9 @@ see command `isearch-forward' for more information."
     (interactive)
     (require 'denote)
     (require 'consult)
-    (consult-find denote-directory))
+    (let ((consult-async-min-input 2)
+          (consult-async-input-debounce 0.08))
+      (consult-find denote-directory)))
   (keymap-global-set "C-c n f" #'my-denote-consult-find)
 
   (defun my-consult-denote-ripgrep-make-builder (paths)
