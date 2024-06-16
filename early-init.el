@@ -51,7 +51,7 @@
            `((bg-main "#fff5e8")
              (fg-active-argument "#630863")
              (bg-active-argument "#fcd1fc")
-             (cursor "#00517d")
+             (cursor "#7d0002")
              (bg-region "#f7dbd6")
              (fg-region unspecified)
              (fg-completion-match-0 "#353b44")
