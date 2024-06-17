@@ -608,7 +608,6 @@ see command `isearch-forward' for more information."
 
 ;;; Packages
 
-
 ;;;; Transient
 
 (elpaca transient
@@ -976,10 +975,6 @@ see command `isearch-forward' for more information."
     (require 'org-pdftools)
     (org-pdftools-setup-link)))
 
-;;;;; hide-mode-line-mode
-
-(elpaca hide-mode-line)
-
 
 ;;;; tex
 
@@ -1253,29 +1248,29 @@ see command `isearch-forward' for more information."
 
 ;;;; popper
 
-(elpaca popper
-  (setq popper-display-control 'user
-        popper-display-function 'display-buffer-reuse-window
-        popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
-        popper-reference-buffers '("\\*Messages\\*"
-                                   "\\*Warnings\\*"
-                                   "Output\\*$"
-                                   "\\*Async Shell Command\\*"
-                                   "\\*sly-macroexpansion"
-                                   "\\*sly-description\\*"
-                                   "\\*projectile-files-errors\\*"
-                                   help-mode
-                                   helpful-mode
-                                   compilation-mode))
+;; (elpaca popper
+;;   (setq popper-display-control 'user
+;;         popper-display-function 'display-buffer-reuse-window
+;;         popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
+;;         popper-reference-buffers '("\\*Messages\\*"
+;;                                    "\\*Warnings\\*"
+;;                                    "Output\\*$"
+;;                                    "\\*Async Shell Command\\*"
+;;                                    "\\*sly-macroexpansion"
+;;                                    "\\*sly-description\\*"
+;;                                    "\\*projectile-files-errors\\*"
+;;                                    help-mode
+;;                                    helpful-mode
+;;                                    compilation-mode))
 
-  (define-keymap
-    :keymap global-map
-    "M-~"   'popper-cycle
-    "M-`"   'popper-toggle
-    "C-M-`" 'popper-toggle-type)
+;;   (define-keymap
+;;     :keymap global-map
+;;     "M-~"   'popper-cycle
+;;     "M-`"   'popper-toggle
+;;     "C-M-`" 'popper-toggle-type)
 
-  (popper-mode 1)
-  (popper-echo-mode 1))
+;;   (popper-mode 1)
+;;   (popper-echo-mode 1))
 
 
 ;;;; posframe
@@ -1385,17 +1380,15 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-2" 'split-window-below)
   (keymap-global-set "C-3" 'split-window-right)
   (keymap-global-set "C-." 'conn-dispatch-on-things)
-  (keymap-set conn-emacs-state-map "C-4" 'conn-C-x-4-keys)
-  (keymap-set conn-emacs-state-map "C-5" 'conn-C-x-5-keys)
   (keymap-global-set "C-6" 'conn-swap-buffers)
   (keymap-global-set "C-7" 'conn-swap-windows)
   (keymap-global-set "C-9" 'tab-close)
-  (keymap-set conn-emacs-state-map "C-t" 'conn-C-x-t-keys)
   (keymap-set isearch-mode-map "<backtab>" 'conn-isearch-dot-match)
   (keymap-set isearch-mode-map "C-," 'conn-dispatch-isearch)
   (keymap-set conn-state-map "B" 'ibuffer)
   (keymap-set search-map "f" 'isearch-forward)
   (keymap-set search-map "b" 'isearch-backward)
+  (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1996,11 +1989,6 @@ see command `isearch-forward' for more information."
 ;;;; wgrep
 
 (elpaca wgrep)
-
-
-;;;; lazytab
-
-(elpaca (lazytab :host github :repo "karthink/lazytab"))
 
 
 ;;;; separedit
