@@ -1514,7 +1514,8 @@ see command `isearch-forward' for more information."
 
     (keymap-global-set "<mouse-2>" 'xref-go-back)
 
-    (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
+    (with-eval-after-load 'conn
+      (keymap-set conn-emacs-state-map "C-TAB" 'embark-act))
 
     (define-keymap
       :keymap embark-general-map
