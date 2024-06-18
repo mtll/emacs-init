@@ -48,7 +48,9 @@
 
 ;;;; emacs
 
-(setq hi-lock-auto-select-face t
+(setq mac-option-modifier 'meta
+      mac-command-modifier 'super
+      hi-lock-auto-select-face t
       mark-even-if-inactive t
       recenter-positions '(top middle bottom)
       even-window-sizes nil
@@ -1372,6 +1374,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
   (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
   (keymap-set (conn-get-transition-map 'conn-org-edit-state) "<f8>" 'conn-state)
+  (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "<f9>" 'conn-org-edit-state)
+  (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
   (keymap-global-set "C-," 'embark-dwim)
   (keymap-global-set "C-<backspace>" 'kill-whole-line)
@@ -1495,9 +1499,8 @@ see command `isearch-forward' for more information."
              (start-point (posn-point start-posn))
              (start-window (posn-window start-posn)))
         (with-selected-window start-window
-          (with-current-buffer (window-buffer start-window)
-            (goto-char start-point)
-            (embark-dwim)))))
+          (goto-char start-point)
+          (embark-dwim))))
     (keymap-global-set "S-<mouse-1>" 'my-embark-dwim-mouse)
 
     (defun my-embark-alt-dwim-mouse (event)
@@ -1507,15 +1510,13 @@ see command `isearch-forward' for more information."
              (start-point (posn-point start-posn))
              (start-window (posn-window start-posn)))
         (with-selected-window start-window
-          (with-current-buffer (window-buffer start-window)
-            (goto-char start-point)
-            (conn-embark-alt-dwim)))))
+          (goto-char start-point)
+          (conn-embark-alt-dwim))))
     (keymap-global-set "S-<mouse-3>" 'my-embark-alt-dwim-mouse)
 
     (keymap-global-set "<mouse-2>" 'xref-go-back)
 
-    (with-eval-after-load 'conn
-      (keymap-set conn-emacs-state-map "C-TAB" 'embark-act))
+    (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
 
     (define-keymap
       :keymap embark-general-map
@@ -2070,13 +2071,6 @@ see command `isearch-forward' for more information."
     (orderless-matching-styles '(orderless-literal orderless-regexp))
     (orderless-affix-dispatch '((?\= . orderless-literal)))
     (orderless-style-dispatchers '(orderless-affix-dispatch))))
-
-;;;;; orderless-set-operations
-
-;; (elpaca (orderless-set-operations :host github
-;;                                   :repo "mtll/orderless-set-operations")
-;;   (with-eval-after-load 'orderless
-;;     (oso-mode 1)))
 
 
 ;;;; consult
