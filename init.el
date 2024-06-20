@@ -890,7 +890,7 @@ see command `isearch-forward' for more information."
 (elpaca lsp-mode
   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
 
-  (setq lsp-keymap-prefix "C-c l"
+  (setq lsp-keymap-prefix "C-c s"
         lsp-eldoc-render-all nil
         lsp-enable-on-type-formatting nil
         lsp-ui-doc-alignment 'window
@@ -961,13 +961,7 @@ see command `isearch-forward' for more information."
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode))
 
   (setopt pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
-  (pdf-loader-install)
-
-  (defun my-bmk-pdf-handler-advice (bookmark)
-    (bookmark-default-handler (bookmark-get-bookmark bookmark)))
-
-  (advice-add 'pdf-view-bookmark-jump-handler
-              :after 'my-bmk-pdf-handler-advice))
+  (pdf-loader-install))
 
 ;;;;; org-pdf-tools
 
@@ -2119,7 +2113,6 @@ see command `isearch-forward' for more information."
     "o" 'consult-line
     "O" 'consult-line-multi
     "G" 'consult-git-grep
-    ;; "G" 'consult-grep
     "g" 'consult-ripgrep
     "/" 'consult-find
     "L" 'consult-locate
