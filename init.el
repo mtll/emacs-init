@@ -1387,6 +1387,8 @@ see command `isearch-forward' for more information."
   (keymap-set search-map "f" 'isearch-forward)
   (keymap-set search-map "b" 'isearch-backward)
   (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
+  (keymap-set conn-state-map "*" 'calc-dispatch)
+  (keymap-set conn-state-map "$" 'ispell-word)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -2787,7 +2789,26 @@ see command `isearch-forward' for more information."
 ;;;; jinx
 
 (elpaca jinx
-  (keymap-global-set "<remap> <ispell-word>" #'jinx-correct))
+  (defun my-jinx-dispatch-check (window pt _thing)
+    (interactive)
+    (with-selected-window window
+      (save-excursion
+        (goto-char pt)
+        (jinx-correct-nearest))))
+
+  (defun my--conn-dispatch-jinx (&optional in-windows)
+    (cl-loop for win in (conn--preview-get-windows in-windows)
+             nconc (with-selected-window win
+                     (cl-loop for ov in (jinx--get-overlays (window-start) (window-end))
+                              collect (conn--make-preview-overlay
+                                       (overlay-start ov)
+                                       (- (overlay-end ov) (overlay-start ov)))))))
+
+  (add-to-list 'conn-dispatch-override-maps
+               (define-keymap
+                 "$" `(jinx
+                       ,(apply-partially 'my--conn-dispatch-jinx t)
+                       . my-jinx-dispatch-check))))
 
 
 ;;;; ef-themes
