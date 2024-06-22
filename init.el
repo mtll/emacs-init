@@ -2804,11 +2804,13 @@ see command `isearch-forward' for more information."
                                        (overlay-start ov)
                                        (- (overlay-end ov) (overlay-start ov)))))))
 
-  (add-to-list 'conn-dispatch-override-maps
-               (define-keymap
-                 "$" `(jinx
-                       ,(apply-partially 'my--conn-dispatch-jinx t)
-                       . my-jinx-dispatch-check))))
+  (add-hook 'jinx-mode-hook
+            (lambda ()
+              (add-to-list (make-local-variable 'conn-dispatch-override-maps)
+                           (define-keymap
+                             "$" `(jinx
+                                   ,(apply-partially 'my--conn-dispatch-jinx t)
+                                   . my-jinx-dispatch-check))))))
 
 
 ;;;; ef-themes
