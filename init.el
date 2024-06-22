@@ -266,12 +266,12 @@
 
 ;;;; strokes
 
-(when (window-system)
-  (strokes-mode 1)
-  (with-eval-after-load 'diminish
-    (diminish 'strokes-mode))
-  (load "~/.emacs.d/strokes" t t)
-  (keymap-global-set "M-<down-mouse-1>" 'strokes-do-stroke))
+;; (when (window-system)
+;;   (strokes-mode 1)
+;;   (with-eval-after-load 'diminish
+;;     (diminish 'strokes-mode))
+;;   (load "~/.emacs.d/strokes" t t)
+;;   (keymap-global-set "M-<down-mouse-1>" 'strokes-do-stroke))
 
 
 ;;;; bookmarks
