@@ -105,7 +105,8 @@
                               delete-all-space
                               delete-space-after
                               delete-space-before
-                              restore))
+                              restore)
+      project-vc-extra-root-markers '(".projectile" ".project"))
 
 (defun my-kill-buffer ()
   (interactive)
@@ -1424,8 +1425,10 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
-  (keymap-set conn-state-map "," 'conn-embark-dwim-either)
-  (keymap-set conn-org-edit-state-map "," 'conn-embark-dwim-either)
+  (keymap-set conn-state-map "," 'indent-region)
+  (keymap-set conn-state-map "TAB" 'conn-embark-dwim-either)
+  (keymap-set conn-state-map "<tab>" 'conn-embark-dwim-either)
+  (keymap-set conn-org-edit-state-map "TAB" 'conn-embark-dwim-either)
   (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
   (defun conn-embark-dwim-either (&optional arg)
@@ -1969,6 +1972,10 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'outline
     (define-keymap
       :keymap outline-minor-mode-map
+      "<backtab>" 'bicycle-cycle-global))
+  (with-eval-after-load 'org
+    (define-keymap
+      :keymap org-mode-map
       "<backtab>" 'bicycle-cycle-global)))
 
 
@@ -2827,3 +2834,8 @@ see command `isearch-forward' for more information."
 ;;;; eat
 
 (elpaca eat)
+
+
+;;;; beancount
+
+(elpaca beancount)
