@@ -611,6 +611,16 @@ see command `isearch-forward' for more information."
 
 ;;; Packages
 
+;;;; Keysee
+
+(when (require 'keysee nil t)
+  (setq kc-completion-styles '(orderless-literal)
+        kc-auto-delay 1
+        prefix-help-command #'kc-complete-keys)
+
+  (kc-mode 1)
+  (advice-add 'sorti-bind-cycle-key-and-complete :override #'ignore))
+
 ;;;; Transient
 
 (elpaca transient
@@ -1363,7 +1373,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c w" 'conn-wincontrol)
   (keymap-global-set "M-n" 'conn-wincontrol)
   (keymap-global-set "C-c q" 'conn-edit-map)
-  (keymap-global-set "C-c r" 'conn-region-map)
   (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
@@ -1425,7 +1434,7 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
-  (keymap-set conn-state-map "," 'indent-region)
+  (keymap-set conn-state-map "," 'embark-act)
   (keymap-set conn-state-map "TAB" 'conn-embark-dwim-either)
   (keymap-set conn-state-map "<tab>" 'conn-embark-dwim-either)
   (keymap-set conn-org-edit-state-map "TAB" 'conn-embark-dwim-either)
@@ -1653,8 +1662,7 @@ see command `isearch-forward' for more information."
         embark-prompter 'embark-keymap-prompter
         embark-cycle-key "<tab>"
         embark-help-key "?"
-        embark-confirm-act-all nil
-        prefix-help-command 'embark-prefix-help-command)
+        embark-confirm-act-all nil)
 
   (keymap-global-set "M-." 'embark-act)
   (keymap-global-set "C-TAB" 'embark-act)
@@ -2073,6 +2081,11 @@ see command `isearch-forward' for more information."
   (orderless-define-completion-style orderless-loc
     (orderless-matching-styles '(orderless-literal orderless-regexp))
     (orderless-affix-dispatch '((?\= . orderless-literal)))
+    (orderless-style-dispatchers '(orderless-affix-dispatch)))
+
+  (orderless-define-completion-style orderless-literal
+    (orderless-matching-styles '(orderless-literal))
+    (orderless-affix-dispatch '((?\~ . orderless-regexp)))
     (orderless-style-dispatchers '(orderless-affix-dispatch))))
 
 
