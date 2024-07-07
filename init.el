@@ -1566,6 +1566,15 @@ see command `isearch-forward' for more information."
       (require 'conn-treesit))))
 
 
+;;;; Orderless Set Operations
+
+(elpaca (orderless-set-operations :host github
+                                  :repo "mtll/orderless-set-operations"
+                                  :protocol ssh)
+  (with-eval-after-load 'orderless
+    (oso-mode 1)))
+
+
 ;;;; Expand Region
 
 (elpaca expand-region)
