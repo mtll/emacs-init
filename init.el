@@ -1340,7 +1340,7 @@ see command `isearch-forward' for more information."
         conn-mark-idle-timer 0.05
         conn-read-string-timeout 0.35)
 
-  (setq-default cursor-type '(hbar . 20))
+  (setq-default cursor-type '(hbar . 18))
 
   (defun conn-mark-emacs-state-hook ()
     (when conn-emacs-state
@@ -1368,11 +1368,12 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
+  (keymap-global-set "C-o" 'conn-open-line)
+  (keymap-global-set "M-o" 'conn-open-line-above)
   (keymap-global-set "C-x m" 'conn-kmacro-prefix)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-c w" 'conn-wincontrol)
   (keymap-global-set "M-n" 'conn-wincontrol)
-  (keymap-global-set "C-c q" 'conn-edit-map)
   (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
@@ -1391,7 +1392,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-6" 'conn-swap-buffers)
   (keymap-global-set "C-7" 'conn-swap-windows)
   (keymap-global-set "C-9" 'tab-close)
-  (keymap-set isearch-mode-map "<backtab>" 'conn-isearch-dot-match)
   (keymap-set isearch-mode-map "C-," 'conn-dispatch-isearch)
   (keymap-set conn-state-map "B" 'ibuffer)
   (keymap-set search-map "f" 'isearch-forward)
@@ -1528,8 +1528,7 @@ see command `isearch-forward' for more information."
 
     (define-keymap
       :keymap embark-general-map
-      "R" 'conn-embark-replace-region
-      "~" 'conn-dot-region)
+      "R" 'conn-embark-replace-region)
 
     (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
@@ -2324,10 +2323,7 @@ see command `isearch-forward' for more information."
 
       (define-keymap
         :keymap embark-consult-location-map
-        "M-RET" 'consult-org-link-location)))
-
-  (with-eval-after-load 'conn
-    (keymap-set conn-edit-map "e" 'consult-keep-lines)))
+        "M-RET" 'consult-org-link-location))))
 
 ;;;;; consult-dir
 
@@ -2708,6 +2704,7 @@ see command `isearch-forward' for more information."
 
   (defun denote-dired-directory ()
     (interactive)
+    (require 'denote)
     (dired denote-directory))
 
   (defun my-denote-org ()
