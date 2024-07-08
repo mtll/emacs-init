@@ -613,13 +613,14 @@ see command `isearch-forward' for more information."
 
 ;;;; Keysee
 
-(when (require 'keysee nil t)
-  (setq kc-completion-styles '(orderless-literal)
-        kc-auto-delay 1
-        prefix-help-command #'kc-complete-keys)
+;; (when (require 'keysee nil t)
+;;   (setq kc-completion-styles '(orderless-literal)
+;;         kc-auto-delay 1
+;;         prefix-help-command #'kc-complete-keys)
 
-  (kc-mode 1)
-  (advice-add 'sorti-bind-cycle-key-and-complete :override #'ignore))
+;;   (kc-mode 1)
+;;   ;; (kc-auto-mode 1)
+;;   (advice-add 'sorti-bind-cycle-key-and-complete :override #'ignore))
 
 ;;;; Transient
 
@@ -1411,8 +1412,6 @@ see command `isearch-forward' for more information."
         (self-insert-command N))))
   (keymap-global-set "S-SPC" 'my-space-after-point)
 
-  (keymap-set conn-state-map "TAB" 'embark-act)
-  (keymap-set conn-state-map "<tab>" 'embark-act)
   (keymap-set conn-state-map "M-<tab>" 'indent-region)
   (keymap-unset conn-state-transition-map "M-TAB")
   (keymap-unset conn-state-transition-map "M-<tab>")
@@ -1670,7 +1669,8 @@ see command `isearch-forward' for more information."
         embark-prompter 'embark-keymap-prompter
         embark-cycle-key "<tab>"
         embark-help-key "?"
-        embark-confirm-act-all nil)
+        embark-confirm-act-all nil
+        prefix-help-command 'embark-prefix-help-command)
 
   (keymap-global-set "M-." 'embark-act)
   (keymap-global-set "C-TAB" 'embark-act)
