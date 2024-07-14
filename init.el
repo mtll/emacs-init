@@ -150,6 +150,7 @@
 (keymap-global-set "C-z"             #'transient-resume)
 (keymap-global-set "C-h A"           #'describe-char)
 (keymap-global-set "C-x j"           #'dired-jump)
+(keymap-global-set "C-/"           #'undo-only)
 
 (put 'other-window 'repeat-map nil)
 
