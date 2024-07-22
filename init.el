@@ -56,7 +56,7 @@
       even-window-sizes nil
       scroll-conservatively 0
       scroll-preserve-screen-position t
-      delete-active-region nil
+      delete-active-region t
       fill-column 72
       use-short-answers t
       y-or-n-p-use-read-key t
@@ -571,37 +571,6 @@ see command `isearch-forward' for more information."
     "<backtab>" 'dired-kill-subdir))
 
 
-;;;; query replace
-
-(with-eval-after-load 'replace
-  (defun my-query-replace-insert-sep ()
-    (interactive)
-    (when query-replace-from-to-separator
-      (let ((separator-string
-             (when query-replace-from-to-separator
-               ;; Check if the first non-whitespace char is displayable
-               (if (char-displayable-p
-                    (string-to-char (string-replace
-                                     " " "" query-replace-from-to-separator)))
-                   query-replace-from-to-separator
-                 " -> "))))
-        (insert (propertize separator-string
-                            'display separator-string
-                            'face 'minibuffer-prompt
-                            'separator t)))))
-
-  (defun my--query-replace-read-advice (&rest app)
-    (minibuffer-with-setup-hook
-        (lambda ()
-          (use-local-map
-           (define-keymap
-             :parent (current-local-map)
-             "C-M-j" 'my-query-replace-insert-sep)))
-      (apply app)))
-
-  (advice-add 'query-replace-read-from :around 'my--query-replace-read-advice))
-
-
 ;;;; eldoc
 
 (with-eval-after-load 'diminish
@@ -788,7 +757,7 @@ see command `isearch-forward' for more information."
                  'paredit-space-for-delimiter-predicates-lisp)
 
     (defun paredit-kill-rectangle-advice (fn &rest args)
-      (if (not rectangle-mark-mode)
+      (if (not (bound-and-true-p rectangle-mark-mode))
           (apply fn args)
         (setq this-command 'kill-rectangle)
         (call-interactively 'kill-rectangle)))
