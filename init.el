@@ -54,7 +54,6 @@
       mark-even-if-inactive t
       recenter-positions '(top middle bottom)
       even-window-sizes nil
-      scroll-conservatively 0
       scroll-preserve-screen-position t
       delete-active-region t
       fill-column 72
@@ -266,14 +265,35 @@
     result))
 
 
-;;;; strokes
+;;;; misearch
 
-;; (when (window-system)
-;;   (strokes-mode 1)
-;;   (with-eval-after-load 'diminish
-;;     (diminish 'strokes-mode))
-;;   (load "~/.emacs.d/strokes" t t)
-;;   (keymap-global-set "M-<down-mouse-1>" 'strokes-do-stroke))
+(defun david-read-buffers (&optional predicate)
+  "Return a list of buffers specified interactively, one by one."
+  (cl-loop for buf = (read-buffer "Buffer: " nil t
+                                  (pcase-lambda (`(,name . ,buf))
+                                    (and
+                                     (if predicate (funcall predicate buf) t)
+                                     (not (member name selected)))))
+           until (equal buf "") collect buf into selected
+           finally return selected))
+
+(defun david-read-files (&optional predicate)
+  "Return a list of buffers specified interactively, one by one."
+  (cl-loop for file = (file-truename
+                       (read-file-name "Files to search: "
+                                       default-directory default-directory nil nil
+                                       (lambda (filename)
+                                         (and
+                                          (if predicate (funcall predicate filename) t)
+                                          (not (member (file-truename filename) selected))))))
+           until (or (not (file-exists-p file))
+                     (file-directory-p file))
+           collect file into selected
+           finally return selected))
+
+(with-eval-after-load 'misearch
+  (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
+  (advice-add 'multi-isearch-read-files :override 'conn--read-files))
 
 
 ;;;; bookmarks
@@ -568,7 +588,8 @@ see command `isearch-forward' for more information."
     :keymap dired-mode-map
     "/" 'dired-undo
     "C-<tab>" 'dired-maybe-insert-subdir
-    "<backtab>" 'dired-kill-subdir))
+    "<backtab>" 'dired-kill-subdir
+    "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff))
 
 
 ;;;; eldoc
@@ -580,17 +601,6 @@ see command `isearch-forward' for more information."
 
 
 ;;; Packages
-
-;;;; Keysee
-
-;; (when (require 'keysee nil t)
-;;   (setq kc-completion-styles '(orderless-literal)
-;;         kc-auto-delay 1
-;;         prefix-help-command #'kc-complete-keys)
-
-;;   (kc-mode 1)
-;;   ;; (kc-auto-mode 1)
-;;   (advice-add 'sorti-bind-cycle-key-and-complete :override #'ignore))
 
 ;;;; Transient
 
@@ -668,14 +678,6 @@ see command `isearch-forward' for more information."
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
-
-
-;;;; info+
-
-;; (elpaca (info+ :host github
-;;                :repo "emacsmirror/info-plus")
-;;   (with-eval-after-load 'info
-;;     (require 'info+)))
 
 
 ;;;; Expreg
@@ -1224,33 +1226,6 @@ see command `isearch-forward' for more information."
       "@"   'crux-insert-date)))
 
 
-;;;; popper
-
-;; (elpaca popper
-;;   (setq popper-display-control 'user
-;;         popper-display-function 'display-buffer-reuse-window
-;;         popper-mode-line '(:eval (propertize " POP " 'face 'mode-line-emphasis))
-;;         popper-reference-buffers '("\\*Messages\\*"
-;;                                    "\\*Warnings\\*"
-;;                                    "Output\\*$"
-;;                                    "\\*Async Shell Command\\*"
-;;                                    "\\*sly-macroexpansion"
-;;                                    "\\*sly-description\\*"
-;;                                    "\\*projectile-files-errors\\*"
-;;                                    help-mode
-;;                                    helpful-mode
-;;                                    compilation-mode))
-
-;;   (define-keymap
-;;     :keymap global-map
-;;     "M-~"   'popper-cycle
-;;     "M-`"   'popper-toggle
-;;     "C-M-`" 'popper-toggle-type)
-
-;;   (popper-mode 1)
-;;   (popper-echo-mode 1))
-
-
 ;;;; posframe
 
 (when window-system
@@ -1314,7 +1289,8 @@ see command `isearch-forward' for more information."
   (setq-default cursor-type '(hbar . 18))
 
   (defun conn-mark-emacs-state-hook ()
-    (when conn-emacs-state
+    (when (and conn-emacs-state
+               (not (use-region-p)))
       (conn--push-ephemeral-mark (point))))
 
   (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
@@ -1370,6 +1346,11 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "$" 'ispell-word)
+  (keymap-global-set "M-u" 'conn-region-case-prefix)
+  (keymap-global-set "M-SPC" 'conn-toggle-mark-command)
+  (keymap-global-set "C-SPC" 'conn-set-mark-command)
+  (keymap-global-set "M-z" 'conn-exchange-mark-command)
+  (keymap-global-set "C-t" 'conn-transpose-regions)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1559,14 +1540,6 @@ see command `isearch-forward' for more information."
       (ialign (region-beginning) (region-end)))
 
     (keymap-set embark-region-map "a" 'embark-ialign)))
-
-
-;;;; dired+
-
-;; (elpaca (dired+ :host github
-;;                 :repo "emacsmirror/dired-plus"
-;;                 :main "dired+.el")
-;;   (require 'dired+))
 
 
 ;;;; all-the-icons
