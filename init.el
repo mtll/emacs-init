@@ -60,7 +60,6 @@
       use-short-answers t
       y-or-n-p-use-read-key t
       xref-search-program 'ripgrep
-      read-process-output-max (* 1024 1024)
       scroll-error-top-bottom t
       browse-url-browser-function 'browse-url-generic
       browse-url-generic-program "firefox"
@@ -88,7 +87,6 @@
       undo-limit 8000000
       undo-strong-limit 16000000
       undo-outer-limit 32000000
-      read-process-output-max (ash 1 18)
       mouse-wheel-progressive-speed nil
       register-separator ?+
       history-delete-duplicates t
@@ -292,8 +290,8 @@
            finally return selected))
 
 (with-eval-after-load 'misearch
-  (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
-  (advice-add 'multi-isearch-read-files :override 'conn--read-files))
+  (advice-add 'multi-isearch-read-buffers :override 'david-read-buffers)
+  (advice-add 'multi-isearch-read-files :override 'david-read-files))
 
 
 ;;;; bookmarks
@@ -1215,9 +1213,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn
     (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
-    ;; (keymap-set conn-misc-edit-map "m" 'crux-smart-open-line)
-    ;; (keymap-set conn-misc-edit-map "n" 'crux-smart-open-line-above)
-
 
     (define-keymap
       :keymap conn-edit-map
@@ -1299,8 +1294,6 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
 
-  (conn-hide-mark-cursor 'conn-view-state)
-
   (add-to-list 'conn-buffer-default-state-alist
                (cons "^\\*Echo.*" 'conn-emacs-state))
   (add-to-list 'conn-buffer-default-state-alist
@@ -1311,13 +1304,10 @@ see command `isearch-forward' for more information."
                (cons (lambda (buffer &rest _args) (bound-and-true-p org-capture-mode))
                      'conn-state))
 
-  (advice-add 'multi-isearch-read-buffers :override 'conn--read-buffers)
-
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
   (keymap-global-set "C-o" 'conn-open-line)
   (keymap-global-set "M-o" 'conn-open-line-above)
-  (keymap-global-set "C-x m" 'conn-kmacro-prefix)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-c w" 'conn-wincontrol)
   (keymap-global-set "M-n" 'conn-wincontrol)
@@ -1339,7 +1329,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-6" 'conn-swap-buffers)
   (keymap-global-set "C-7" 'conn-swap-windows)
   (keymap-global-set "C-9" 'tab-close)
-  (keymap-set isearch-mode-map "C-," 'conn-dispatch-isearch)
   (keymap-set conn-state-map "B" 'ibuffer)
   (keymap-set search-map "f" 'isearch-forward)
   (keymap-set search-map "b" 'isearch-backward)
@@ -1365,10 +1354,7 @@ see command `isearch-forward' for more information."
 
   (keymap-set conn-state-map "M-<tab>" 'indent-region)
   (keymap-unset conn-state-transition-map "M-TAB")
-  (keymap-unset conn-state-transition-map "M-<tab>")
-
-  (with-eval-after-load 'vertico
-    (keymap-set vertico-map "<f1>" 'conn-toggle-minibuffer-focus)))
+  (keymap-unset conn-state-transition-map "M-<tab>"))
 
 ;;;;; Conn Extensions
 

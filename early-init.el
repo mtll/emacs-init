@@ -37,7 +37,8 @@
       ring-bell-function #'ignore
       inhibit-startup-screen t
       inhibit-x-resources t
-      load-prefer-newer t)
+      load-prefer-newer t
+      read-process-output-max (ash 1 18))
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
