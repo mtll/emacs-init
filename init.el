@@ -598,6 +598,53 @@ see command `isearch-forward' for more information."
 (setq eldoc-echo-area-prefer-doc-buffer t)
 
 
+;;;; erc
+
+(with-eval-after-load 'erc
+  (setq erc-fill-function 'erc-fill-static
+        erc-fill-static-center 22
+        erc-header-line-format "%n on %t (%m)"
+        erc-hide-list '("JOIN" "PART" "QUIT")
+        erc-lurker-threshold-time 43200
+        erc-lurker-hide-list '("JOIN" "PART" "QUIT")
+        erc-track-exclude-types '("JOIN" "MODE" "NICK" "PART" "QUIT"
+                                  "324" ; modes https://www.alien.net.au/irc/irc2numerics.html
+                                  "329" ; channel creation date
+                                  "332" ; topic notice
+                                  "333" ; who set the topic
+                                  "353" ; names notice
+                                  )
+        erc-autojoin-channels-alist '(("Libera.Chat" "#emacs"))
+        erc-services-mode t
+        erc-prompt (lambda () (concat "[" (buffer-name) "]"))
+        erc-modules '(autojoin
+                      button
+                      completion
+                      fill
+                      irccontrols
+                      list
+                      log
+                      match
+                      menu
+                      move-to-prompt
+                      netsplit
+                      networks
+                      noncommands
+                      notifications
+                      readonly
+                      ring
+                      services
+                      smiley
+                      spelling
+                      stamp
+                      track
+                      unmorse))
+
+  (keymap-set erc-mode-map "RET" nil)
+  (keymap-set erc-mode-map "C-c RET" 'erc-send-current-line)
+  (keymap-set erc-mode-map "C-c C-RET" 'erc-send-current-line))
+
+
 ;;; Packages
 
 ;;;; Transient
@@ -1309,8 +1356,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-o" 'conn-open-line)
   (keymap-global-set "M-o" 'conn-open-line-above)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
-  (keymap-global-set "C-c w" 'conn-wincontrol)
-  (keymap-global-set "M-n" 'conn-wincontrol)
+  (keymap-global-set "C-;" 'conn-wincontrol)
   (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
@@ -2536,8 +2582,8 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-I" 'tempel-complete)
-  (keymap-global-set "M-i" 'tempel-insert)
+  (keymap-global-set "M-i" 'tempel-complete)
+  (keymap-global-set "M-I" 'tempel-insert)
 
   (defun tempel-insert-region ()
     (interactive)
