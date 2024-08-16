@@ -123,7 +123,6 @@
 (delete-selection-mode -1)
 (column-number-mode 1)
 (line-number-mode 1)
-(electric-pair-mode 1)
 (undelete-frame-mode 1)
 (context-menu-mode 1)
 (save-place-mode 1)
@@ -261,6 +260,20 @@
                           (match-string 0)
                           'match-data (match-data)))))))
     result))
+
+
+;;;; electric pair
+
+(defun my-electric-pair-turn-on ()
+  (electric-pair-local-mode 1))
+
+(define-global-minor-mode my-electric-pair-mode
+  electric-pair-mode
+  my-electric-pair-turn-on
+  :predicate '(prog-mode)
+  :group 'electricity)
+
+(my-electric-pair-mode 1)
 
 
 ;;;; misearch
