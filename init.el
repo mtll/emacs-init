@@ -267,7 +267,7 @@
 (defun my-electric-pair-turn-on ()
   (electric-pair-local-mode 1))
 
-(define-global-minor-mode my-electric-pair-mode
+(define-globalized-minor-mode my-electric-pair-mode
   electric-pair-mode
   my-electric-pair-turn-on
   :predicate '(prog-mode)
@@ -1389,8 +1389,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-7" 'conn-swap-windows)
   (keymap-global-set "C-9" 'tab-close)
   (keymap-set conn-state-map "B" 'ibuffer)
-  (keymap-set search-map "f" 'isearch-forward)
-  (keymap-set search-map "b" 'isearch-backward)
   (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "$" 'ispell-word)
@@ -2132,11 +2130,10 @@ see command `isearch-forward' for more information."
     "O" 'consult-line-multi
     "G" 'consult-git-grep
     "g" 'consult-ripgrep
-    "/" 'consult-find
+    "f" 'consult-find
     "L" 'consult-locate
     "v" 'consult-focus-lines
-    "k" 'consult-keep-lines
-    "I" 'consult-imenu-multi)
+    "k" 'consult-keep-lines)
 
   (keymap-set goto-map "g" 'consult-goto-line)
   (keymap-global-set "<remap> <project-switch-to-buffer>" 'consult-project-buffer)
