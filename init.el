@@ -263,7 +263,18 @@
 
 ;;;; Abbrev
 
+(setq abbrev-all-caps t
+      hippie-expand-try-functions-list '(try-complete-file-name-partially
+                                         try-complete-file-name
+                                         try-expand-dabbrev
+                                         try-expand-dabbrev-from-kill
+                                         try-expand-dabbrev-all-buffers
+                                         try-expand-list
+                                         try-expand-line))
+
 (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
+
+(keymap-global-set "C-o" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list " Abv")))
@@ -285,7 +296,7 @@
 
 ;;;; misearch
 
-(defun david-read-buffers (&optional predicate)
+(defun my-read-buffers (&optional predicate)
   "Return a list of buffers specified interactively, one by one."
   (cl-loop for buf = (read-buffer "Buffer: " nil t
                                   (pcase-lambda (`(,name . ,buf))
@@ -295,7 +306,7 @@
            until (equal buf "") collect buf into selected
            finally return selected))
 
-(defun david-read-files (&optional predicate)
+(defun my-read-files (&optional predicate)
   "Return a list of buffers specified interactively, one by one."
   (cl-loop for file = (file-truename
                        (read-file-name "Files to search: "
@@ -310,8 +321,8 @@
            finally return selected))
 
 (with-eval-after-load 'misearch
-  (advice-add 'multi-isearch-read-buffers :override 'david-read-buffers)
-  (advice-add 'multi-isearch-read-files :override 'david-read-files))
+  (advice-add 'multi-isearch-read-buffers :override 'my-read-buffers)
+  (advice-add 'multi-isearch-read-files :override 'my-read-files))
 
 
 ;;;; bookmarks
@@ -1374,7 +1385,7 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
-  (keymap-global-set "C-o" 'conn-open-line)
+  ;; (keymap-global-set "C-o" 'conn-open-line)
   (keymap-global-set "M-o" 'conn-open-line-above)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-;" 'conn-wincontrol)
