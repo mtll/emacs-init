@@ -265,7 +265,7 @@
 
 (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
 
-(with-eval-after-load 'abbrev-mode
+(with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list " Abv")))
 
 
@@ -1399,6 +1399,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "$" 'ispell-word)
+  (keymap-set conn-state-map "!" 'add-mode-abbrev)
+  (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
   (keymap-global-set "M-u" 'conn-region-case-prefix)
   (keymap-global-set "M-SPC" 'conn-toggle-mark-command)
   (keymap-global-set "C-SPC" 'conn-set-mark-command)
@@ -1554,8 +1556,7 @@ see command `isearch-forward' for more information."
                    :repo "mtll/conn"
                    :files ("extensions/conn-calc.el"))
   (with-eval-after-load 'calc
-    (require 'conn-calc)
-    (keymap-global-set "C-x =" 'calc-dispatch)))
+    (require 'conn-calc)))
 
 (when (>= emacs-major-version 30)
   (elpaca (conn-treesit :host github
@@ -1655,6 +1656,12 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'consult
     (require 'embark))
 
+  (with-eval-after-load 'embark
+    (defun my-embark-abbrev-target-finder ()
+      (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
+        (when sym `(abbrev ,name ,wordstart . ,wordend))))
+    (add-to-list 'embark-target-finders 'my-embark-abbrev-target-finder))
+
   (setq embark-quit-after-action t
         embark-indicators '(embark-minimal-indicator
                             embark-highlight-indicator
@@ -1720,6 +1727,17 @@ see command `isearch-forward' for more information."
     (keymap-set embark-heading-map "RET" #'bicycle-cycle)
     (with-eval-after-load 'org
       (keymap-set embark-org-heading-map "RET" #'bicycle-cycle))
+
+    (defun my-embark-abbrev-target-finder ()
+      (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
+        (when sym `(abbrev ,name ,wordstart . ,wordend))))
+    (add-to-list 'embark-target-finders 'my-embark-abbrev-target-finder)
+
+    (defvar-keymap my-embark-abbrev-map
+      "RET" 'expand-abbrev
+      "M-RET" 'edit-abbrevs)
+    (setf (alist-get 'abbrev embark-keymap-alist)
+          (list 'my-embark-abbrev-map))
 
     (defun embark-tab-delete (name)
       (tab-bar-close-tab
