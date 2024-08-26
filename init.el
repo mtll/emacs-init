@@ -166,8 +166,7 @@
 (define-keymap
   :keymap ctl-x-map
   "s"   #'save-buffer
-  "C-s" #'save-some-buffers
-  "f"   #'project-find-file)
+  "C-s" #'save-some-buffers)
 
 (define-keymap
   :keymap window-prefix-map
@@ -183,9 +182,11 @@
   "C-c C-l" #'pp-eval-last-sexp
   "C-c C-r" #'eval-region)
 
+(add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
+
 (defun my-show-trailing-whitespace ()
   (setq show-trailing-whitespace t))
-(add-hook 'prog-mode 'my-show-trailing-whitespace)
+(add-hook 'prog-mode-hook 'my-show-trailing-whitespace)
 
 (defun my-quit-other-window-for-scrolling ()
   (interactive)
@@ -1898,12 +1899,12 @@ see command `isearch-forward' for more information."
   (global-corfu-mode 1)
   (corfu-echo-mode 1)
 
-  (setq corfu-quit-at-boundary 'separator
-        corfu-quit-no-match 'separator
-        corfu-preview-current nil
+  (setq corfu-quit-at-boundary nil
+        corfu-quit-no-match nil
+        corfu-preview-current 'insert
         corfu-on-exact-match nil
         corfu-auto nil
-        corfu-auto-delay 0.05
+        corfu-auto-delay nil
         corfu-auto-prefix 3
         corfu-map (define-keymap
                     "<remap> <forward-sentence>" 'corfu-prompt-end
@@ -1911,13 +1912,15 @@ see command `isearch-forward' for more information."
                     "<remap> <scroll-down-command>" #'corfu-scroll-down
                     "<remap> <scroll-up-command>" #'corfu-scroll-up
                     "<tab>" #'corfu-complete
+                    "RET" #'corfu-complete
                     "C-h" #'corfu-info-documentation
                     "M-h" #'corfu-info-location
                     "M-n" #'corfu-next
+                    "C-n" #'corfu-next
                     "M-p" #'corfu-previous
+                    "C-p" #'corfu-previous
                     "C-g" #'corfu-quit
-                    "TAB" #'corfu-complete
-                    "M-SPC" #'corfu-insert-separator))
+                    "TAB" #'corfu-complete))
 
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
@@ -2592,22 +2595,15 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-i" 'tempel-complete)
-  (keymap-global-set "M-I" 'tempel-insert)
-
-  (defun tempel-insert-region ()
-    (interactive)
-    (require 'tempel)
-    (activate-mark t)
-    (unwind-protect
-        (call-interactively 'tempel-insert)
-      (deactivate-mark)))
+  (keymap-global-set "M-I" 'tempel-complete)
+  (keymap-global-set "M-i" 'tempel-insert)
+  (global-tempel-abbrev-mode 1)
 
   (with-eval-after-load 'tempel
-    (keymap-set tempel-map "M-i" 'tempel-next)
-    (keymap-set tempel-map "M-I" 'tempel-previous)
+    (keymap-set tempel-map "M-n" 'tempel-next)
+    (keymap-set tempel-map "M-p" 'tempel-previous)
 
-    (setq tempel-path "/home/dave/.emacs.d/templates/*.eld")
+    (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
     (defun conn-tempel-insert-ad (fn &rest args)
       (apply fn args)
@@ -2843,3 +2839,42 @@ see command `isearch-forward' for more information."
 ;;;; beancount
 
 (elpaca beancount)
+
+
+;;;; projectile
+
+(elpaca projectile
+  (setq projectile-mode-line-prefix " Prj")
+  (run-with-timer 2 nil (lambda () (projectile-mode 1)))
+
+  (with-eval-after-load 'conn
+    (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
+                "Q" 'projectile-command-map))
+
+  (with-eval-after-load 'projectile
+    (keymap-set projectile-mode-map "C-x f" 'projectile-find-file)))
+
+
+;;;; edit-indirect image
+
+;; (defun my-edit-indirect-image ()
+;;   (interactive)
+;;   (edit-indirect-region (point-min) (point-max) t)
+;;   (overlay-put edit-indirect--overlay 'face nil)
+;;   (image-mode-as-text)
+;;   (let* (timer
+;;          (buffer (current-buffer))
+;;          (fn (lambda ()
+;;                (setq timer nil)
+;;                (when (buffer-live-p buffer)
+;;                  (with-current-buffer buffer
+;;                    (with-current-buffer (overlay-buffer edit-indirect--overlay)
+;;                      (image-toggle-display-text))
+;;                    (edit-indirect-save)
+;;                    (with-current-buffer (overlay-buffer edit-indirect--overlay)
+;;                      (image-toggle-display-image))))))
+;;          (hook
+;;           (lambda (&rest _)
+;;             (unless timer
+;;               (setq timer (run-with-idle-timer 0.5 nil fn))))))
+;;     (add-hook 'after-change-functions hook nil t)))
