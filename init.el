@@ -331,6 +331,7 @@
 (with-eval-after-load 'outline
   (define-keymap
     :keymap outline-mode-prefix-map
+    "u" 'outline-up-heading
     "@" 'outline-mark-subtree
     "n" 'outline-next-visible-heading
     "p" 'outline-previous-visible-heading
