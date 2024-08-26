@@ -2611,6 +2611,11 @@ see command `isearch-forward' for more information."
 
     (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
+    (defun tempel-edit-template ()
+      (interactive)
+      (let ((default-directory (expand-file-name "templates/" user-emacs-directory)))
+        (call-interactively 'find-file)))
+
     (defun conn-tempel-insert-ad (fn &rest args)
       (apply fn args)
       (when tempel--active (conn-emacs-state)))
@@ -2618,7 +2623,7 @@ see command `isearch-forward' for more information."
 
 ;;;;; tempel-collection
 
-(elpaca tempel-collection)
+;; (elpaca tempel-collection)
 
 
 ;;;; vundo
