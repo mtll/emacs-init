@@ -182,8 +182,6 @@
   "C-c C-l" #'pp-eval-last-sexp
   "C-c C-r" #'eval-region)
 
-(add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
-
 (defun my-show-trailing-whitespace ()
   (setq show-trailing-whitespace t))
 (add-hook 'prog-mode-hook 'my-show-trailing-whitespace)
@@ -261,6 +259,14 @@
                           (match-string 0)
                           'match-data (match-data)))))))
     result))
+
+
+;;;; Abbrev
+
+(add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
+
+(with-eval-after-load 'abbrev-mode
+  (setf (alist-get 'abbrev-mode minor-mode-alist) (list " Abv")))
 
 
 ;;;; electric pair
