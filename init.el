@@ -264,8 +264,7 @@
 ;;;; Abbrev
 
 (setq abbrev-all-caps t
-      hippie-expand-try-functions-list '(try-complete-file-name-partially
-                                         try-complete-file-name
+      hippie-expand-try-functions-list '(try-expand-dabbrev-visible
                                          try-expand-dabbrev
                                          try-expand-dabbrev-from-kill
                                          try-expand-dabbrev-all-buffers
