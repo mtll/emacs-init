@@ -132,21 +132,21 @@
 (keymap-global-unset "C-x C-z")
 
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
-(keymap-global-set "C-M-<return>"    #'default-indent-new-line)
-(keymap-global-set "S-<backspace>"   #'cycle-spacing)
-(keymap-global-set "M-N"             #'tab-bar-switch-to-next-tab)
-(keymap-global-set "M-P"             #'tab-bar-switch-to-prev-tab)
-(keymap-global-set "C-:"             #'read-only-mode)
-(keymap-global-set "C-x C-b"         #'ibuffer)
-(keymap-global-set "M-;"             #'comment-line)
-(keymap-global-set "C-c c"           #'compile)
-(keymap-global-set "C-S-w"           #'delete-region)
-(keymap-global-set "C-S-o"           #'other-window)
-(keymap-global-set "<f2>"            #'other-window)
-(keymap-global-set "C-z"             #'transient-resume)
-(keymap-global-set "C-h A"           #'describe-char)
-(keymap-global-set "C-x j"           #'dired-jump)
-(keymap-global-set "C-/"           #'undo-only)
+(keymap-global-set "C-M-<return>"#'default-indent-new-line)
+(keymap-global-set "S-<backspace>" #'cycle-spacing)
+(keymap-global-set "M-N" #'tab-bar-switch-to-next-tab)
+(keymap-global-set "M-P" #'tab-bar-switch-to-prev-tab)
+(keymap-global-set "C-:" #'read-only-mode)
+(keymap-global-set "C-x C-b" #'ibuffer)
+(keymap-global-set "M-;" #'comment-line)
+(keymap-global-set "C-c c" #'compile)
+(keymap-global-set "C-S-w" #'delete-region)
+(keymap-global-set "C-S-o" #'other-window)
+(keymap-global-set "<f2>" #'other-window)
+(keymap-global-set "C-z" #'transient-resume)
+(keymap-global-set "C-h A" #'describe-char)
+(keymap-global-set "C-x j" #'dired-jump)
+(keymap-global-set "C-/" #'undo-only)
 
 (put 'other-window 'repeat-map nil)
 
@@ -269,95 +269,10 @@
 
 (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
 
-(defun my-dabbrev-expand (arg)
-  (interactive "P")
-  (cond
-   ((equal arg '(4))
-    (put this-command 'state 'clear)
-    (search-backward dabbrev--last-expansion)
-    (insert dabbrev--last-abbreviation)
-    (delete-region (point) (+ (point) (length dabbrev--last-expansion)))
-    (dabbrev--reset-global-variables))
-   ((and (eq 'my-dabbrev-expand last-command)
-         (eq 'expand (get this-command 'state)))
-    (progn
-      (put this-command 'state 'complete)
-      (search-backward dabbrev--last-expansion)
-      (insert dabbrev--last-abbreviation)
-      (delete-region (point) (+ (point) (length dabbrev--last-expansion)))
-      (let ((completion-at-point-functions
-             (list (lambda ()
-                     (let* ((abbrev (dabbrev--abbrev-at-point))
-                            (ignore-case-p (dabbrev--ignore-case-p abbrev)))
-                       (list (progn (search-backward abbrev) (point))
-                             (progn (search-forward abbrev) (point))
-                             (nreverse
-                              (save-excursion
-                                (setq dabbrev--last-abbreviation abbrev)
-                                (let ((completion-list
-                                       (dabbrev--find-all-expansions abbrev ignore-case-p)))
-                                  (or (consp completion-list)
-                                      (user-error "No dynamic expansion for \"%s\" found%s"
-                                                  abbrev
-                                                  (if dabbrev--check-other-buffers
-                                                      "" " in this-buffer")))
-                                  (setq list
-                                        (cond
-                                         ((not (and ignore-case-p dabbrev-case-replace))
-                                          completion-list)
-                                         ((string= abbrev (upcase abbrev))
-                                          (mapcar #'upcase completion-list))
-                                         ((string= (substring abbrev 0 1)
-                                                   (upcase (substring abbrev 0 1)))
-                                          (mapcar #'capitalize completion-list))
-                                         (t
-                                          (mapcar #'downcase completion-list)))))))
-                             :cycle-sort-function 'identity
-                             :display-sort-function 'identity
-                             :category 'dabbrev))))))
-        (completion-at-point))))
-   (t
-    (put this-command 'state 'expand)
-    (dabbrev-expand arg))))
-
-(defun my-completion-preview-advice (&rest app)
-  (require 'dabbrev)
-  (dabbrev--reset-global-variables)
-  (let ((completion-at-point-functions
-         (list (lambda ()
-                 (let* ((abbrev (dabbrev--abbrev-at-point))
-                        (ignore-case-p (dabbrev--ignore-case-p abbrev)))
-                   (list (progn (search-backward abbrev) (point))
-                         (progn (search-forward abbrev) (point))
-                         (list (save-excursion
-                                 (setq dabbrev--last-abbreviation abbrev)
-                                 (let ((completion
-                                        (dabbrev--find-expansion abbrev
-                                                                 (if dabbrev-backward-only -1 0)
-                                                                 ignore-case-p)))
-                                   (cond
-                                    ((not (and ignore-case-p dabbrev-case-replace))
-                                     completion)
-                                    ((string= abbrev (upcase abbrev))
-                                     (upcase completion))
-                                    ((string= (substring abbrev 0 1)
-                                              (upcase (substring abbrev 0 1)))
-                                     (capitalize completion))
-                                    (t
-                                     (downcase completion)))))))))))
-        (completion-preview-sort-function 'identity))
-    (apply app))
-  (dabbrev--reset-global-variables))
-(advice-add 'completion-preview--update :around 'my-completion-preview-advice)
-
-(with-eval-after-load 'tempel
-  (custom-set-faces `(completion-preview ((t :inherit tempel-default)))))
-
 (global-completion-preview-mode 1)
 (keymap-unset completion-preview-active-mode-map "TAB")
 (keymap-unset completion-preview-active-mode-map "M-i")
 
-(keymap-global-set "C-j" 'my-dabbrev-expand)
 (keymap-global-set "M-n" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
@@ -2984,6 +2899,19 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'projectile
     (keymap-set projectile-mode-map "C-x f" 'projectile-find-file)))
+
+
+;;;; dabbrev-hacks
+
+(elpaca (dabbrev-hacks :host github
+                       :protocol ssh
+                       :depth nil
+                       :repo "mtll/dabbrev-hacks")
+  (require 'dabbrev-hacks)
+  (dabbrev-hacks-preview-mode 1)
+  (keymap-global-set "C-j" 'dabbrev-hacks-expand)
+  (with-eval-after-load 'tempel
+    (custom-set-faces `(completion-preview ((t :inherit tempel-default))))))
 
 
 ;;;; edit-indirect image
