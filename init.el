@@ -264,16 +264,94 @@
 ;;;; Abbrev
 
 (setq abbrev-all-caps t
-      hippie-expand-try-functions-list '(try-expand-dabbrev-visible
-                                         try-expand-dabbrev
-                                         try-expand-dabbrev-from-kill
-                                         try-expand-dabbrev-all-buffers
-                                         try-expand-list
+      hippie-expand-try-functions-list '(try-expand-list
                                          try-expand-line))
 
 (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
 
-(keymap-global-set "C-o" 'hippie-expand)
+(defun my-dabbrev-expand (arg)
+  (interactive "P")
+  (cond
+   ((equal arg '(4))
+    (setq this-command 'my-dabbrev-clear)
+    (search-backward dabbrev--last-expansion)
+    (insert dabbrev--last-abbreviation)
+    (delete-region (point) (+ (point) (length dabbrev--last-expansion)))
+    (dabbrev--reset-global-variables))
+   ((eq 'my-dabbrev-expand last-command)
+    (progn
+      (setq this-command 'my-dabbrev-complete)
+      (search-backward dabbrev--last-expansion)
+      (insert dabbrev--last-abbreviation)
+      (delete-region (point) (+ (point) (length dabbrev--last-expansion)))
+      (let ((completion-at-point-functions
+             (list (lambda ()
+                     (let* ((abbrev (dabbrev--abbrev-at-point))
+                            (ignore-case-p (dabbrev--ignore-case-p abbrev)))
+                       (list (progn (search-backward abbrev) (point))
+                             (progn (search-forward abbrev) (point))
+                             (nreverse
+                              (save-excursion
+                                (setq dabbrev--last-abbreviation abbrev)
+                                (let ((completion-list
+                                       (dabbrev--find-all-expansions abbrev ignore-case-p)))
+                                  (or (consp completion-list)
+                                      (user-error "No dynamic expansion for \"%s\" found%s"
+                                                  abbrev
+                                                  (if dabbrev--check-other-buffers
+                                                      "" " in this-buffer")))
+                                  (setq list
+                                        (cond
+                                         ((not (and ignore-case-p dabbrev-case-replace))
+                                          completion-list)
+                                         ((string= abbrev (upcase abbrev))
+                                          (mapcar #'upcase completion-list))
+                                         ((string= (substring abbrev 0 1)
+                                                   (upcase (substring abbrev 0 1)))
+                                          (mapcar #'capitalize completion-list))
+                                         (t
+                                          (mapcar #'downcase completion-list)))))))
+                             :cycle-sort-function 'identity
+                             :display-sort-function 'identity
+                             :category 'dabbrev))))))
+        (completion-at-point))))
+   (t
+    (dabbrev-expand arg))))
+
+(defun my-completion-preview-advice (&rest app)
+  (require 'dabbrev)
+  (dabbrev--reset-global-variables)
+  (let ((completion-at-point-functions
+         (list (lambda ()
+                 (let* ((abbrev (dabbrev--abbrev-at-point))
+                        (ignore-case-p (dabbrev--ignore-case-p abbrev)))
+                   (list (progn (search-backward abbrev) (point))
+                         (progn (search-forward abbrev) (point))
+                         (list (save-excursion
+                                 (setq dabbrev--last-abbreviation abbrev)
+                                 (let ((completion
+                                        (dabbrev--find-expansion abbrev
+                                                                 (if dabbrev-backward-only -1 0)
+                                                                 ignore-case-p)))
+                                   (cond
+                                    ((not (and ignore-case-p dabbrev-case-replace))
+                                     completion)
+                                    ((string= abbrev (upcase abbrev))
+                                     (upcase completion))
+                                    ((string= (substring abbrev 0 1)
+                                              (upcase (substring abbrev 0 1)))
+                                     (capitalize completion))
+                                    (t
+                                     (downcase completion)))))))))))
+        (completion-preview-sort-function 'identity))
+    (apply app))
+  (dabbrev--reset-global-variables))
+(advice-add 'completion-preview--update :around 'my-completion-preview-advice)
+
+(global-completion-preview-mode 1)
+
+(keymap-global-set "C-o" 'my-dabbrev-expand)
+(keymap-global-set "M-n" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list " Abv")))
@@ -341,7 +419,6 @@
 (with-eval-after-load 'outline
   (define-keymap
     :keymap outline-mode-prefix-map
-    "u" 'outline-up-heading
     "@" 'outline-mark-subtree
     "n" 'outline-next-visible-heading
     "p" 'outline-previous-visible-heading
@@ -1417,6 +1494,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-SPC" 'conn-set-mark-command)
   (keymap-global-set "M-z" 'conn-exchange-mark-command)
   (keymap-global-set "C-t" 'conn-transpose-regions)
+  (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1939,6 +2017,7 @@ see command `isearch-forward' for more information."
         corfu-preview-current 'insert
         corfu-on-exact-match nil
         corfu-auto nil
+        corfu-preselect 'valid
         corfu-auto-delay nil
         corfu-auto-prefix 3
         corfu-map (define-keymap
@@ -1948,10 +2027,14 @@ see command `isearch-forward' for more information."
                     "<remap> <scroll-up-command>" #'corfu-scroll-up
                     "<tab>" #'corfu-complete
                     "RET" #'corfu-complete
+                    "<return>" #'corfu-complete
                     "C-h" #'corfu-info-documentation
                     "M-h" #'corfu-info-location
+                    "M-<" #'corfu-first
+                    "M->" #'corfu-last
                     "M-n" #'corfu-next
                     "C-n" #'corfu-next
+                    "C-o" #'corfu-next
                     "M-p" #'corfu-previous
                     "C-p" #'corfu-previous
                     "C-g" #'corfu-quit
@@ -1959,7 +2042,7 @@ see command `isearch-forward' for more information."
 
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
-  (add-hook 'prog-mode-hook 'my-corfu-auto-on)
+  ;; (add-hook 'prog-mode-hook 'my-corfu-auto-on)
 
   (with-eval-after-load 'corfu
     (defun corfu-sep-and-start ()
