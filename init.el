@@ -2720,6 +2720,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'tempel
     (keymap-set tempel-map "M-n" 'tempel-next)
     (keymap-set tempel-map "M-p" 'tempel-previous)
+    (keymap-set tempel-map "M-i" 'tempel-done)
 
     (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
