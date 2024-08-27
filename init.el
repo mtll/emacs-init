@@ -273,14 +273,15 @@
   (interactive "P")
   (cond
    ((equal arg '(4))
-    (setq this-command 'my-dabbrev-clear)
+    (put this-command 'state 'clear)
     (search-backward dabbrev--last-expansion)
     (insert dabbrev--last-abbreviation)
     (delete-region (point) (+ (point) (length dabbrev--last-expansion)))
     (dabbrev--reset-global-variables))
-   ((eq 'my-dabbrev-expand last-command)
+   ((and (eq 'my-dabbrev-expand last-command)
+         (eq 'expand (get this-command 'state)))
     (progn
-      (setq this-command 'my-dabbrev-complete)
+      (put this-command 'state 'complete)
       (search-backward dabbrev--last-expansion)
       (insert dabbrev--last-abbreviation)
       (delete-region (point) (+ (point) (length dabbrev--last-expansion)))
@@ -316,6 +317,7 @@
                              :category 'dabbrev))))))
         (completion-at-point))))
    (t
+    (put this-command 'state 'expand)
     (dabbrev-expand arg))))
 
 (defun my-completion-preview-advice (&rest app)
@@ -348,11 +350,14 @@
   (dabbrev--reset-global-variables))
 (advice-add 'completion-preview--update :around 'my-completion-preview-advice)
 
+(with-eval-after-load 'tempel
+  (custom-set-faces `(completion-preview ((t :inherit tempel-default)))))
+
 (global-completion-preview-mode 1)
 (keymap-unset completion-preview-active-mode-map "TAB")
 (keymap-unset completion-preview-active-mode-map "M-i")
 
-(keymap-global-set "C-o" 'my-dabbrev-expand)
+(keymap-global-set "C-j" 'my-dabbrev-expand)
 (keymap-global-set "M-n" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
@@ -1463,7 +1468,7 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
-  ;; (keymap-global-set "C-o" 'conn-open-line)
+  (keymap-global-set "C-o" 'conn-open-line)
   (keymap-global-set "M-o" 'conn-open-line-above)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-;" 'conn-wincontrol)
@@ -2036,7 +2041,7 @@ see command `isearch-forward' for more information."
                     "M->" #'corfu-last
                     "M-n" #'corfu-next
                     "C-n" #'corfu-next
-                    "C-o" #'corfu-next
+                    "C-j" #'corfu-next
                     "M-p" #'corfu-previous
                     "C-p" #'corfu-previous
                     "C-g" #'corfu-quit
@@ -2716,8 +2721,8 @@ see command `isearch-forward' for more information."
 
 (elpaca tempel
   (keymap-global-set "M-I" 'tempel-complete)
-  (keymap-global-set "M-i" 'tempel-insert)
-  (global-tempel-abbrev-mode 1)
+  (keymap-global-set "M-i" 'tempel-expand)
+  ;; (global-tempel-abbrev-mode -1)
 
   (with-eval-after-load 'tempel
     (keymap-set tempel-map "M-n" 'tempel-next)
