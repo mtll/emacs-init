@@ -349,6 +349,8 @@
 (advice-add 'completion-preview--update :around 'my-completion-preview-advice)
 
 (global-completion-preview-mode 1)
+(keymap-unset completion-preview-active-mode-map "TAB")
+(keymap-unset completion-preview-active-mode-map "M-i")
 
 (keymap-global-set "C-o" 'my-dabbrev-expand)
 (keymap-global-set "M-n" 'hippie-expand)
