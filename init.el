@@ -755,7 +755,7 @@ see command `isearch-forward' for more information."
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
 
 
-;;;; Expreg
+;;;; expreg
 
 (elpaca expreg)
 
@@ -1390,8 +1390,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-x ," 'subword-mode)
   (keymap-global-set "M-\\"  'conn-kapply-prefix)
   (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
-  (keymap-set (conn-get-transition-map 'conn-emacs-state) "<f8>" 'conn-state)
-  (keymap-set (conn-get-transition-map 'conn-org-edit-state) "<f8>" 'conn-state)
+  (keymap-set conn-emacs-state-map "<f8>" 'conn-state)
+  (keymap-set conn-org-edit-state-map "<f8>" 'conn-state)
   (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
@@ -1429,11 +1429,9 @@ see command `isearch-forward' for more information."
         (self-insert-command N))))
   (keymap-global-set "S-SPC" 'my-space-after-point)
 
-  (keymap-set conn-state-map "M-<tab>" 'indent-region)
-  (keymap-unset conn-state-transition-map "M-TAB")
-  (keymap-unset conn-state-transition-map "M-<tab>"))
+  (keymap-set conn-state-map "M-<tab>" 'indent-region))
 
-;;;;; Conn Extensions
+;;;;; conn extensions
 
 (elpaca (conn-consult :host github
                       :repo "mtll/conn"
@@ -1577,7 +1575,7 @@ see command `isearch-forward' for more information."
       (require 'conn-treesit))))
 
 
-;;;; Orderless Set Operations
+;;;; orderless set operations
 
 (elpaca (orderless-set-operations :host github
                                   :repo "mtll/orderless-set-operations"
@@ -1586,7 +1584,7 @@ see command `isearch-forward' for more information."
     (oso-mode 1)))
 
 
-;;;; Expand Region
+;;;; expand region
 
 (elpaca expand-region)
 
@@ -2910,8 +2908,18 @@ see command `isearch-forward' for more information."
   (require 'dabbrev-hacks)
   (dabbrev-hacks-preview-mode 1)
   (keymap-global-set "C-j" 'dabbrev-hacks-expand)
-  (with-eval-after-load 'tempel
-    (custom-set-faces `(completion-preview ((t :inherit tempel-default))))))
+  (custom-set-faces `(completion-preview ((t :inherit diff-indicator-added :slant italic))))
+  (setq completion-preview-minimum-symbol-length 1)
+
+  (cl-pushnew 'paredit-backward-delete completion-preview-commands)
+
+  (defun my-completion-disable-preview ()
+    (cond ((and completion-in-region-mode global-completion-preview-mode)
+           (completion-preview-mode -1))
+          ((and (not completion-in-region-mode)
+                global-completion-preview-mode)
+           (completion-preview-mode 1))))
+  (add-hook 'completion-in-region-mode-hook 'my-completion-disable-preview))
 
 
 ;;;; edit-indirect image
