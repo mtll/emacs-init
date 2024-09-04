@@ -269,9 +269,8 @@
 
 (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
 
-(global-completion-preview-mode 1)
-(keymap-unset completion-preview-active-mode-map "TAB")
-(keymap-unset completion-preview-active-mode-map "M-i")
+;; (keymap-unset completion-preview-active-mode-map "TAB")
+;; (keymap-unset completion-preview-active-mode-map "M-i")
 
 (keymap-global-set "M-n" 'hippie-expand)
 
@@ -747,9 +746,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-;; (elpaca benchmark-init
-;;   (require 'benchmark-init)
-;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+(elpaca benchmark-init
+  (require 'benchmark-init)
+  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -1932,13 +1931,13 @@ see command `isearch-forward' for more information."
   (global-corfu-mode 1)
   (corfu-echo-mode 1)
 
-  (setq corfu-quit-at-boundary nil
+  (setq corfu-quit-at-boundary 'separator
         corfu-quit-no-match nil
         corfu-preview-current 'insert
         corfu-on-exact-match nil
         corfu-auto nil
         corfu-preselect 'valid
-        corfu-auto-delay nil
+        corfu-auto-delay 0.3
         corfu-auto-prefix 3
         corfu-map (define-keymap
                     "<remap> <forward-sentence>" 'corfu-prompt-end
@@ -1946,15 +1945,16 @@ see command `isearch-forward' for more information."
                     "<remap> <scroll-down-command>" #'corfu-scroll-down
                     "<remap> <scroll-up-command>" #'corfu-scroll-up
                     "<tab>" #'corfu-complete
-                    "RET" #'corfu-complete
-                    "<return>" #'corfu-complete
+                    "RET" nil
+                    "<return>" nil
+                    "M-SPC" 'corfu-insert-separator
                     "C-h" #'corfu-info-documentation
                     "M-h" #'corfu-info-location
                     "M-<" #'corfu-first
                     "M->" #'corfu-last
                     "M-n" #'corfu-next
-                    "C-n" #'corfu-next
-                    "C-j" #'corfu-next
+                    "C-n" nil
+                    "C-j" nil
                     "M-p" #'corfu-previous
                     "C-p" #'corfu-previous
                     "C-g" #'corfu-quit
@@ -1962,7 +1962,7 @@ see command `isearch-forward' for more information."
 
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
-  ;; (add-hook 'prog-mode-hook 'my-corfu-auto-on)
+  (add-hook 'prog-mode-hook 'my-corfu-auto-on)
 
   (with-eval-after-load 'corfu
     (defun corfu-sep-and-start ()
@@ -2085,7 +2085,9 @@ see command `isearch-forward' for more information."
   (setq conn-completion-region-quote-function 'my-quote-region-for-orderless)
 
   (defun flex-first-if-completing (pattern index _total)
-    (when (and (= index 0) completion-in-region-mode)
+    (when (and (= index 0)
+               (or completion-in-region-mode
+                   (bound-and-true-p company-candidates)))
       `(orderless-flex . ,pattern)))
 
   (defun orderless-toggle-smart-case ()
@@ -2901,25 +2903,25 @@ see command `isearch-forward' for more information."
 
 ;;;; dabbrev-hacks
 
-(elpaca (dabbrev-hacks :host github
-                       :protocol ssh
-                       :depth nil
-                       :repo "mtll/dabbrev-hacks")
-  (require 'dabbrev-hacks)
-  (dabbrev-hacks-preview-mode 1)
-  (keymap-global-set "C-j" 'dabbrev-hacks-expand)
-  (custom-set-faces `(completion-preview ((t :inherit diff-indicator-added :slant italic))))
-  (setq completion-preview-minimum-symbol-length 1)
+;; (elpaca (dabbrev-hacks :host github
+;;                        :protocol ssh
+;;                        :depth nil
+;;                        :repo "mtll/dabbrev-hacks")
+;;   (require 'dabbrev-hacks)
+;;   ;; (dabbrev-hacks-preview-mode -1)
+;;   (keymap-global-set "C-j" 'dabbrev-expand)
+;;   (custom-set-faces `(completion-preview ((t :inherit diff-indicator-added :slant italic))))
+;;   (setq completion-preview-minimum-symbol-length 1)
 
-  (cl-pushnew 'paredit-backward-delete completion-preview-commands)
+;;   (cl-pushnew 'paredit-backward-delete completion-preview-commands)
 
-  (defun my-completion-disable-preview ()
-    (cond ((and completion-in-region-mode global-completion-preview-mode)
-           (completion-preview-mode -1))
-          ((and (not completion-in-region-mode)
-                global-completion-preview-mode)
-           (completion-preview-mode 1))))
-  (add-hook 'completion-in-region-mode-hook 'my-completion-disable-preview))
+;;   (defun my-completion-disable-preview ()
+;;     (cond ((and completion-in-region-mode global-completion-preview-mode)
+;;            (completion-preview-mode -1))
+;;           ((and (not completion-in-region-mode)
+;;                 global-completion-preview-mode)
+;;            (completion-preview-mode 1))))
+;;   (add-hook 'completion-in-region-mode-hook 'my-completion-disable-preview))
 
 
 ;;;; edit-indirect image
@@ -2945,3 +2947,7 @@ see command `isearch-forward' for more information."
 ;;             (unless timer
 ;;               (setq timer (run-with-idle-timer 0.5 nil fn))))))
 ;;     (add-hook 'after-change-functions hook nil t)))
+
+;; Local Variables:
+;; outline-regexp: ";;;;* [^ 	\n]"
+;; End:
