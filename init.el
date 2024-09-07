@@ -2375,13 +2375,18 @@ see command `isearch-forward' for more information."
     (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
     (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
 
+;;;;; consult-projectile
+
+(elpaca consult-projectile
+  (keymap-global-set "C-c j" 'consult-projectile))
+
 ;;;;; consult-project-extras
 
-(elpaca (consult-project-extras :host github
-                                :repo "Qkessler/consult-project-extra"
-                                :files (:defaults "consult-project-extra.el")
-                                :main "consult-project-extra.el")
-  (keymap-global-set "C-c j" 'consult-project-extra-find))
+;; (elpaca (consult-project-extras :host github
+;;                                 :repo "Qkessler/consult-project-extra"
+;;                                 :files (:defaults "consult-project-extra.el")
+;;                                 :main "consult-project-extra.el")
+;;   (keymap-global-set "C-c j" 'consult-project-extra-find))
 
 
 ;;;; vertico
@@ -2889,16 +2894,17 @@ see command `isearch-forward' for more information."
 
 ;;;; projectile
 
-(elpaca projectile
-  (setq projectile-mode-line-prefix " Prj")
-  (run-with-timer 2 nil (lambda () (projectile-mode 1)))
+;; (elpaca projectile
+;;   (setq projectile-mode-line-prefix " Prj"
+;;         projectile-dynamic-mode-line nil)
+;;   (run-with-timer 2 nil (lambda () (projectile-mode 1)))
 
-  (with-eval-after-load 'conn
-    (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
-                "Q" 'projectile-command-map))
+;;   (with-eval-after-load 'conn
+;;     (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
+;;                 "Q" 'projectile-command-map))
 
-  (with-eval-after-load 'projectile
-    (keymap-set projectile-mode-map "C-x f" 'projectile-find-file)))
+;;   (with-eval-after-load 'projectile
+;;     (keymap-set projectile-mode-map "C-x f" 'projectile-find-file)))
 
 
 ;;;; dabbrev-hacks
