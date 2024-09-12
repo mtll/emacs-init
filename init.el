@@ -182,6 +182,9 @@
   "C-c C-l" #'pp-eval-last-sexp
   "C-c C-r" #'eval-region)
 
+(keymap-global-set "C-x f" 'find-file)
+(keymap-global-set "C-x C-f" 'set-fill-column)
+
 (defun my-show-trailing-whitespace ()
   (setq show-trailing-whitespace t))
 (add-hook 'prog-mode-hook 'my-show-trailing-whitespace)
@@ -746,9 +749,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-(elpaca benchmark-init
-  (require 'benchmark-init)
-  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+;; (elpaca benchmark-init
+;;   (require 'benchmark-init)
+;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -2894,17 +2897,14 @@ see command `isearch-forward' for more information."
 
 ;;;; projectile
 
-;; (elpaca projectile
-;;   (setq projectile-mode-line-prefix " Prj"
-;;         projectile-dynamic-mode-line nil)
-;;   (run-with-timer 2 nil (lambda () (projectile-mode 1)))
+(elpaca projectile
+  (setq projectile-mode-line-prefix " Prj"
+        projectile-dynamic-mode-line nil)
+  (run-with-timer 2 nil (lambda () (projectile-mode 1)))
 
-;;   (with-eval-after-load 'conn
-;;     (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
-;;                 "Q" 'projectile-command-map))
-
-;;   (with-eval-after-load 'projectile
-;;     (keymap-set projectile-mode-map "C-x f" 'projectile-find-file)))
+  (with-eval-after-load 'conn
+    (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
+                "Q" 'projectile-command-map)))
 
 
 ;;;; dabbrev-hacks
