@@ -2,9 +2,7 @@
 
 ;;; Elpaca
 
-;; (setq elpaca-core-date
-;;       (list (string-to-number (format-time-string "%Y%m%d" emacs-build-time))))
-(defvar elpaca-installer-version 0.7)
+(defvar elpaca-installer-version 0.8)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
@@ -21,18 +19,18 @@
     (make-directory repo t)
     (when (< emacs-major-version 28) (require 'subr-x))
     (condition-case-unless-debug err
-        (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                 ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                 ,@(when-let ((depth (plist-get order :depth)))
-                                                     (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                 ,(plist-get order :repo) ,repo))))
-                 ((zerop (call-process "git" nil buffer t "checkout"
-                                       (or (plist-get order :ref) "--"))))
-                 (emacs (concat invocation-directory invocation-name))
-                 ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                       "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                 ((require 'elpaca))
-                 ((elpaca-generate-autoloads "elpaca" repo)))
+        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                  ,@(when-let* ((depth (plist-get order :depth)))
+                                                      (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                  ,(plist-get order :repo) ,repo))))
+                  ((zerop (call-process "git" nil buffer t "checkout"
+                                        (or (plist-get order :ref) "--"))))
+                  (emacs (concat invocation-directory invocation-name))
+                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                  ((require 'elpaca))
+                  ((elpaca-generate-autoloads "elpaca" repo)))
             (progn (message "%s" (buffer-string)) (kill-buffer buffer))
           (error "%s" (with-current-buffer buffer (buffer-string))))
       ((error) (warn "%s" err) (delete-directory repo 'recursive))))
@@ -262,6 +260,18 @@
                           (match-string 0)
                           'match-data (match-data)))))))
     result))
+
+(defun customize-read-group-ad ()
+  (let ((completion-ignore-case t)
+        (def (custom-group-of-mode major-mode)))
+    (completing-read (format-prompt "Customize group" def)
+                     obarray
+                     (lambda (symbol)
+                       (or (and (get symbol 'custom-loads)
+                                (not (get symbol 'custom-autoload)))
+                           (get symbol 'custom-group)))
+                     t nil nil def)))
+(advice-add 'customize-read-group :override 'customize-read-group-ad)
 
 
 ;;;; Abbrev
@@ -1618,7 +1628,7 @@ see command `isearch-forward' for more information."
 
 ;;;; magit
 
-(elpaca magit
+(elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
@@ -1928,79 +1938,126 @@ see command `isearch-forward' for more information."
     (insert "<[bmk:" bmk "]>")))
 
 
+;;;; company
+
+(elpaca company
+  (global-company-mode 1)
+
+  (define-keymap
+    :keymap company-active-map
+    "<tab>" 'company-complete-selection
+    "<return>" nil
+    "RET" nil)
+
+  (defun just-one-face (fn &rest args)
+    (let ((orderless-match-faces [completions-common-part]))
+      (apply fn args)))
+  (advice-add 'company-capf--candidates :around #'just-one-face)
+
+  (defun company-capf--candidates (input suffix)
+    (require 'vertico)
+    (let* ((res (company--capf-data))
+           (table (nth 3 res))
+           (pred (plist-get (nthcdr 4 res) :predicate))
+           (meta (and res
+                      (completion-metadata
+                       (buffer-substring (nth 1 res) (nth 2 res))
+                       table pred))))
+      (company-capf--save-current-data res meta)
+      (when res
+        (let* ((interrupt (plist-get (nthcdr 4 res) :company-use-while-no-input))
+               (all-result (company-capf--candidates-1 input suffix
+                                                       table pred
+                                                       meta
+                                                       (and non-essential
+                                                            (eq interrupt t))))
+               (sortfun (or (cdr (assq 'display-sort-function meta))
+                            #'vertico-sort-length-alpha))
+               (candidates (assoc-default :completions all-result)))
+          (setq company-capf--sorted (functionp sortfun))
+          (when candidates
+            (setq company-capf--current-boundaries
+                  (company--capf-boundaries-markers
+                   (assoc-default :boundaries all-result)
+                   company-capf--current-boundaries)))
+          (when sortfun
+            (setq candidates (funcall sortfun candidates)))
+          candidates)))))
+
+
 ;;;; corfu
 
-(elpaca corfu
-  (global-corfu-mode 1)
-  (corfu-echo-mode 1)
+;; (elpaca corfu
+;;   (global-corfu-mode 1)
+;;   (corfu-echo-mode 1)
 
-  (setq corfu-quit-at-boundary 'separator
-        corfu-quit-no-match nil
-        corfu-preview-current 'insert
-        corfu-on-exact-match nil
-        corfu-auto nil
-        corfu-preselect 'valid
-        corfu-auto-delay 0.3
-        corfu-auto-prefix 3
-        corfu-map (define-keymap
-                    "<remap> <forward-sentence>" 'corfu-prompt-end
-                    "<remap> <backward-sentence>" 'corfu-prompt-beginning
-                    "<remap> <scroll-down-command>" #'corfu-scroll-down
-                    "<remap> <scroll-up-command>" #'corfu-scroll-up
-                    "<tab>" #'corfu-complete
-                    "RET" nil
-                    "<return>" nil
-                    "M-SPC" 'corfu-insert-separator
-                    "C-h" #'corfu-info-documentation
-                    "M-h" #'corfu-info-location
-                    "M-<" #'corfu-first
-                    "M->" #'corfu-last
-                    "M-n" #'corfu-next
-                    "C-n" nil
-                    "C-j" nil
-                    "M-p" #'corfu-previous
-                    "C-p" #'corfu-previous
-                    "C-g" #'corfu-quit
-                    "TAB" #'corfu-complete))
+;;   (setq corfu-quit-at-boundary 'separator
+;;         corfu-quit-no-match nil
+;;         corfu-preview-current 'insert
+;;         corfu-on-exact-match nil
+;;         corfu-auto nil
+;;         corfu-preselect 'valid
+;;         corfu-auto-delay 0.3
+;;         corfu-auto-prefix 3
+;;         corfu-map (define-keymap
+;;                     "<remap> <forward-sentence>" 'corfu-prompt-end
+;;                     "<remap> <backward-sentence>" 'corfu-prompt-beginning
+;;                     "<remap> <scroll-down-command>" #'corfu-scroll-down
+;;                     "<remap> <scroll-up-command>" #'corfu-scroll-up
+;;                     "<tab>" #'corfu-complete
+;;                     "RET" nil
+;;                     "<return>" nil
+;;                     "M-SPC" 'corfu-insert-separator
+;;                     "C-h" #'corfu-info-documentation
+;;                     "M-h" #'corfu-info-location
+;;                     "M-<" #'corfu-first
+;;                     "M->" #'corfu-last
+;;                     "M-n" #'corfu-next
+;;                     "C-n" nil
+;;                     "C-j" nil
+;;                     "M-p" #'corfu-previous
+;;                     "C-p" #'corfu-previous
+;;                     "C-g" #'corfu-quit
+;;                     "TAB" #'corfu-complete))
 
-  (defun my-corfu-auto-on ()
-    (setq-local corfu-auto t))
-  (add-hook 'prog-mode-hook 'my-corfu-auto-on)
+;;   (defun my-corfu-auto-on ()
+;;     (setq-local corfu-auto t))
+;;   (add-hook 'prog-mode-hook 'my-corfu-auto-on)
 
-  (with-eval-after-load 'corfu
-    (defun corfu-sep-and-start ()
-      (interactive)
-      (completion-at-point)
-      (corfu-insert-separator))
+;;   (with-eval-after-load 'corfu
+;;     (defun corfu-sep-and-start ()
+;;       (interactive)
+;;       (completion-at-point)
+;;       (corfu-insert-separator))
 
-    (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start)
+;;     (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start)
 
-    (with-eval-after-load 'conn
-      (defun my-corfu-off ()
-        (global-corfu-mode -1))
-      (add-hook 'conn-macro-dispatch-start-hook 'my-corfu-off)
+;;     (with-eval-after-load 'conn
+;;       (defun my-corfu-off ()
+;;         (global-corfu-mode -1))
+;;       (add-hook 'conn-macro-dispatch-start-hook 'my-corfu-off)
 
-      (defun my-corfu-on ()
-        (global-corfu-mode 1))
-      (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on)))
+;;       (defun my-corfu-on ()
+;;         (global-corfu-mode 1))
+;;       (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on)))
 
-  (with-eval-after-load 'lsp-mode
-    (defun wrap-lsp-capf ()
-      (setq-local completion-at-point-functions
-                  (cl-nsubst
-                   (cape-capf-noninterruptible
-                    (cape-capf-buster #'lsp-completion-at-point))
-                   #'lsp-completion-at-point completion-at-point-functions)))
-    (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
+;;   (with-eval-after-load 'lsp-mode
+;;     (defun wrap-lsp-capf ()
+;;       (setq-local completion-at-point-functions
+;;                   (cl-nsubst
+;;                    (cape-capf-noninterruptible
+;;                     (cape-capf-buster #'lsp-completion-at-point))
+;;                    #'lsp-completion-at-point completion-at-point-functions)))
+;;     (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
 
-  (with-eval-after-load 'eglot
-    (defun wrap-eglot-capf ()
-      (setq-local completion-at-point-functions
-                  (cl-nsubst
-                   (cape-capf-noninterruptible
-                    (cape-capf-buster #'eglot-completion-at-point))
-                   #'eglot-completion-at-point completion-at-point-functions)))
-    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
+;;   (with-eval-after-load 'eglot
+;;     (defun wrap-eglot-capf ()
+;;       (setq-local completion-at-point-functions
+;;                   (cl-nsubst
+;;                    (cape-capf-noninterruptible
+;;                     (cape-capf-buster #'eglot-completion-at-point))
+;;                    #'eglot-completion-at-point completion-at-point-functions)))
+;;     (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
 ;;;;; kind-icons
 
@@ -2955,5 +3012,5 @@ see command `isearch-forward' for more information."
 ;;     (add-hook 'after-change-functions hook nil t)))
 
 ;; Local Variables:
-;; outline-regexp: ";;;;* [^ 	\n]"
+;; outline-regexp: ";;;;* [^    \n]"
 ;; End:
