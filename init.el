@@ -398,9 +398,9 @@
 
 ;;;; dictionary
 
-(require 'dictionary)
-(setopt dictionary-server "localhost")
-(keymap-global-set "C-c t d" #'dictionary-lookup-definition)
+;; (require 'dictionary)
+;; (setopt dictionary-server "localhost")
+;; (keymap-global-set "C-c t d" #'dictionary-lookup-definition)
 
 
 ;;;; isearch
@@ -1361,16 +1361,16 @@ see command `isearch-forward' for more information."
 ;;;; conn
 
 (elpaca (conn :host github
-              :protocol ssh
+              ;; :protocol ssh
               :depth nil
               :repo "mtll/conn")
   (setq conn-wincontrol-initial-help nil
         conn-state-cursor-type 'box
-        conn-emacs-state-cursor-type '(hbar . 18)
+        conn-emacs-state-cursor-type '(hbar . 5)
         conn-mark-idle-timer 0.05
         conn-read-string-timeout 0.35)
 
-  (setq-default cursor-type '(hbar . 18))
+  (setq-default cursor-type '(hbar . 5))
 
   (defun conn-mark-emacs-state-hook ()
     (when (and conn-emacs-state
@@ -1591,7 +1591,8 @@ see command `isearch-forward' for more information."
 
 (elpaca (orderless-set-operations :host github
                                   :repo "mtll/orderless-set-operations"
-                                  :protocol ssh)
+                                  ;; :protocol ssh
+                                  )
   (with-eval-after-load 'orderless
     (oso-mode 1)))
 
