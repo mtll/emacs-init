@@ -861,7 +861,15 @@ see command `isearch-forward' for more information."
 (elpaca slime
   (require 'slime-autoloads)
 
+  (put 'iterate 'common-lisp-indent-function 1)
+  (put 'mapping 'common-lisp-indent-function 1)
+  (put 'gathering 'common-lisp-indent-function 1)
+  (put 'collect 'common-lisp-indent-function 1)
+  (put 'collect-minimize 'common-lisp-indent-function 2)
+
   (setq inferior-lisp-program "sbcl"
+        slime-default-lisp 'sbcl
+        slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096")))
         slime-contribs '(slime-autodoc
                          slime-xref-browser
                          slime-repl
@@ -907,7 +915,12 @@ see command `isearch-forward' for more information."
       (if (slime-reading-p)
           (user-error "Synchronous Lisp Evaluation suppressed while reading input")
         (apply slime-eval args)))
-    (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading)))
+    (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading))
+
+  (with-eval-after-load 'conn
+    (conn-register-thing-commands
+     'defun 'conn-sequential-thing-handler
+     'slime-end-of-defun 'slime-beginning-of-defun)))
 
 
 ;;;; bqn-mode
@@ -1947,6 +1960,8 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap company-active-map
     "<tab>" 'company-complete-selection
+    "C-n" nil
+    "C-p" nil
     "<return>" nil
     "RET" nil)
 
@@ -1955,7 +1970,7 @@ see command `isearch-forward' for more information."
       (apply fn args)))
   (advice-add 'company-capf--candidates :around #'just-one-face)
 
-  (defun company-capf--candidates (input suffix)
+  (defun company-capf--candidates-ad (input suffix)
     (require 'vertico)
     (let* ((res (company--capf-data))
            (table (nth 3 res))
@@ -1983,7 +1998,8 @@ see command `isearch-forward' for more information."
                    company-capf--current-boundaries)))
           (when sortfun
             (setq candidates (funcall sortfun candidates)))
-          candidates)))))
+          candidates))))
+  (advice-add 'company-capf--candidates :override 'company-capf--candidates-ad))
 
 
 ;;;; corfu
