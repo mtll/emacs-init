@@ -2796,20 +2796,20 @@ see command `isearch-forward' for more information."
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
-  (setq denote-file-type 'text
-        denote-history-completion-in-prompts nil
-        denote-org-front-matter "#+title:      %s
-#+date:       %s
-#+filetags:   %s
-#+identifier: %s
-#+category:   Denote
-\n")
-
   (with-eval-after-load 'denote
     (require 'denote-silo-extras)
     (with-eval-after-load 'org
       (require 'denote-org-extras))
-    (denote-rename-buffer-mode 1))
+    (denote-rename-buffer-mode 1)
+
+    (setq denote-file-type 'text
+          denote-history-completion-in-prompts nil
+          denote-org-front-matter "#+title:      %s
+#+date:       %s
+#+filetags:   %s
+#+identifier: %s
+#+category:   Denote
+\n"))
 
   (defun denote-dired-directory ()
     (interactive)

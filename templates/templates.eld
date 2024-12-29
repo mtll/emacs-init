@@ -36,3 +36,38 @@ latex-mode org-mode
 (overline "\\overline{" q "}")
 (tidle "\\tilde{" q "}")
 (limits "\\limits_{" p "}^{" q "}")
+
+org-mode
+
+(nm "#+name: " r)
+(cpt "#+caption: ")
+(drw ":" p ":" n r ":end:")
+(bgn "#+begin_" (s name) n> r> n "#+end_" name)
+(qu "#+begin_quote" n> r> n "#+end_quote")
+(snote "#+begin_sidenote" n> r> n "#+end_sidenote")
+(mnote "#+begin_marginnote" n> r> n "#+end_marginnote")
+(ex "#+begin_example" n> r> n "#+end_example")
+(cent "#+begin_center" n> r> n "#+end_center")
+(ascii "#+begin_export ascii" n> r> n "#+end_export")
+(html "#+begin_export html" n> r> n "#+end_export")
+(latex "#+begin_export latex" n> r> n "#+end_export")
+(com "#+begin_comment" n> r> n "#+end_comment")
+(verse "#+begin_verse" n> r> n "#+end_verse")
+(src "#+begin_src " q n r n "#+end_src")
+(gnuplot "#+begin_src gnuplot :var data=" (p "table") " :file " (p "plot.png") n r n "#+end_src" :post (org-edit-src-code))
+(elisp "#+begin_src emacs-lisp" n r n "#+end_src" :post (org-edit-src-code))
+(inlsrc "src_" p "{" q "}")
+(title "#+title: " p n "#+author: David Feller" n "#+language: en")
+
+c++-mode c-mode
+
+(if "if (" p ") {" n> r> n "}" >)
+(for "for (" p ") {" n> r> n "}" >)
+(while "while (" p ") {" n> r> n "}" >)
+(do "do {" n> r> n "} while (" > p ")")
+(ifelse "if (" p ") {" n> r> n> "} else {" > n> n "}" >)
+(inc "#include " q)
+
+c++-mode
+
+(lambda "[" p "] " "(" p ") " "{" q "}")
