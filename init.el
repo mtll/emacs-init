@@ -273,6 +273,10 @@
                      t nil nil def)))
 (advice-add 'customize-read-group :override 'customize-read-group-ad)
 
+(defun my-recenter-pulse-ad (&rest _)
+  (pulse-momentary-highlight-one-line))
+(advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
+
 
 ;;;; Abbrev
 
