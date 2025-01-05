@@ -117,7 +117,7 @@
 
 (minibuffer-depth-indicate-mode 1)
 (global-goto-address-mode 1)
-(show-paren-mode 1)
+(show-paren-mode -1)
 (delete-selection-mode -1)
 (column-number-mode 1)
 (line-number-mode 1)
@@ -276,6 +276,15 @@
 (defun my-recenter-pulse-ad (&rest _)
   (pulse-momentary-highlight-one-line))
 (advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
+
+
+;;;; Lisp Indentation
+
+(put 'iterate 'common-lisp-indent-function 1)
+(put 'mapping 'common-lisp-indent-function 1)
+(put 'gathering 'common-lisp-indent-function 1)
+(put 'collect 'common-lisp-indent-function 1)
+(put 'collect-minimize 'common-lisp-indent-function 2)
 
 
 ;;;; Abbrev
@@ -797,134 +806,138 @@ see command `isearch-forward' for more information."
 
 ;;;; paredit
 
-(elpaca (paredit :host github :repo "emacsmirror/paredit")
-  (dolist (mode '(lisp-data-mode-hook
-                  eval-expression-minibuffer-setup-hook
-                  lisp-interaction-mode-hook
-                  eshell-mode-hook
-                  slime-repl-mode-hook))
-    (add-hook mode #'enable-paredit-mode))
+;; (elpaca (paredit :host github :repo "emacsmirror/paredit")
+;;   (dolist (mode '(lisp-data-mode-hook
+;;                   eval-expression-minibuffer-setup-hook
+;;                   lisp-interaction-mode-hook
+;;                   eshell-mode-hook
+;;                   slime-repl-mode-hook))
+;;     (add-hook mode #'enable-paredit-mode))
 
-  (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
+;;   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
 
-  (eldoc-add-command 'paredit-backward-delete
-                     'paredit-close-round)
+;;   (eldoc-add-command 'paredit-backward-delete
+;;                      'paredit-close-round)
 
-  (defun override-slime-repl-bindings-with-paredit ()
-    (keymap-unset slime-repl-mode-map paredit-backward-delete-key))
-  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
+;;   (defun override-slime-repl-bindings-with-paredit ()
+;;     (keymap-unset slime-repl-mode-map paredit-backward-delete-key))
+;;   (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
 
-  (with-eval-after-load 'paredit
-    (with-eval-after-load 'diminish
-      (diminish 'paredit-mode))
+;;   (with-eval-after-load 'paredit
+;;     (with-eval-after-load 'diminish
+;;       (diminish 'paredit-mode))
 
-    (keymap-unset paredit-mode-map "C-j")
-    (keymap-unset paredit-mode-map "RET")
-    (keymap-unset paredit-mode-map "M-s")
-    (keymap-unset paredit-mode-map "M-;")
+;;     (keymap-unset paredit-mode-map "C-j")
+;;     (keymap-unset paredit-mode-map "RET")
+;;     (keymap-unset paredit-mode-map "M-s")
+;;     (keymap-unset paredit-mode-map "M-;")
 
-    (keymap-set paredit-mode-map "M-l" 'paredit-splice-sexp)
-    (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
-    (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
+;;     (keymap-set paredit-mode-map "M-l" 'paredit-splice-sexp)
+;;     (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
+;;     (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
 
-    (keymap-set paredit-mode-map "C-S-l" 'paredit-forward-slurp-sexp)
-    (keymap-set paredit-mode-map "C-S-o" 'paredit-forward-barf-sexp)
-    (keymap-set paredit-mode-map "C-S-j" 'paredit-backward-slurp-sexp)
-    (keymap-set paredit-mode-map "C-S-u" 'paredit-backward-barf-sexp)
-    (keymap-set paredit-mode-map "C-S-i" 'paredit-convolute-sexp)
-    (keymap-set paredit-mode-map "C-S-k" 'paredit-join-sexps)
+;;     (keymap-set paredit-mode-map "C-S-l" 'paredit-forward-slurp-sexp)
+;;     (keymap-set paredit-mode-map "C-S-o" 'paredit-forward-barf-sexp)
+;;     (keymap-set paredit-mode-map "C-S-j" 'paredit-backward-slurp-sexp)
+;;     (keymap-set paredit-mode-map "C-S-u" 'paredit-backward-barf-sexp)
+;;     (keymap-set paredit-mode-map "C-S-i" 'paredit-convolute-sexp)
+;;     (keymap-set paredit-mode-map "C-S-k" 'paredit-join-sexps)
 
-    (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
-      (or endp
-          (cond ((eq (char-syntax delimiter) ?\()
-                 (not (or (looking-back ",@" nil t)
-                          (looking-back "'" nil t)
-                          (looking-back "`" nil t)
-                          (looking-back "#." nil t))))
-                ((eq (char-syntax delimiter) ?\")
-                 (not (or (looking-back "#" nil t)
-                          (looking-back "#." nil t))))
-                (else t))))
+;;     (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
+;;       (or endp
+;;           (cond ((eq (char-syntax delimiter) ?\()
+;;                  (not (or (looking-back ",@" nil t)
+;;                           (looking-back "'" nil t)
+;;                           (looking-back "`" nil t)
+;;                           (looking-back "#." nil t))))
+;;                 ((eq (char-syntax delimiter) ?\")
+;;                  (not (or (looking-back "#" nil t)
+;;                           (looking-back "#." nil t))))
+;;                 (else t))))
 
-    (add-to-list 'paredit-space-for-delimiter-predicates
-                 'paredit-space-for-delimiter-predicates-lisp)
+;;     (add-to-list 'paredit-space-for-delimiter-predicates
+;;                  'paredit-space-for-delimiter-predicates-lisp)
 
-    (defun paredit-kill-rectangle-advice (fn &rest args)
-      (if (not (bound-and-true-p rectangle-mark-mode))
-          (apply fn args)
-        (setq this-command 'kill-rectangle)
-        (call-interactively 'kill-rectangle)))
-    (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
+;;     (defun paredit-kill-rectangle-advice (fn &rest args)
+;;       (if (not (bound-and-true-p rectangle-mark-mode))
+;;           (apply fn args)
+;;         (setq this-command 'kill-rectangle)
+;;         (call-interactively 'kill-rectangle)))
+;;     (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
 
-    (defun paredit-disable-electric-pair ()
-      (electric-pair-local-mode -1))))
+;;     (defun paredit-disable-electric-pair ()
+;;       (electric-pair-local-mode -1))))
+
+
+
+(elpaca sly)
 
 
 ;;;; slime
 
-(elpaca slime
-  (require 'slime-autoloads)
+;; (elpaca slime
+;;   (require 'slime-autoloads)
 
-  (put 'iterate 'common-lisp-indent-function 1)
-  (put 'mapping 'common-lisp-indent-function 1)
-  (put 'gathering 'common-lisp-indent-function 1)
-  (put 'collect 'common-lisp-indent-function 1)
-  (put 'collect-minimize 'common-lisp-indent-function 2)
+;;   (put 'iterate 'common-lisp-indent-function 1)
+;;   (put 'mapping 'common-lisp-indent-function 1)
+;;   (put 'gathering 'common-lisp-indent-function 1)
+;;   (put 'collect 'common-lisp-indent-function 1)
+;;   (put 'collect-minimize 'common-lisp-indent-function 2)
 
-  (setq inferior-lisp-program "sbcl"
-        slime-default-lisp 'sbcl
-        slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096")))
-        slime-contribs '(slime-autodoc
-                         slime-xref-browser
-                         slime-repl
-                         slime-cl-indent
-                         slime-autodoc
-                         slime-editing-commands
-                         slime-fancy-inspector
-                         slime-fancy-trace
-                         slime-mdot-fu
-                         slime-macrostep
-                         slime-presentations
-                         slime-scratch
-                         slime-references
-                         slime-package-fu
-                         slime-fontifying-fu
-                         slime-quicklisp
-                         slime-trace-dialog
-                         slime-hyperdoc
-                         slime-quicklisp
-                         slime-asdf
-                         slime-sbcl-exts
-                         slime-banner))
+;;   (setq inferior-lisp-program "sbcl"
+;;         slime-default-lisp 'sbcl
+;;         slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096")))
+;;         slime-contribs '(slime-autodoc
+;;                          slime-xref-browser
+;;                          slime-repl
+;;                          slime-cl-indent
+;;                          slime-autodoc
+;;                          slime-editing-commands
+;;                          slime-fancy-inspector
+;;                          slime-fancy-trace
+;;                          slime-mdot-fu
+;;                          slime-macrostep
+;;                          slime-presentations
+;;                          slime-scratch
+;;                          slime-references
+;;                          slime-package-fu
+;;                          slime-fontifying-fu
+;;                          slime-quicklisp
+;;                          slime-trace-dialog
+;;                          slime-hyperdoc
+;;                          slime-quicklisp
+;;                          slime-asdf
+;;                          slime-sbcl-exts
+;;                          slime-banner))
 
-  ;; TODO: use local embark-keymap-alist instead
-  (defun slime-setup-embark ()
-    (require 'embark)
-    (require 'conn-embark)
-    (make-local-variable 'embark-default-action-overrides)
-    (make-local-variable 'conn-embark-alt-default-action-overrides)
-    (setf (alist-get 'expression embark-default-action-overrides) 'slime-interactive-eval
-          (alist-get 'defun embark-default-action-overrides) 'slime-eval-defun
-          (alist-get 'identifier embark-default-action-overrides) 'slime-edit-definition
-          (alist-get 'identifier conn-embark-alt-default-action-overrides) 'slime-hyperdoc-lookup))
-  (add-hook 'slime-mode-hook #'slime-setup-embark)
-  (add-hook 'slime-repl-mode-hook #'slime-setup-embark)
+;;   ;; TODO: use local embark-keymap-alist instead
+;;   (defun slime-setup-embark ()
+;;     (require 'embark)
+;;     (require 'conn-embark)
+;;     (make-local-variable 'embark-default-action-overrides)
+;;     (make-local-variable 'conn-embark-alt-default-action-overrides)
+;;     (setf (alist-get 'expression embark-default-action-overrides) 'slime-interactive-eval
+;;           (alist-get 'defun embark-default-action-overrides) 'slime-eval-defun
+;;           (alist-get 'identifier embark-default-action-overrides) 'slime-edit-definition
+;;           (alist-get 'identifier conn-embark-alt-default-action-overrides) 'slime-hyperdoc-lookup))
+;;   (add-hook 'slime-mode-hook #'slime-setup-embark)
+;;   (add-hook 'slime-repl-mode-hook #'slime-setup-embark)
 
-  (with-eval-after-load 'slime
-    (slime-setup)
+;;   (with-eval-after-load 'slime
+;;     (slime-setup)
 
-    (keymap-unset slime-repl-mode-map "M-r")
+;;     (keymap-unset slime-repl-mode-map "M-r")
 
-    (defun slime-repl-skip-eval-when-reading (slime-eval &rest args)
-      (if (slime-reading-p)
-          (user-error "Synchronous Lisp Evaluation suppressed while reading input")
-        (apply slime-eval args)))
-    (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading))
+;;     (defun slime-repl-skip-eval-when-reading (slime-eval &rest args)
+;;       (if (slime-reading-p)
+;;           (user-error "Synchronous Lisp Evaluation suppressed while reading input")
+;;         (apply slime-eval args)))
+;;     (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading))
 
-  (with-eval-after-load 'conn
-    (conn-register-thing-commands
-     'defun 'conn-sequential-thing-handler
-     'slime-end-of-defun 'slime-beginning-of-defun)))
+;;   (with-eval-after-load 'conn
+;;     (conn-register-thing-commands
+;;      'defun 'conn-sequential-thing-handler
+;;      'slime-end-of-defun 'slime-beginning-of-defun)))
 
 
 ;;;; bqn-mode
@@ -1022,7 +1035,7 @@ see command `isearch-forward' for more information."
 
 (elpaca j-mode
   (setq j-console-cmd
-        (locate-file "j9.5/jconsole.sh" exec-path
+        (locate-file "~/build/j9.5/bin/jconsole" nil
                      nil #'file-executable-p)))
 
 
@@ -1045,6 +1058,9 @@ see command `isearch-forward' for more information."
 ;;;; pdf-tools
 
 (elpaca pdf-tools
+  (with-eval-after-load 'org
+    (require 'pdf-tools))
+
   (with-eval-after-load 'pdf-tools
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode))
 
@@ -1378,7 +1394,7 @@ see command `isearch-forward' for more information."
 ;;;; conn
 
 (elpaca (conn :host github
-              ;; :protocol ssh
+              :protocol ssh
               :depth nil
               :repo "mtll/conn")
   (setq conn-wincontrol-initial-help nil
@@ -1470,11 +1486,13 @@ see command `isearch-forward' for more information."
 (elpaca (conn-consult :host github
                       :repo "mtll/conn"
                       :files ("extensions/conn-consult.el"))
-  (with-eval-after-load 'consult (require 'conn-consult))
-  (keymap-set conn-region-map "o" 'conn-consult-line-region)
-  (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
-  (keymap-set conn-region-map "h" 'conn-consult-region-search-map)
-  (keymap-global-set "M-s T" 'conn-consult-thing))
+  (with-eval-after-load 'consult
+    (require 'conn-consult))
+  (with-eval-after-load 'conn
+    (keymap-set conn-region-map "o" 'conn-consult-line-region)
+    (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
+    (keymap-set conn-region-map "h" 'conn-consult-region-search-map)
+    (keymap-global-set "M-s T" 'conn-consult-thing)))
 
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
@@ -1613,8 +1631,7 @@ see command `isearch-forward' for more information."
 
 (elpaca (orderless-set-operations :host github
                                   :repo "mtll/orderless-set-operations"
-                                  ;; :protocol ssh
-                                  )
+                                  :protocol ssh)
   (with-eval-after-load 'orderless
     (oso-mode 1)))
 
@@ -2976,7 +2993,7 @@ see command `isearch-forward' for more information."
 
 ;;;; beancount
 
-(elpaca beancount)
+;; (elpaca beancount)
 
 
 ;;;; projectile
@@ -2989,6 +3006,59 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn
     (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
                 "Q" 'projectile-command-map)))
+
+;;;; Smart Parens
+
+(elpaca (smartparens :host github
+                     :repo "Fuco1/smartparens")
+  (require 'smartparens-config)
+  (show-smartparens-global-mode 1)
+  (smartparens-global-strict-mode 1)
+
+  (define-keymap
+    :keymap smartparens-mode-map
+    ;; "C-]" 'sp-select-next-thing-exchange
+    ;; "C-M-]" 'sp-select-next-thing
+    ;; "C-M-SPC" 'sp-mark-sexp
+    ;; sp-forward-symbol sp-backward-symbol
+    "C-M-f" 'sp-forward-sexp ;; navigation
+    "C-M-b" 'sp-backward-sexp
+    "C-M-u" 'sp-backward-up-sexp
+    "C-M-d" 'sp-down-sexp
+    "C-M-p" 'sp-backward-down-sexp
+    "C-M-n" 'sp-up-sexp
+    "C-M-k" 'sp-kill-sexp
+    "C-M-w" 'sp-copy-sexp
+    "C-M-a" 'sp-backward-down-sexp
+    "C-M-e" 'sp-up-sexp
+    "C-S-d" 'sp-beginning-of-sexp
+    "C-S-a" 'sp-end-of-sexp
+    ;; "M-<delete>" 'sp-unwrap-sexp
+    ;; "M-<backspace>" 'sp-backward-unwrap-sexp
+    ;; "C-M-<delete>" 'sp-splice-sexp-killing-forward
+    ;; "C-M-<backspace>" 'sp-splice-sexp-killing-backward
+    ;; "C-S-<backspace>" 'sp-splice-sexp-killing-around
+    "M-<up>" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+    "M-<down>" 'sp-splice-sexp-killing-forward
+    "M-l" 'sp-splice-sexp
+    "M-r" 'sp-splice-sexp-killing-around
+    "M-(" 'sp-wrap-round
+    "C-)" 'sp-forward-slurp-sexp ;; barf/slurp
+    "C-<right>" 'sp-forward-slurp-sexp
+    "C-}" 'sp-forward-barf-sexp
+    "C-<left>" 'sp-forward-barf-sexp
+    "C-(" 'sp-backward-slurp-sexp
+    "C-M-<left>" 'sp-backward-slurp-sexp
+    "C-{" 'sp-backward-barf-sexp
+    "C-M-<right>" 'sp-backward-barf-sexp
+    ;; "M-j" 'sp-join-sexp ;; misc
+    ;; "M-?" 'sp-convolute-sexp
+    "C-S-l" 'sp-forward-slurp-sexp
+    "C-S-o" 'sp-forward-barf-sexp
+    "C-S-j" 'sp-backward-slurp-sexp
+    "C-S-u" 'sp-backward-barf-sexp
+    "C-S-i" 'sp-convolute-sexp
+    "C-S-k" 'sp-join-sexps))
 
 
 ;;;; dabbrev-hacks
