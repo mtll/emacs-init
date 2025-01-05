@@ -1394,6 +1394,10 @@ see command `isearch-forward' for more information."
                (not (use-region-p)))
       (conn--push-ephemeral-mark (point))))
 
+  (defun my-add-mode-abbrev (arg)
+    (interactive "P")
+    (add-mode-abbrev (or arg 0)))
+
   (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
 
   (add-hook 'view-mode-hook #'conn-emacs-state)
@@ -1435,10 +1439,11 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-7" 'conn-swap-windows)
   (keymap-global-set "C-9" 'tab-close)
   (keymap-set conn-state-map "B" 'ibuffer)
+  (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
   (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "$" 'ispell-word)
-  (keymap-set conn-state-map "!" 'add-mode-abbrev)
+  (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
   (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
   (keymap-global-set "M-u" 'conn-region-case-prefix)
   (keymap-global-set "M-SPC" 'conn-toggle-mark-command)
@@ -2721,7 +2726,7 @@ see command `isearch-forward' for more information."
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-I" 'tempel-complete)
+  (keymap-global-set "M-I" 'tempel-insert)
   (keymap-global-set "M-i" 'tempel-expand)
   ;; (global-tempel-abbrev-mode -1)
 
@@ -2833,6 +2838,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c n k" #'denote-rename-file-keywords)
   (keymap-global-set "C-c n r" #'denote-rename-file)
   (keymap-global-set "C-c n b" #'denote-backlinks)
+  (keymap-global-set "C-c n c" #'denote-link)
   (keymap-global-set "C-c n B" #'denote-find-backlink)
   (keymap-global-set "C-c n l" #'denote-find-link)
   (keymap-global-set "C-c n o" #'my-denote-org)
