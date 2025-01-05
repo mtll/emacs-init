@@ -47,6 +47,7 @@
 (advice-add #'x-apply-session-resources :override #'ignore)
 
 (load (expand-file-name "font.el" user-emacs-directory) t t)
+(load (expand-file-name "custom.el" user-emacs-directory) t t)
 
 (when (>= emacs-major-version 30)
   (with-eval-after-load 'modus-themes
