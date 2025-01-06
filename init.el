@@ -306,16 +306,16 @@
 
 ;;;; electric pair
 
-(defun my-electric-pair-turn-on ()
-  (electric-pair-local-mode 1))
+;; (defun my-electric-pair-turn-on ()
+;;   (electric-pair-local-mode 1))
 
-(define-globalized-minor-mode my-electric-pair-mode
-  electric-pair-mode
-  my-electric-pair-turn-on
-  :predicate '(prog-mode)
-  :group 'electricity)
+;; (define-globalized-minor-mode my-electric-pair-mode
+;;   electric-pair-mode
+;;   my-electric-pair-turn-on
+;;   :predicate '(prog-mode)
+;;   :group 'electricity)
 
-(my-electric-pair-mode 1)
+;; (my-electric-pair-mode 1)
 
 
 ;;;; misearch
@@ -1456,6 +1456,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-9" 'tab-close)
   (keymap-set conn-state-map "B" 'ibuffer)
   (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
+  (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
+  (keymap-set conn-state-map "C-M-;" 'conn-wincontrol-one-command)
   (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "$" 'ispell-word)
@@ -2147,7 +2149,8 @@ see command `isearch-forward' for more information."
 (elpaca separedit
   (keymap-set prog-mode-map "C-c '" 'separedit)
   (keymap-set minibuffer-local-map "C-c '" 'separedit)
-  (keymap-set help-mode-map "C-c '" 'separedit))
+  (with-eval-after-load 'help-mode
+    (keymap-set help-mode-map "C-c '" 'separedit)))
 
 
 ;;;; package-link-flymake
@@ -3011,9 +3014,10 @@ see command `isearch-forward' for more information."
 
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
-  (require 'smartparens-config)
+  (smartparens-global-mode 1)
   (show-smartparens-global-mode 1)
-  (smartparens-global-strict-mode 1)
+  (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
+  (require 'smartparens-config)
 
   (define-keymap
     :keymap smartparens-mode-map
