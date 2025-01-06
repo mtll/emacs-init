@@ -1211,6 +1211,15 @@ see command `isearch-forward' for more information."
   (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
+    (setopt org-format-latex-options
+            '( :foreground default
+               :background default
+               :scale 3
+               :html-foreground "Black"
+               :html-background "Transparent"
+               :html-scale 1.0
+               :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")))
+
     (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
              (keymap-unset org-mode-map (concat "C-c " (string c)) t)
              (keymap-unset org-mode-map (concat "C-c " (upcase (string c))) t)
@@ -1329,6 +1338,7 @@ see command `isearch-forward' for more information."
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
+  (keymap-global-set "<remap> <whitespace-cleanup>" 'crux-cleanup-buffer-or-region)
   (keymap-global-set "C-S-k" 'crux-kill-line-backwards)
   (keymap-global-set "C-c S" 'crux-visit-shell-buffer)
 
@@ -1339,7 +1349,6 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap conn-edit-map
       "D"   'crux-duplicate-and-comment-current-line-or-region
-      "RET" 'crux-cleanup-buffer-or-region
       "@"   'crux-insert-date)))
 
 
@@ -1984,6 +1993,8 @@ see command `isearch-forward' for more information."
 
 (elpaca company
   (global-company-mode 1)
+
+  (diminish 'company-mode " Cm")
 
   (define-keymap
     :keymap company-active-map
@@ -3014,9 +3025,10 @@ see command `isearch-forward' for more information."
 
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
-  (smartparens-global-mode 1)
+  ;; (smartparens-global-mode 1)
+  (smartparens-global-strict-mode 1)
   (show-smartparens-global-mode 1)
-  (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
+  ;; (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
 
   (define-keymap
@@ -3069,6 +3081,11 @@ see command `isearch-forward' for more information."
 
 (elpaca puni
   (puni-global-mode))
+
+
+;;;; djvu
+
+(elpaca djvu)
 
 
 ;;;; dabbrev-hacks
