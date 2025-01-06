@@ -3065,6 +3065,12 @@ see command `isearch-forward' for more information."
     "C-S-k" 'sp-join-sexps))
 
 
+;;;; puni
+
+(elpaca puni
+  (puni-global-mode))
+
+
 ;;;; dabbrev-hacks
 
 ;; (elpaca (dabbrev-hacks :host github
