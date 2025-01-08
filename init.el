@@ -306,16 +306,17 @@
 
 ;;;; electric pair
 
-;; (defun my-electric-pair-turn-on ()
-;;   (electric-pair-local-mode 1))
+(defun my-electric-pair-turn-on ()
+  (electric-pair-local-mode 1))
 
-;; (define-globalized-minor-mode my-electric-pair-mode
-;;   electric-pair-mode
-;;   my-electric-pair-turn-on
-;;   :predicate '(prog-mode)
-;;   :group 'electricity)
+(define-globalized-minor-mode my-electric-pair-mode
+  electric-pair-mode
+  my-electric-pair-turn-on
+  :predicate '((not lisp-data-mode)
+               prog-mode)
+  :group 'electricity)
 
-;; (my-electric-pair-mode 1)
+(my-electric-pair-mode 1)
 
 
 ;;;; misearch
@@ -2964,10 +2965,10 @@ see command `isearch-forward' for more information."
 
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
-  (smartparens-global-mode 1)
+  ;; (smartparens-global-mode -1)
   ;; (smartparens-global-strict-mode 1)
-  (show-smartparens-global-mode 1)
-  ;; (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
+  ;; (show-smartparens-global-mode 1)
+  (add-hook 'lisp-data-mode-hook 'smartparens-mode)
   (require 'smartparens-config)
 
   (define-keymap
@@ -3018,8 +3019,14 @@ see command `isearch-forward' for more information."
 
 ;;;; puni
 
-;; (elpaca puni
-;;   (puni-global-mode))
+(elpaca puni
+  (puni-global-mode)
+  (keymap-unset puni-mode-map "C-M-f")
+  (keymap-unset puni-mode-map "C-M-b")
+  (keymap-unset puni-mode-map "C-M-a")
+  (keymap-unset puni-mode-map "C-M-e")
+  (keymap-unset puni-mode-map "M-(")
+  (keymap-unset puni-mode-map "M-)"))
 
 
 ;;;; djvu
