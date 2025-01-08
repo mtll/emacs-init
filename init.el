@@ -1575,14 +1575,14 @@ see command `isearch-forward' for more information."
 
 ;;;; all-the-icons
 
-(elpaca all-the-icons)
+;; (elpaca all-the-icons)
 
 ;;;;; all-the-icons-dired
 
-(elpaca all-the-icons-dired
-  (with-eval-after-load 'diminish
-    (diminish 'all-the-icons-dired-mode))
-  (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
+;; (elpaca all-the-icons-dired
+;;   (with-eval-after-load 'diminish
+;;     (diminish 'all-the-icons-dired-mode))
+;;   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
 
 ;;;; magit
@@ -2025,12 +2025,24 @@ see command `isearch-forward' for more information."
 
 ;;;;; kind-icons
 
-(elpaca kind-icon
-  (setq kind-icon-use-icons nil
-        kind-icon-extra-space t)
+;; (elpaca kind-icon
+;;   (setq kind-icon-use-icons nil
+;;         kind-icon-extra-space t)
 
-  (with-eval-after-load 'corfu
-    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)))
+;;   (with-eval-after-load 'corfu
+;;     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)))
+
+
+;;;; nerd icons
+
+(elpaca nerd-icons)
+
+(elpaca nerd-icons-dired
+  (add-hook 'dired-mode-hook #'nerd-icons-dired-mode))
+
+(elpaca nerd-icons-completion
+  (with-eval-after-load 'marginalia
+    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))
 
 
 ;;;; bicycle
