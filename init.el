@@ -1089,97 +1089,12 @@ see command `isearch-forward' for more information."
 (elpaca cdlatex
   (add-hook 'latex-mode-hook #'cdlatex-mode)
   (add-hook 'org-mode-hook #'org-cdlatex-mode)
-  (setq cdlatex-math-symbol-alist
-        '(( ?a  ("\\alpha"))
-          ( ?A  ("\\forall"         "\\aleph"))
-          ( ?b  ("\\beta"))
-          ( ?B  (""))
-          ( ?c  (""                 ""                "\\cos"))
-          ( ?C  (""                 ""                "\\arccos"))
-          ( ?d  ("\\delta"          "\\partial"))
-          ( ?D  ("\\Delta"          "\\nabla"))
-          ( ?e  ("\\epsilon"        "\\varepsilon"    "\\exp"))
-          ( ?E  ("\\exists"         ""                "\\ln"))
-          ( ?f  ("\\phi"            "\\varphi"))
-          ( ?F  (""))
-          ( ?g  ("\\gamma"          ""                "\\lg"))
-          ( ?G  ("\\Gamma"          ""                "10^{?}"))
-          ( ?h  ("\\eta"            "\\hbar"))
-          ( ?H  (""))
-          ( ?i  ("\\in"             "\\imath"))
-          ( ?I  (""                 "\\Im"))
-          ( ?j  ("\\left"          "\\right"        "\\jmath"))
-          ( ?J  (""))
-          ( ?k  ("\\kappa"))
-          ( ?K  (""))
-          ( ?l  ("\\lambda"         "\\ell"           "\\log"))
-          ( ?L  ("\\Lambda"))
-          ( ?m  ("\\mu"))
-          ( ?M  (""))
-          ( ?n  ("\\nu"             ""                "\\ln"))
-          ( ?N  ("\\nabla"          ""                "\\exp"))
-          ( ?o  ("\\omega"))
-          ( ?O  ("\\Omega"          "\\mho"))
-          ( ?p  ("\\pi"             "\\varpi"))
-          ( ?P  ("\\Pi"))
-          ( ?q  ("\\theta"          "\\vartheta"))
-          ( ?Q  ("\\Theta"))
-          ( ?r  ("\\rho"            "\\varrho"))
-          ( ?R  ("\\Rho"                 "\\Re"))
-          ( ?s  ("\\sigma"          "\\varsigma"      "\\sin"))
-          ( ?S  ("\\Sigma"          ""                "\\arcsin"))
-          ( ?t  ("\\tau"            ""                "\\tan"))
-          ( ?T  ("\\Tau"            ""                "\\arctan"))
-          ( ?u  ("\\upsilon"))
-          ( ?U  ("\\Upsilon"))
-          ( ?v  ("\\vee"))
-          ( ?V  ("\\Phi"))
-          ( ?w  ("\\xi"))
-          ( ?W  ("\\Xi"))
-          ( ?x  ("\\chi"))
-          ( ?X  ("\\Chi"))
-          ( ?y  ("\\psi"))
-          ( ?Y  ("\\Psi"))
-          ( ?z  ("\\zeta"))
-          ( ?Z  ("\\Zeta"))
-          ( ?0  ("\\emptyset"))
-          ( ?1  ("\\sum" "\\prod"))
-          ( ?2  ("\\dots"))
-          ( ?3  ("\\ldots" "\\cdots"))
-          ( ?4  ("\\quad" "\\qquad"))
-          ( ?5  (""))
-          ( ?6  ("\\vdots" "\\ddots"))
-          ( ?7  (""))
-          ( ?8  ("\\infty"))
-          ( ?9  (""))
-          ( ?!  ("\\neg"))
-          ( ?@  ("\\circ"))
-          ( ?#  (""))
-          ( ?$  (""))
-          ( ?%  (""))
-          ( ?^  ("\\uparrow"))
-          ( ?&  ("\\wedge"))
-          ( ?\? (""))
-          ( ?~  ("\\approx"         "\\simeq"))
-          ( ?_  ("\\downarrow"))
-          ( ?+  ("\\cup"   "\\cap"))
-          ( ?-  ("\\leftrightarrow" "\\longleftrightarrow"))
-          ( ?*  ("\\times"          ))
-          ( ?/  ("\\not"))
-          ( ?|  ("\\mapsto"         "\\longmapsto"))
-          ( ?\\ ("\\setminus"))
-          ( ?\" (""))
-          ( ?=  ("\\Leftrightarrow" "\\Longleftrightarrow"))
-          ( ?\( ("\\langle" "\\left"))
-          ( ?\) ("\\rangle" "\\right"))
-          ( ?\[ ("\\Leftarrow"      "\\Longleftarrow"))
-          ( ?\] ("\\Rightarrow"     "\\Longrightarrow"))
-          ( ?\{  ("\\subset"))
-          ( ?\}  ("\\supset"))
-          ( ?<  ("\\leftarrow"      "\\longleftarrow"     "\\min"))
-          ( ?>  ("\\rightarrow"     "\\longrightarrow"    "\\max"))
-          ( ?'  ("\\prime"))
-          ( ?.  ("\\cdot")))))
+  ;;    `cdlatex-math-modify-alist' and `cdlatex-math-modify-prefix'.
+
+  (with-eval-after-load 'conn
+    (define-keymap
+      :keymap (conn-get-mode-map 'conn-state 'org-mode)
+      "'" 'org-cdlatex-math-modify)))
 
 
 ;;;; math-delimiters
@@ -1193,6 +1108,7 @@ see command `isearch-forward' for more information."
 
 (elpaca org
   (setq org-agenda-start-on-weekday nil
+        org-preview-latex-image-directory "/tmp/ltximg/"
         org-agenda-include-diary t
         org-src-window-setup 'plain
         org-startup-truncated nil
@@ -1211,15 +1127,6 @@ see command `isearch-forward' for more information."
   (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
-    (setopt org-format-latex-options
-            '( :foreground default
-               :background default
-               :scale 3
-               :html-foreground "Black"
-               :html-background "Transparent"
-               :html-scale 1.0
-               :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")))
-
     (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
              (keymap-unset org-mode-map (concat "C-c " (string c)) t)
              (keymap-unset org-mode-map (concat "C-c " (upcase (string c))) t)
@@ -1233,7 +1140,7 @@ see command `isearch-forward' for more information."
     (setf (alist-get "\\*Org Src.*" display-buffer-alist nil nil #'equal)
           '((display-buffer-same-window)))
 
-    (setf (plist-get org-format-latex-options :scale) 1.5)
+    (setf (plist-get org-format-latex-options :scale) 3)
 
     (keymap-set org-mode-map "C-c v" 'latex-math-mode)
     (autoload 'latex-math-mode "latex")
@@ -1441,8 +1348,9 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
-  (keymap-global-set "C-o" 'conn-open-line)
-  (keymap-global-set "M-o" 'conn-open-line-above)
+  (keymap-global-set "C-o" 'conn-open-line-above)
+  (keymap-global-set "M-o" 'conn-open-line)
+  (keymap-global-set "C-j" 'conn-open-line-and-indent)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-;" 'conn-wincontrol)
   (keymap-global-set "C-x ," 'subword-mode)
@@ -2758,8 +2666,27 @@ see command `isearch-forward' for more information."
 
 (elpaca tempel
   (keymap-global-set "M-I" 'tempel-insert)
-  (keymap-global-set "M-i" 'tempel-expand)
+  (keymap-global-set "M-i" 'my-tempel-expand-or-complete)
   ;; (global-tempel-abbrev-mode -1)
+
+  (defun my-tempel-expand-or-complete (&optional interactive)
+    (interactive (list t))
+    (require 'tempel)
+    (if interactive
+        (tempel--interactive #'my-tempel-expand-or-complete)
+      (if-let ((templates (tempel--templates))
+               (bounds (tempel--prefix-bounds))
+               (name (buffer-substring-no-properties
+                      (car bounds) (cdr bounds)))
+               (sym (intern-soft name))
+               (template (assq sym templates)))
+          (progn
+            (setq templates (list template))
+            (list (car bounds) (cdr bounds) templates
+                  :category 'tempel
+                  :exclusive 'no
+                  :exit-function (apply-partially #'tempel--exit templates nil)))
+        (tempel-complete))))
 
   (with-eval-after-load 'tempel
     (keymap-set tempel-map "M-n" 'tempel-next)
@@ -3025,8 +2952,8 @@ see command `isearch-forward' for more information."
 
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
-  ;; (smartparens-global-mode 1)
-  (smartparens-global-strict-mode 1)
+  (smartparens-global-mode 1)
+  ;; (smartparens-global-strict-mode 1)
   (show-smartparens-global-mode 1)
   ;; (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
@@ -3045,8 +2972,8 @@ see command `isearch-forward' for more information."
     "C-M-n" 'sp-up-sexp
     "C-M-k" 'sp-kill-sexp
     "C-M-w" 'sp-copy-sexp
-    "C-M-a" 'sp-backward-down-sexp
-    "C-M-e" 'sp-up-sexp
+    ;; "C-M-a" 'sp-backward-down-sexp
+    ;; "C-M-e" 'sp-up-sexp
     "C-S-d" 'sp-beginning-of-sexp
     "C-S-a" 'sp-end-of-sexp
     ;; "M-<delete>" 'sp-unwrap-sexp
@@ -3079,13 +3006,18 @@ see command `isearch-forward' for more information."
 
 ;;;; puni
 
-(elpaca puni
-  (puni-global-mode))
+;; (elpaca puni
+;;   (puni-global-mode))
 
 
 ;;;; djvu
 
 (elpaca djvu)
+
+
+;;;; hide mode line
+
+(elpaca hide-mode-line)
 
 
 ;;;; dabbrev-hacks
