@@ -1167,9 +1167,9 @@ see command `isearch-forward' for more information."
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
-  (with-eval-after-load 'dtrt-indent-mode
-    (with-eval-after-load 'diminish
-      (diminish 'dtrt-indent-mode))))
+  (dtrt-indent-global-mode 1)
+  (with-eval-after-load 'diminish
+    (diminish 'dtrt-indent-mode)))
 
 
 ;;;; exec-path-from-shell
@@ -3037,6 +3037,12 @@ see command `isearch-forward' for more information."
 ;;;; hide mode line
 
 (elpaca hide-mode-line)
+
+
+;;;; aggressive indent mode
+
+(elpaca aggressive-indent
+  (add-hook 'lisp-data-mode 'aggressive-indent-mode))
 
 
 ;;;; dabbrev-hacks
