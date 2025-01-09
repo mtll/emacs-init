@@ -2895,6 +2895,13 @@ see command `isearch-forward' for more information."
 ;;;; jinx
 
 (elpaca jinx
+  (global-jinx-mode 1)
+
+  (define-keymap
+    :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
+    "$" 'jinx-correct-nearest
+    "C-$" 'jinx-correct-all)
+
   (defun my-jinx-dispatch-check (window pt _thing)
     (interactive)
     (with-selected-window window
@@ -2910,13 +2917,18 @@ see command `isearch-forward' for more information."
                                        (overlay-start ov)
                                        (- (overlay-end ov) (overlay-start ov)))))))
 
-  (add-hook 'jinx-mode-hook
-            (lambda ()
-              (add-to-list (make-local-variable 'conn-dispatch-override-maps)
-                           (define-keymap
-                             "$" `(jinx
-                                   ,(apply-partially 'my--conn-dispatch-jinx t)
-                                   . my-jinx-dispatch-check))))))
+  (conn-register-thing-commands
+   'word nil
+   'jinx-correct-nearest
+   'jinx-correct
+   'jinx-correct-all)
+
+  (let ((fn (apply-partially 'conn--dispatch-all-things 'word t)))
+    (dolist (cmd '(jinx-correct-nearest
+                   jinx-correct
+                   jinx-correct-all))
+      (setf (alist-get cmd conn-dispatch-default-actions-alist)
+            'my-jinx-dispatch-check))))
 
 
 ;;;; ef-themes
