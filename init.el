@@ -1903,7 +1903,7 @@ see command `isearch-forward' for more information."
 (elpaca company
   (global-company-mode 1)
 
-  (diminish 'company-mode " Cm")
+  (diminish 'company-mode)
 
   (define-keymap
     :keymap company-active-map
@@ -2039,7 +2039,9 @@ see command `isearch-forward' for more information."
 (elpaca nerd-icons)
 
 (elpaca nerd-icons-dired
-  (add-hook 'dired-mode-hook #'nerd-icons-dired-mode))
+  (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
+  (with-eval-after-load 'diminish
+    (diminish 'nerd-icons-dired-mode)))
 
 (elpaca nerd-icons-completion
   (with-eval-after-load 'marginalia
@@ -2718,10 +2720,6 @@ see command `isearch-forward' for more information."
       (when tempel--active (conn-emacs-state)))
     (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
 
-;;;;; tempel-collection
-
-;; (elpaca tempel-collection)
-
 
 ;;;; vundo
 
@@ -2743,14 +2741,6 @@ see command `isearch-forward' for more information."
   (global-page-break-lines-mode)
   (with-eval-after-load 'diminish
     (diminish 'page-break-lines-mode)))
-
-
-;;;; sage-shell-mode
-
-(elpaca sage-shell-mode
-  (with-eval-after-load 'sage-shell-mode
-    (setq sage-shell:input-history-cache-file "~/.emacs.d/.sage_shell_input_history")
-    (add-hook 'sage-shell-after-prompt-hook #'sage-shell-view-mode)))
 
 
 ;;;; tuareg
@@ -2825,32 +2815,32 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c n f" #'my-denote-consult-find)
 
   (defun my-consult-denote-ripgrep-make-builder (paths)
-  "Create ripgrep command line builder given PATHS."
-  (let* ((cmd (consult--build-args consult-ripgrep-args))
-         (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
-    (lambda (input)
-      (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-                   (flags (append cmd opts))
-                   (ignore-case
-                    (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
-                         (or (member "-i" flags) (member "--ignore-case" flags)
-                             (and (or (member "-S" flags) (member "--smart-case" flags))
-                                  (let (case-fold-search)
-                                    ;; Case insensitive if there are no uppercase letters
-                                    (not (string-match-p "[[:upper:]]" arg))))))))
-        (if (or (member "-F" flags) (member "--fixed-strings" flags))
-            (cons (append cmd (list "-e" arg)
-                          (list "-torg" "-ttxt" "-tmarkdown" "-ttoml")
-                          opts paths)
-                  (apply-partially #'consult--highlight-regexps
-                                   (list (regexp-quote arg)) ignore-case))
-          (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
-            (when re
-              (cons (append cmd (and (eq type 'pcre) '("-P"))
-                            (list "-e" (consult--join-regexps re type))
+    "Create ripgrep command line builder given PATHS."
+    (let* ((cmd (consult--build-args consult-ripgrep-args))
+           (type (if (consult--grep-lookahead-p (car cmd) "-P") 'pcre 'extended)))
+      (lambda (input)
+        (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                     (flags (append cmd opts))
+                     (ignore-case
+                      (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                           (or (member "-i" flags) (member "--ignore-case" flags)
+                               (and (or (member "-S" flags) (member "--smart-case" flags))
+                                    (let (case-fold-search)
+                                      ;; Case insensitive if there are no uppercase letters
+                                      (not (string-match-p "[[:upper:]]" arg))))))))
+          (if (or (member "-F" flags) (member "--fixed-strings" flags))
+              (cons (append cmd (list "-e" arg)
                             (list "-torg" "-ttxt" "-tmarkdown" "-ttoml")
                             opts paths)
-                    hl))))))))
+                    (apply-partially #'consult--highlight-regexps
+                                     (list (regexp-quote arg)) ignore-case))
+            (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg type ignore-case)))
+              (when re
+                (cons (append cmd (and (eq type 'pcre) '("-P"))
+                              (list "-e" (consult--join-regexps re type))
+                              (list "-torg" "-ttxt" "-tmarkdown" "-ttoml")
+                              opts paths)
+                      hl))))))))
 
   (defun my-denote-consult-ripgrep ()
     (interactive)
@@ -2961,22 +2951,16 @@ see command `isearch-forward' for more information."
     (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
                 "Q" 'projectile-command-map)))
 
-;;;; Smart Parens
+;;;; smart parens
 
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
-  ;; (smartparens-global-mode -1)
-  ;; (smartparens-global-strict-mode 1)
-  ;; (show-smartparens-global-mode 1)
+  (diminish 'smartparens-mode)
   (add-hook 'lisp-data-mode-hook 'smartparens-mode)
   (require 'smartparens-config)
 
   (define-keymap
     :keymap smartparens-mode-map
-    ;; "C-]" 'sp-select-next-thing-exchange
-    ;; "C-M-]" 'sp-select-next-thing
-    ;; "C-M-SPC" 'sp-mark-sexp
-    ;; sp-forward-symbol sp-backward-symbol
     "C-M-f" 'sp-forward-sexp ;; navigation
     "C-M-b" 'sp-backward-sexp
     "C-M-u" 'sp-backward-up-sexp
@@ -2985,15 +2969,8 @@ see command `isearch-forward' for more information."
     "C-M-n" 'sp-up-sexp
     "C-M-k" 'sp-kill-sexp
     "C-M-w" 'sp-copy-sexp
-    ;; "C-M-a" 'sp-backward-down-sexp
-    ;; "C-M-e" 'sp-up-sexp
     "C-S-d" 'sp-beginning-of-sexp
     "C-S-a" 'sp-end-of-sexp
-    ;; "M-<delete>" 'sp-unwrap-sexp
-    ;; "M-<backspace>" 'sp-backward-unwrap-sexp
-    ;; "C-M-<delete>" 'sp-splice-sexp-killing-forward
-    ;; "C-M-<backspace>" 'sp-splice-sexp-killing-backward
-    ;; "C-S-<backspace>" 'sp-splice-sexp-killing-around
     "M-<up>" 'sp-splice-sexp-killing-backward ;; depth-changing commands
     "M-<down>" 'sp-splice-sexp-killing-forward
     "M-l" 'sp-splice-sexp
@@ -3007,8 +2984,6 @@ see command `isearch-forward' for more information."
     "C-M-<left>" 'sp-backward-slurp-sexp
     "C-{" 'sp-backward-barf-sexp
     "C-M-<right>" 'sp-backward-barf-sexp
-    ;; "M-j" 'sp-join-sexp ;; misc
-    ;; "M-?" 'sp-convolute-sexp
     "C-S-l" 'sp-forward-slurp-sexp
     "C-S-o" 'sp-forward-barf-sexp
     "C-S-j" 'sp-backward-slurp-sexp
@@ -3020,7 +2995,7 @@ see command `isearch-forward' for more information."
 ;;;; puni
 
 (elpaca puni
-  (puni-global-mode)
+  (add-hook 'prog-mode-hook #'puni-mode)
   (keymap-unset puni-mode-map "C-M-f")
   (keymap-unset puni-mode-map "C-M-b")
   (keymap-unset puni-mode-map "C-M-a")
