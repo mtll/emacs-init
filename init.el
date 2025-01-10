@@ -2469,78 +2469,12 @@ see command `isearch-forward' for more information."
 
   ;; I prefer it if the vertico buffer mode-line face
   ;; is not remapped to always appear active.
-  (defun vertico-buffer--setup-ad ()
-    "Setup buffer display."
-    (let* ((action vertico-buffer-display-action)
-           (old-wins (mapcar (lambda (w) (cons w (window-buffer w))) (window-list)))
-           win old-buf tmp-buf
-           (_ (unwind-protect
-                  (progn
-                    (with-current-buffer
-                        (setq tmp-buf (generate-new-buffer "*vertico-buffer*"))
-                      ;; Set a fake major mode such that
-                      ;; `display-buffer-reuse-mode-window' does not take over!
-                      (setq major-mode 'vertico-buffer-mode))
-                    ;; Temporarily select the original window such that
-                    ;; `display-buffer-same-window' works.
-                    (setq win (with-minibuffer-selected-window
-                                (display-buffer tmp-buf action))
-                          old-buf (alist-get win old-wins))
-                    (set-window-buffer win (current-buffer)))
-                (kill-buffer tmp-buf)))
-           (old-no-other (window-parameter win 'no-other-window))
-           (old-no-delete (window-parameter win 'no-delete-other-windows))
-           (old-state (buffer-local-set-state
-                       cursor-in-non-selected-windows cursor-in-non-selected-windows
-                       show-trailing-whitespace nil
-                       truncate-lines t
-                       ;; face-remapping-alist (copy-tree `((mode-line-inactive mode-line)
-                       ;;                                        ,@face-remapping-alist))
-                       mode-line-format
-                       (list (format  #(" %s%s " 1 3 (face mode-line-buffer-id))
-                                      (replace-regexp-in-string ":? *\\'" ""
-                                                                (minibuffer-prompt))
-                                      (let ((depth (recursion-depth)))
-                                        (if (< depth 2) "" (format " [%s]" depth)))))
-                       vertico-count (- (/ (window-pixel-height win)
-                                           (default-line-height)) 2))))
-      (set-window-parameter win 'no-other-window t)
-      (set-window-parameter win 'no-delete-other-windows t)
-      (set-window-dedicated-p win t)
-      (overlay-put vertico--candidates-ov 'window win)
-      (when (and vertico-buffer-hide-prompt vertico--count-ov)
-        (overlay-put vertico--count-ov 'window win))
-      (setq-local vertico-buffer--restore (make-symbol "vertico-buffer--restore"))
-      (fset vertico-buffer--restore
-            (lambda ()
-              (with-selected-window (active-minibuffer-window)
-                (when vertico-buffer--restore
-                  (when transient-mark-mode
-                    (with-silent-modifications
-                      (vertico--remove-face (point-min) (point-max) 'region)))
-                  (remove-hook 'pre-redisplay-functions #'vertico-buffer--redisplay 'local)
-                  (remove-hook 'minibuffer-exit-hook vertico-buffer--restore)
-                  (fset vertico-buffer--restore nil)
-                  (kill-local-variable 'vertico-buffer--restore)
-                  (buffer-local-restore-state old-state)
-                  (overlay-put vertico--candidates-ov 'window nil)
-                  (when vertico--count-ov (overlay-put vertico--count-ov 'window nil))
-                  (cond
-                   ((and (window-live-p win) (buffer-live-p old-buf))
-                    (set-window-parameter win 'no-other-window old-no-other)
-                    (set-window-parameter win 'no-delete-other-windows old-no-delete)
-                    (set-window-dedicated-p win nil)
-                    (set-window-buffer win old-buf))
-                   ((window-live-p win)
-                    (delete-window win)))
-                  (when vertico-buffer-hide-prompt
-                    (set-window-vscroll nil 0))))))
-      ;; We cannot use a buffer-local minibuffer-exit-hook here.  The hook will
-      ;; not be called when abnormally exiting the minibuffer from another buffer
-      ;; via `keyboard-escape-quit'.
-      (add-hook 'minibuffer-exit-hook vertico-buffer--restore)
-      (add-hook 'pre-redisplay-functions #'vertico-buffer--redisplay nil 'local)))
-  (advice-add 'vertico-buffer--setup :override #'vertico-buffer--setup-ad)
+  (defun my-vertico-buffer-stop-face-remap ()
+    (setq-local face-remapping-alist
+                (seq-remove (lambda (cons)
+                              (eq (car cons) 'mode-line-inactive))
+                            face-remapping-alist)))
+  (advice-add 'vertico-buffer--setup :after #'my-vertico-buffer-stop-face-remap)
 
   (defun vertico--display-count-ad ()
     (when vertico-flat-mode
@@ -2895,40 +2829,41 @@ see command `isearch-forward' for more information."
 ;;;; jinx
 
 (elpaca jinx
-  (global-jinx-mode 1)
+  (run-with-idle-timer 2 nil (lambda () (global-jinx-mode 1)))
 
-  (define-keymap
-    :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
-    "$" 'jinx-correct-nearest
-    "C-$" 'jinx-correct-all)
+  (with-eval-after-load 'jinx
+    (define-keymap
+      :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
+      "$" 'jinx-correct-nearest
+      "C-$" 'jinx-correct-all)
 
-  (defun my-jinx-dispatch-check (window pt _thing)
-    (interactive)
-    (with-selected-window window
-      (save-excursion
-        (goto-char pt)
-        (jinx-correct-nearest))))
+    (defun my-jinx-dispatch-check (window pt _thing)
+      (interactive)
+      (with-selected-window window
+        (save-excursion
+          (goto-char pt)
+          (jinx-correct-nearest))))
 
-  (defun my--conn-dispatch-jinx (&optional in-windows)
-    (cl-loop for win in (conn--preview-get-windows in-windows)
-             nconc (with-selected-window win
-                     (cl-loop for ov in (jinx--get-overlays (window-start) (window-end))
-                              collect (conn--make-preview-overlay
-                                       (overlay-start ov)
-                                       (- (overlay-end ov) (overlay-start ov)))))))
+    (defun my--conn-dispatch-jinx (&optional in-windows)
+      (cl-loop for win in (conn--preview-get-windows in-windows)
+               nconc (with-selected-window win
+                       (cl-loop for ov in (jinx--get-overlays (window-start) (window-end))
+                                collect (conn--make-preview-overlay
+                                         (overlay-start ov)
+                                         (- (overlay-end ov) (overlay-start ov)))))))
 
-  (conn-register-thing-commands
-   'word nil
-   'jinx-correct-nearest
-   'jinx-correct
-   'jinx-correct-all)
+    (conn-register-thing-commands
+     'word nil
+     'jinx-correct-nearest
+     'jinx-correct
+     'jinx-correct-all)
 
-  (let ((fn (apply-partially 'conn--dispatch-all-things 'word t)))
-    (dolist (cmd '(jinx-correct-nearest
-                   jinx-correct
-                   jinx-correct-all))
-      (setf (alist-get cmd conn-dispatch-default-actions-alist)
-            'my-jinx-dispatch-check))))
+    (let ((fn (apply-partially 'conn--dispatch-all-things 'word t)))
+      (dolist (cmd '(jinx-correct-nearest
+                     jinx-correct
+                     jinx-correct-all))
+        (setf (alist-get cmd conn-dispatch-default-actions-alist)
+              'my-jinx-dispatch-check)))))
 
 
 ;;;; ef-themes
@@ -3029,7 +2964,7 @@ see command `isearch-forward' for more information."
 ;;;; aggressive indent mode
 
 (elpaca aggressive-indent
-  (add-hook 'lisp-data-mode 'aggressive-indent-mode))
+  (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
 
 
 ;;;; dabbrev-hacks
