@@ -773,9 +773,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-;; (elpaca benchmark-init
-;;   (require 'benchmark-init)
-;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+(elpaca benchmark-init
+  (require 'benchmark-init)
+  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -2024,15 +2024,6 @@ see command `isearch-forward' for more information."
 ;;                    #'eglot-completion-at-point completion-at-point-functions)))
 ;;     (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
-;;;;; kind-icons
-
-;; (elpaca kind-icon
-;;   (setq kind-icon-use-icons nil
-;;         kind-icon-extra-space t)
-
-;;   (with-eval-after-load 'corfu
-;;     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)))
-
 
 ;;;; nerd icons
 
@@ -2832,6 +2823,9 @@ see command `isearch-forward' for more information."
   (run-with-idle-timer 2 nil (lambda () (global-jinx-mode 1)))
 
   (with-eval-after-load 'jinx
+    (with-eval-after-load 'diminish
+      (diminish 'jinx-mode "JX"))
+
     (define-keymap
       :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
       "$" 'jinx-correct-nearest

@@ -24,7 +24,7 @@
 
 (fringe-mode '(8 . 8))
 (push '(tool-bar-lines . 0) default-frame-alist)
-;; (tool-bar-mode -1)
+(tool-bar-mode -1)
 (scroll-bar-mode -1)
 (blink-cursor-mode -1)
 (menu-bar-mode -1)
