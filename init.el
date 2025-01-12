@@ -90,9 +90,9 @@
       history-delete-duplicates t
       disabled-command-function nil
       switch-to-buffer-obey-display-actions t
-      minibuffer-prompt-properties '(read-only t
-                                               cursor-intangible t
-                                               face minibuffer-prompt)
+      minibuffer-prompt-properties '( read-only t
+                                      cursor-intangible t
+                                      face minibuffer-prompt)
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
       edebug-inhibit-emacs-lisp-mode-bindings t
       bidi-inhibit-bpa t
@@ -108,10 +108,11 @@
   (kill-buffer (current-buffer)))
 (keymap-global-set "C-x k" 'my-kill-buffer)
 
-(setopt mouse-wheel-scroll-amount '(0.33 ((shift) . hscroll)
-                                         ((meta))
-                                         ((control meta) . global-text-scale)
-                                         ((control) . text-scale)))
+(setopt mouse-wheel-scroll-amount '(0.33
+                                    ((shift) . hscroll)
+                                    ((meta))
+                                    ((control meta) . global-text-scale)
+                                    ((control) . text-scale)))
 
 (setq-default indent-tabs-mode nil)
 
@@ -871,7 +872,25 @@ see command `isearch-forward' for more information."
 
 
 
-(elpaca sly)
+(elpaca sly
+  (with-eval-after-load 'sly
+    (setq sly-default-lisp 'sbcl
+          sly-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096"))))
+
+    (defun sly-setup-embark ()
+      (require 'embark)
+      (require 'conn-embark)
+      (make-local-variable 'embark-default-action-overrides)
+      (make-local-variable 'conn-embark-alt-default-action-overrides)
+      (setf (alist-get 'expression embark-default-action-overrides) 'sly-interactive-eval
+            (alist-get 'defun embark-default-action-overrides) 'sly-eval-defun
+            (alist-get 'identifier embark-default-action-overrides) 'sly-edit-definition
+            (alist-get 'identifier conn-embark-alt-default-action-overrides) 'sly-documentation-lookup))
+    (add-hook 'sly-mode-hook #'sly-setup-embark)
+    (add-hook 'sly-repl-mode-hook #'sly-setup-embark))
+
+  (with-eval-after-load 'smartparens
+    (add-hook 'sly-mrepl-mode-hook 'smartparens-mode)))
 
 
 ;;;; slime
