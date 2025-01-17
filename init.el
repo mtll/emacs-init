@@ -54,7 +54,7 @@
       even-window-sizes nil
       scroll-preserve-screen-position t
       delete-active-region t
-      fill-column 72
+      fill-column 70
       use-short-answers t
       y-or-n-p-use-read-key t
       xref-search-program 'ripgrep
@@ -118,7 +118,7 @@
 
 (minibuffer-depth-indicate-mode 1)
 (global-goto-address-mode 1)
-(show-paren-mode -1)
+;; (show-paren-mode 1)
 (delete-selection-mode -1)
 (column-number-mode 1)
 (line-number-mode 1)
@@ -302,7 +302,7 @@
 (keymap-global-set "M-n" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
-  (setf (alist-get 'abbrev-mode minor-mode-alist) (list " Abv")))
+  (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
 
 
 ;;;; electric pair
@@ -624,7 +624,7 @@ see command `isearch-forward' for more information."
 (keymap-global-set "C-c L" 'outline-minor-mode)
 (with-eval-after-load 'outline
   (with-eval-after-load 'diminish
-    (diminish 'outline-minor-mode " OL")))
+    (diminish 'outline-minor-mode " *")))
 
 
 ;;;; ibuffer
@@ -1405,6 +1405,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-SPC" 'conn-set-mark-command)
   (keymap-global-set "M-z" 'conn-exchange-mark-command)
   (keymap-global-set "C-t" 'conn-transpose-regions)
+  (keymap-global-set "M-U" 'conn-wincontrol-maximize-vertically)
   (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
 
   (dolist (state '(conn-state conn-emacs-state))
@@ -2428,7 +2429,8 @@ see command `isearch-forward' for more information."
 ;;;;; consult-projectile
 
 (elpaca consult-projectile
-  (keymap-global-set "C-c j" 'consult-projectile))
+  (with-eval-after-load 'projectile
+    (keymap-set projectile-command-map "f" 'consult-projectile)))
 
 ;;;;; consult-project-extras
 
@@ -2843,7 +2845,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'jinx
     (with-eval-after-load 'diminish
-      (diminish 'jinx-mode "JX"))
+      (diminish 'jinx-mode " $"))
 
     (define-keymap
       :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
@@ -2903,21 +2905,36 @@ see command `isearch-forward' for more information."
 ;;;; projectile
 
 (elpaca projectile
-  (setq projectile-mode-line-prefix " Prj"
+  (setq projectile-mode-line-prefix ""
         projectile-dynamic-mode-line nil)
   (run-with-timer 2 nil (lambda () (projectile-mode 1)))
 
+  (with-eval-after-load 'projectile
+    (keymap-global-unset "C-x p")
+    (keymap-global-set "C-x p" 'projectile-command-map)
+
+    (define-keymap
+      :keymap projectile-command-map
+      "e" 'projectile-run-eshell
+      "d" 'projectile-dired
+      "D" 'projectile-find-dir
+      "j" 'projectile-run-gdb))
+
   (with-eval-after-load 'conn
     (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
-                "Q" 'projectile-command-map)))
+                "," 'projectile-command-map)))
 
 ;;;; smart parens
 
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
-  (diminish 'smartparens-mode)
+  (with-eval-after-load 'smartparens
+    (with-eval-after-load 'diminish
+      (diminish 'smartparens-mode)))
+
   (add-hook 'lisp-data-mode-hook 'smartparens-mode)
   (require 'smartparens-config)
+  (show-smartparens-global-mode 1)
 
   (define-keymap
     :keymap smartparens-mode-map
