@@ -774,9 +774,9 @@ see command `isearch-forward' for more information."
 
 ;;;; benchmark-init
 
-(elpaca benchmark-init
-  (require 'benchmark-init)
-  (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
+;; (elpaca benchmark-init
+;;   (require 'benchmark-init)
+;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
 
 ;; (profiler-start 'cpu+mem)
 ;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
@@ -806,71 +806,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
 
 
-;;;; paredit
-
-;; (elpaca (paredit :host github :repo "emacsmirror/paredit")
-;;   (dolist (mode '(lisp-data-mode-hook
-;;                   eval-expression-minibuffer-setup-hook
-;;                   lisp-interaction-mode-hook
-;;                   eshell-mode-hook
-;;                   slime-repl-mode-hook))
-;;     (add-hook mode #'enable-paredit-mode))
-
-;;   (add-hook 'paredit-mode-hook #'paredit-disable-electric-pair)
-
-;;   (eldoc-add-command 'paredit-backward-delete
-;;                      'paredit-close-round)
-
-;;   (defun override-slime-repl-bindings-with-paredit ()
-;;     (keymap-unset slime-repl-mode-map paredit-backward-delete-key))
-;;   (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
-
-;;   (with-eval-after-load 'paredit
-;;     (with-eval-after-load 'diminish
-;;       (diminish 'paredit-mode))
-
-;;     (keymap-unset paredit-mode-map "C-j")
-;;     (keymap-unset paredit-mode-map "RET")
-;;     (keymap-unset paredit-mode-map "M-s")
-;;     (keymap-unset paredit-mode-map "M-;")
-
-;;     (keymap-set paredit-mode-map "M-l" 'paredit-splice-sexp)
-;;     (keymap-set paredit-mode-map "C-w" 'paredit-kill-region)
-;;     (keymap-set paredit-mode-map "<remap> <delete-region>" 'paredit-delete-region)
-
-;;     (keymap-set paredit-mode-map "C-S-l" 'paredit-forward-slurp-sexp)
-;;     (keymap-set paredit-mode-map "C-S-o" 'paredit-forward-barf-sexp)
-;;     (keymap-set paredit-mode-map "C-S-j" 'paredit-backward-slurp-sexp)
-;;     (keymap-set paredit-mode-map "C-S-u" 'paredit-backward-barf-sexp)
-;;     (keymap-set paredit-mode-map "C-S-i" 'paredit-convolute-sexp)
-;;     (keymap-set paredit-mode-map "C-S-k" 'paredit-join-sexps)
-
-;;     (defun paredit-space-for-delimiter-predicates-lisp (endp delimiter)
-;;       (or endp
-;;           (cond ((eq (char-syntax delimiter) ?\()
-;;                  (not (or (looking-back ",@" nil t)
-;;                           (looking-back "'" nil t)
-;;                           (looking-back "`" nil t)
-;;                           (looking-back "#." nil t))))
-;;                 ((eq (char-syntax delimiter) ?\")
-;;                  (not (or (looking-back "#" nil t)
-;;                           (looking-back "#." nil t))))
-;;                 (else t))))
-
-;;     (add-to-list 'paredit-space-for-delimiter-predicates
-;;                  'paredit-space-for-delimiter-predicates-lisp)
-
-;;     (defun paredit-kill-rectangle-advice (fn &rest args)
-;;       (if (not (bound-and-true-p rectangle-mark-mode))
-;;           (apply fn args)
-;;         (setq this-command 'kill-rectangle)
-;;         (call-interactively 'kill-rectangle)))
-;;     (advice-add 'paredit-kill-region :around 'paredit-kill-rectangle-advice)
-
-;;     (defun paredit-disable-electric-pair ()
-;;       (electric-pair-local-mode -1))))
-
-
+;;;; sly
 
 (elpaca sly
   (with-eval-after-load 'sly
@@ -891,73 +827,6 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'smartparens
     (add-hook 'sly-mrepl-mode-hook 'smartparens-mode)))
-
-
-;;;; slime
-
-;; (elpaca slime
-;;   (require 'slime-autoloads)
-
-;;   (put 'iterate 'common-lisp-indent-function 1)
-;;   (put 'mapping 'common-lisp-indent-function 1)
-;;   (put 'gathering 'common-lisp-indent-function 1)
-;;   (put 'collect 'common-lisp-indent-function 1)
-;;   (put 'collect-minimize 'common-lisp-indent-function 2)
-
-;;   (setq inferior-lisp-program "sbcl"
-;;         slime-default-lisp 'sbcl
-;;         slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096")))
-;;         slime-contribs '(slime-autodoc
-;;                          slime-xref-browser
-;;                          slime-repl
-;;                          slime-cl-indent
-;;                          slime-autodoc
-;;                          slime-editing-commands
-;;                          slime-fancy-inspector
-;;                          slime-fancy-trace
-;;                          slime-mdot-fu
-;;                          slime-macrostep
-;;                          slime-presentations
-;;                          slime-scratch
-;;                          slime-references
-;;                          slime-package-fu
-;;                          slime-fontifying-fu
-;;                          slime-quicklisp
-;;                          slime-trace-dialog
-;;                          slime-hyperdoc
-;;                          slime-quicklisp
-;;                          slime-asdf
-;;                          slime-sbcl-exts
-;;                          slime-banner))
-
-;;   ;; TODO: use local embark-keymap-alist instead
-;;   (defun slime-setup-embark ()
-;;     (require 'embark)
-;;     (require 'conn-embark)
-;;     (make-local-variable 'embark-default-action-overrides)
-;;     (make-local-variable 'conn-embark-alt-default-action-overrides)
-;;     (setf (alist-get 'expression embark-default-action-overrides) 'slime-interactive-eval
-;;           (alist-get 'defun embark-default-action-overrides) 'slime-eval-defun
-;;           (alist-get 'identifier embark-default-action-overrides) 'slime-edit-definition
-;;           (alist-get 'identifier conn-embark-alt-default-action-overrides) 'slime-hyperdoc-lookup))
-;;   (add-hook 'slime-mode-hook #'slime-setup-embark)
-;;   (add-hook 'slime-repl-mode-hook #'slime-setup-embark)
-
-;;   (with-eval-after-load 'slime
-;;     (slime-setup)
-
-;;     (keymap-unset slime-repl-mode-map "M-r")
-
-;;     (defun slime-repl-skip-eval-when-reading (slime-eval &rest args)
-;;       (if (slime-reading-p)
-;;           (user-error "Synchronous Lisp Evaluation suppressed while reading input")
-;;         (apply slime-eval args)))
-;;     (advice-add 'slime-eval :around #'slime-repl-skip-eval-when-reading))
-
-;;   (with-eval-after-load 'conn
-;;     (conn-register-thing-commands
-;;      'defun 'conn-sequential-thing-handler
-;;      'slime-end-of-defun 'slime-beginning-of-defun)))
 
 
 ;;;; bqn-mode
@@ -1281,8 +1150,7 @@ see command `isearch-forward' for more information."
 
 ;;;; posframe
 
-(when window-system
-  (elpaca posframe))
+(when window-system (elpaca posframe))
 
 
 ;;;; isearch+
@@ -1592,18 +1460,6 @@ see command `isearch-forward' for more information."
       (ialign (region-beginning) (region-end)))
 
     (keymap-set embark-region-map "a" 'embark-ialign)))
-
-
-;;;; all-the-icons
-
-;; (elpaca all-the-icons)
-
-;;;;; all-the-icons-dired
-
-;; (elpaca all-the-icons-dired
-;;   (with-eval-after-load 'diminish
-;;     (diminish 'all-the-icons-dired-mode))
-;;   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
 
 ;;;; magit
@@ -1921,53 +1777,57 @@ see command `isearch-forward' for more information."
 ;;;; company
 
 (elpaca company
-  (global-company-mode 1)
+  (run-with-timer
+   2 nil
+   (lambda ()
+     (global-company-mode 1)))
 
-  (diminish 'company-mode)
+  (with-eval-after-load 'company
+    (diminish 'company-mode)
 
-  (define-keymap
-    :keymap company-active-map
-    "<tab>" 'company-complete-selection
-    "C-n" nil
-    "C-p" nil
-    "<return>" nil
-    "RET" nil)
+    (define-keymap
+      :keymap company-active-map
+      "<tab>" 'company-complete-selection
+      "C-n" nil
+      "C-p" nil
+      "<return>" nil
+      "RET" nil)
 
-  (defun just-one-face (fn &rest args)
-    (let ((orderless-match-faces [completions-common-part]))
-      (apply fn args)))
-  (advice-add 'company-capf--candidates :around #'just-one-face)
+    (defun just-one-face (fn &rest args)
+      (let ((orderless-match-faces [completions-common-part]))
+        (apply fn args)))
+    (advice-add 'company-capf--candidates :around #'just-one-face)
 
-  (defun company-capf--candidates-ad (input suffix)
-    (require 'vertico)
-    (let* ((res (company--capf-data))
-           (table (nth 3 res))
-           (pred (plist-get (nthcdr 4 res) :predicate))
-           (meta (and res
-                      (completion-metadata
-                       (buffer-substring (nth 1 res) (nth 2 res))
-                       table pred))))
-      (company-capf--save-current-data res meta)
-      (when res
-        (let* ((interrupt (plist-get (nthcdr 4 res) :company-use-while-no-input))
-               (all-result (company-capf--candidates-1 input suffix
-                                                       table pred
-                                                       meta
-                                                       (and non-essential
-                                                            (eq interrupt t))))
-               (sortfun (or (cdr (assq 'display-sort-function meta))
-                            #'vertico-sort-length-alpha))
-               (candidates (assoc-default :completions all-result)))
-          (setq company-capf--sorted (functionp sortfun))
-          (when candidates
-            (setq company-capf--current-boundaries
-                  (company--capf-boundaries-markers
-                   (assoc-default :boundaries all-result)
-                   company-capf--current-boundaries)))
-          (when sortfun
-            (setq candidates (funcall sortfun candidates)))
-          candidates))))
-  (advice-add 'company-capf--candidates :override 'company-capf--candidates-ad))
+    (defun company-capf--candidates-ad (input suffix)
+      (require 'vertico)
+      (let* ((res (company--capf-data))
+             (table (nth 3 res))
+             (pred (plist-get (nthcdr 4 res) :predicate))
+             (meta (and res
+                        (completion-metadata
+                         (buffer-substring (nth 1 res) (nth 2 res))
+                         table pred))))
+        (company-capf--save-current-data res meta)
+        (when res
+          (let* ((interrupt (plist-get (nthcdr 4 res) :company-use-while-no-input))
+                 (all-result (company-capf--candidates-1 input suffix
+                                                         table pred
+                                                         meta
+                                                         (and non-essential
+                                                              (eq interrupt t))))
+                 (sortfun (or (cdr (assq 'display-sort-function meta))
+                              #'vertico-sort-length-alpha))
+                 (candidates (assoc-default :completions all-result)))
+            (setq company-capf--sorted (functionp sortfun))
+            (when candidates
+              (setq company-capf--current-boundaries
+                    (company--capf-boundaries-markers
+                     (assoc-default :boundaries all-result)
+                     company-capf--current-boundaries)))
+            (when sortfun
+              (setq candidates (funcall sortfun candidates)))
+            candidates))))
+    (advice-add 'company-capf--candidates :override 'company-capf--candidates-ad)))
 
 
 ;;;; corfu
@@ -2055,8 +1915,11 @@ see command `isearch-forward' for more information."
     (diminish 'nerd-icons-dired-mode)))
 
 (elpaca nerd-icons-completion
-  (with-eval-after-load 'marginalia
-    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))
+  (run-with-timer
+   3 nil
+   (lambda ()
+     (with-eval-after-load 'marginalia
+       (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))))
 
 
 ;;;; bicycle
@@ -2431,14 +2294,6 @@ see command `isearch-forward' for more information."
 (elpaca consult-projectile
   (with-eval-after-load 'projectile
     (keymap-set projectile-command-map "f" 'consult-projectile)))
-
-;;;;; consult-project-extras
-
-;; (elpaca (consult-project-extras :host github
-;;                                 :repo "Qkessler/consult-project-extra"
-;;                                 :files (:defaults "consult-project-extra.el")
-;;                                 :main "consult-project-extra.el")
-;;   (keymap-global-set "C-c j" 'consult-project-extra-find))
 
 
 ;;;; vertico
@@ -2995,54 +2850,6 @@ see command `isearch-forward' for more information."
 
 (elpaca aggressive-indent
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
-
-
-;;;; dabbrev-hacks
-
-;; (elpaca (dabbrev-hacks :host github
-;;                        :protocol ssh
-;;                        :depth nil
-;;                        :repo "mtll/dabbrev-hacks")
-;;   (require 'dabbrev-hacks)
-;;   ;; (dabbrev-hacks-preview-mode -1)
-;;   (keymap-global-set "C-j" 'dabbrev-expand)
-;;   (custom-set-faces `(completion-preview ((t :inherit diff-indicator-added :slant italic))))
-;;   (setq completion-preview-minimum-symbol-length 1)
-
-;;   (cl-pushnew 'paredit-backward-delete completion-preview-commands)
-
-;;   (defun my-completion-disable-preview ()
-;;     (cond ((and completion-in-region-mode global-completion-preview-mode)
-;;            (completion-preview-mode -1))
-;;           ((and (not completion-in-region-mode)
-;;                 global-completion-preview-mode)
-;;            (completion-preview-mode 1))))
-;;   (add-hook 'completion-in-region-mode-hook 'my-completion-disable-preview))
-
-
-;;;; edit-indirect image
-
-;; (defun my-edit-indirect-image ()
-;;   (interactive)
-;;   (edit-indirect-region (point-min) (point-max) t)
-;;   (overlay-put edit-indirect--overlay 'face nil)
-;;   (image-mode-as-text)
-;;   (let* (timer
-;;          (buffer (current-buffer))
-;;          (fn (lambda ()
-;;                (setq timer nil)
-;;                (when (buffer-live-p buffer)
-;;                  (with-current-buffer buffer
-;;                    (with-current-buffer (overlay-buffer edit-indirect--overlay)
-;;                      (image-toggle-display-text))
-;;                    (edit-indirect-save)
-;;                    (with-current-buffer (overlay-buffer edit-indirect--overlay)
-;;                      (image-toggle-display-image))))))
-;;          (hook
-;;           (lambda (&rest _)
-;;             (unless timer
-;;               (setq timer (run-with-idle-timer 0.5 nil fn))))))
-;;     (add-hook 'after-change-functions hook nil t)))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
