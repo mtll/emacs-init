@@ -278,6 +278,9 @@
   (pulse-momentary-highlight-one-line))
 (advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
 
+(require 'c-ts-mode)
+(setq c-ts-mode-indent-offset 4)
+
 
 ;;;; Lisp Indentation
 
@@ -978,7 +981,26 @@ see command `isearch-forward' for more information."
 (elpaca cdlatex
   (add-hook 'latex-mode-hook #'cdlatex-mode)
   (add-hook 'org-mode-hook #'org-cdlatex-mode)
-  ;;    `cdlatex-math-modify-alist' and `cdlatex-math-modify-prefix'.
+
+  (with-eval-after-load 'cdlatex
+    (setq
+     ;; cdlatex-math-symbol-alist nil
+     cdlatex-command-alist
+     '(("alin"      "Insert an ALIGN* environment template"
+        "" cdlatex-environment ("align*") t nil)
+       ("alitn"     "Insert an ALIGNAT* environment template"
+        "" cdlatex-environment ("alignat*") t nil)
+       ("xxan"      "Insert a XXALIGNAT environment template"
+        "" cdlatex-environment ("xxalignat") t nil)
+       ("muln"      "Insert a MULTINE* environment template"
+        "" cdlatex-environment ("multline*") t nil)
+       ("gatn"      "Insert a GATHER* environment template"
+        "" cdlatex-environment ("gather*") t nil)
+       ("flan"      "Insert a FLALIGN* environment template"
+        "" cdlatex-environment ("flalign*") t nil))))
+
+  (with-eval-after-load 'org
+    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent))
 
   (with-eval-after-load 'conn
     (define-keymap
@@ -2482,7 +2504,7 @@ see command `isearch-forward' for more information."
 
 (elpaca tempel
   (keymap-global-set "M-I" 'tempel-insert)
-  (keymap-global-set "M-i" 'my-tempel-expand-or-complete)
+  (keymap-global-set "M-TAB" 'my-tempel-expand-or-complete)
   ;; (global-tempel-abbrev-mode -1)
 
   (defun my-tempel-expand-or-complete (&optional interactive)
@@ -2787,7 +2809,7 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
-  (add-hook 'lisp-data-mode-hook 'smartparens-mode)
+  (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
   (show-smartparens-global-mode 1)
 
@@ -2826,14 +2848,14 @@ see command `isearch-forward' for more information."
 
 ;;;; puni
 
-(elpaca puni
-  (add-hook 'prog-mode-hook #'puni-mode)
-  (keymap-unset puni-mode-map "C-M-f")
-  (keymap-unset puni-mode-map "C-M-b")
-  (keymap-unset puni-mode-map "C-M-a")
-  (keymap-unset puni-mode-map "C-M-e")
-  (keymap-unset puni-mode-map "M-(")
-  (keymap-unset puni-mode-map "M-)"))
+;; (elpaca puni
+;;   (add-hook 'prog-mode-hook #'puni-mode)
+;;   (keymap-unset puni-mode-map "C-M-f")
+;;   (keymap-unset puni-mode-map "C-M-b")
+;;   (keymap-unset puni-mode-map "C-M-a")
+;;   (keymap-unset puni-mode-map "C-M-e")
+;;   (keymap-unset puni-mode-map "M-(")
+;;   (keymap-unset puni-mode-map "M-)"))
 
 
 ;;;; djvu
