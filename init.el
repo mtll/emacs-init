@@ -2,12 +2,12 @@
 
 ;;; Elpaca
 
-(defvar elpaca-installer-version 0.8)
+(defvar elpaca-installer-version 0.9)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                              :ref nil :depth 1
+                              :ref nil :depth 1 :inherit ignore
                               :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                               :build (:not elpaca--activate-package)))
 (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
@@ -766,7 +766,8 @@ see command `isearch-forward' for more information."
 
 ;;;; Compat
 
-(elpaca compat)
+(elpaca (compat :repo "emacs-compat/compat"
+                :host github))
 
 
 ;;;; Diminish
@@ -787,7 +788,7 @@ see command `isearch-forward' for more information."
 
 ;;;; expreg
 
-(elpaca expreg)
+(elpaca (expreg :host github :repo "casouri/expreg"))
 
 
 ;;;; helpful
@@ -973,7 +974,9 @@ see command `isearch-forward' for more information."
 (elpaca (auctex :pre-build (("./autogen.sh")
                             ("./configure"
                              "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
-                            ("make"))))
+                            ("make")))
+  (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex)
+  (add-hook 'latex-mode-hook 'turn-on-cdlatex))
 
 
 ;;;; cdlatex
@@ -985,6 +988,8 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'cdlatex
     (setq
      ;; cdlatex-math-symbol-alist nil
+     cdlatex-math-modify-alist
+     '((?w "\\mathbb" nil t nil nil ))
      cdlatex-command-alist
      '(("alin"      "Insert an ALIGN* environment template"
         "" cdlatex-environment ("align*") t nil)
@@ -1000,7 +1005,12 @@ see command `isearch-forward' for more information."
         "" cdlatex-environment ("flalign*") t nil))))
 
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent))
+    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent)
+
+    (defun my-special-edit-ad (&rest _)
+      (when (eq major-mode 'org-mode)
+        (org-edit-latex-environment)))
+    (advice-add 'cdlatex-environment :after 'my-special-edit-ad))
 
   (with-eval-after-load 'conn
     (define-keymap
@@ -1048,13 +1058,16 @@ see command `isearch-forward' for more information."
     (keymap-unset org-mode-map "C-,")
     (keymap-set org-mode-map "M-s s" 'org-sparse-tree)
 
-    (setf (alist-get "\\*Org Src.*" display-buffer-alist nil nil #'equal)
-          '((display-buffer-same-window)))
-
     (setf (plist-get org-format-latex-options :scale) 3)
 
     (keymap-set org-mode-map "C-c v" 'latex-math-mode)
     (autoload 'latex-math-mode "latex")
+
+    (defun my-org-edit-elem-ad (&rest app)
+      (let ((state conn-current-state))
+        (apply app)
+        (funcall state)))
+    (advice-add 'org-src--edit-element :around 'my-org-edit-elem-ad)
 
     (defun mathematica-nb-link ()
       "Insert an org link to a Mathematica notebook."
@@ -1172,6 +1185,8 @@ see command `isearch-forward' for more information."
 
 ;;;; posframe
 
+(elpaca spinner)
+
 (when window-system (elpaca posframe))
 
 
@@ -1220,7 +1235,6 @@ see command `isearch-forward' for more information."
 ;;;; conn
 
 (elpaca (conn :host github
-              :protocol ssh
               :depth nil
               :repo "mtll/conn")
   (setq conn-wincontrol-initial-help nil
@@ -1460,8 +1474,7 @@ see command `isearch-forward' for more information."
 ;;;; orderless set operations
 
 (elpaca (orderless-set-operations :host github
-                                  :repo "mtll/orderless-set-operations"
-                                  :protocol ssh)
+                                  :repo "mtll/orderless-set-operations")
   (with-eval-after-load 'orderless
     (oso-mode 1)))
 
