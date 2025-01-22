@@ -791,6 +791,13 @@ see command `isearch-forward' for more information."
 (elpaca (expreg :host github :repo "casouri/expreg"))
 
 
+;;;;
+
+(elpaca (org-luhmann :host github :repo "yibie/org-luhmann")
+  (with-eval-after-load 'org
+    (org-luhmann-setup)))
+
+
 ;;;; helpful
 
 (elpaca helpful
@@ -2689,10 +2696,11 @@ see command `isearch-forward' for more information."
     (interactive)
     (require 'denote)
     (require 'consult)
-    (let ((plist (consult--async-split-style)))
+    (let ((style (alist-get consult-async-split-style consult-async-split-styles-alist)))
       (consult--grep "Notes" #'my-consult-denote-ripgrep-make-builder denote-directory
-                     (concat "^[*]+" (or (plist-get plist :separator)
-                                         (plist-get plist :initial))))))
+                     (concat "^[*]+"
+                             (string (or (plist-get style :separator)
+                                         (plist-get style :initial)))))))
   (keymap-global-set "C-c n h" #'my-denote-consult-ripgrep-heading)
 
   (with-eval-after-load 'org-capture
