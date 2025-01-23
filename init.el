@@ -46,7 +46,9 @@
 
 ;;;; emacs
 
-(setq mac-option-modifier 'meta
+;; help-window-select t
+(setq help-enable-symbol-autoload t
+      mac-option-modifier 'meta
       mac-command-modifier 'super
       hi-lock-auto-select-face t
       mark-even-if-inactive t
@@ -280,6 +282,102 @@
 
 (require 'c-ts-mode)
 (setq c-ts-mode-indent-offset 4)
+
+
+;;;; org
+
+(elpaca (org :repo ("https://code.tecosaur.net/tec/org-mode.git/" . "org")
+             :branch "dev"
+             :pre-build (progn (require 'elpaca-menu-org) (elpaca-menu-org--build))
+             :autoloads "org-loaddefs.el"
+             :build (:not elpaca--generate-autoloads-async)
+             :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
+  (setq org-agenda-start-on-weekday nil
+        org-preview-latex-image-directory "/tmp/ltximg/"
+        org-agenda-include-diary t
+        org-src-window-setup 'plain
+        org-startup-truncated nil
+        org-insert-mode-line-in-empty-file t
+        org-confirm-babel-evaluate nil
+        org-startup-indented nil
+        org-agenda-files (list "~/Documents/notes/")
+        org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'")
+
+  (keymap-global-set "C-c p" 'org-capture)
+  (keymap-global-set "C-c o" 'org-store-link)
+  (keymap-global-set "C-c l" 'org-insert-link-global)
+  (keymap-global-set "C-c a" 'org-agenda)
+
+  (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
+  (add-hook 'org-mode-hook 'abbrev-mode)
+
+  (with-eval-after-load 'org
+    ;; Increase preview width
+    (plist-put org-latex-preview-appearance-options
+               :page-width 0.8)
+
+    (add-hook 'org-mode-hook 'org-latex-preview-auto-mode)
+
+    ;; Block C-n, C-p etc from opening up previews when using auto-mode
+    (setq org-latex-preview-auto-ignored-commands
+          '(next-line previous-line mwheel-scroll
+                      scroll-up-command scroll-down-command))
+
+    ;; Enable consistent equation numbering
+    (setq org-latex-preview-numbered t)
+
+    ;; Bonus: Turn on live previews.  This shows you a live preview of a LaTeX
+    ;; fragment and updates the preview in real-time as you edit it.
+    ;; To preview only environments, set it to '(block edit-special) instead
+    (setq org-latex-preview-live t)
+
+    ;; More immediate live-previews -- the default delay is 1 second
+    (setq org-latex-preview-live-debounce 0.25)
+
+    (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
+             (keymap-unset org-mode-map (concat "C-c " (string c)) t)
+             (keymap-unset org-mode-map (concat "C-c " (upcase (string c))) t)
+             (keymap-unset outline-mode-map (concat "C-c " (string c)) t)
+             (keymap-unset outline-mode-map (concat "C-c " (upcase (string c))) t))
+
+    (keymap-unset org-mode-map "C-'")
+    (keymap-unset org-mode-map "C-,")
+    (keymap-set org-mode-map "M-s s" 'org-sparse-tree)
+
+    ;; (setf (plist-get org-format-latex-options :scale) 3)
+
+    (keymap-set org-mode-map "C-c v" 'latex-math-mode)
+    (autoload 'latex-math-mode "latex")
+
+    (defun my-org-edit-elem-ad (&rest app)
+      (let ((state conn-current-state))
+        (apply app)
+        (funcall state)))
+    (advice-add 'org-src--edit-element :around 'my-org-edit-elem-ad)
+
+    (defun mathematica-nb-link ()
+      "Insert an org link to a Mathematica notebook."
+      (interactive)
+      (let* ((notebook (read-file-name
+                        "Notebook: " nil nil t nil
+                        (lambda (filename)
+                          (or (directory-name-p filename)
+                              (member (file-name-extension filename)
+                                      '("nb" "ma" "m" "ws" "wls" "cdf" "nbp"))))))
+             (link (format "mathematica:%s" notebook)))
+        (insert (org-link-make-string link (read-string "Description: ")))))
+
+    (defun mathematica-nb-jump (notebook)
+      (call-process "Mathematica" nil 0 nil notebook))
+
+    (org-link-set-parameters "mathematica" :follow #'mathematica-nb-jump)))
+
+(elpaca (org-luhmann :host github :repo "yibie/org-luhmann")
+  (with-eval-after-load 'org
+    (org-luhmann-setup)))
+
+;; (elpaca org-fragtog
+;;   (add-hook 'org-mode-hook 'org-fragtog-mode))
 
 
 ;;;; Lisp Indentation
@@ -791,13 +889,6 @@ see command `isearch-forward' for more information."
 (elpaca (expreg :host github :repo "casouri/expreg"))
 
 
-;;;;
-
-(elpaca (org-luhmann :host github :repo "yibie/org-luhmann")
-  (with-eval-after-load 'org
-    (org-luhmann-setup)))
-
-
 ;;;; helpful
 
 (elpaca helpful
@@ -969,11 +1060,11 @@ see command `isearch-forward' for more information."
 
 ;;;;; org-pdf-tools
 
-(elpaca org-pdftools
-  (with-eval-after-load 'pdf-tools
-    (require 'org)
-    (require 'org-pdftools)
-    (org-pdftools-setup-link)))
+;; (elpaca org-pdftools
+;;   (with-eval-after-load 'pdf-tools
+;;     (require 'org)
+;;     (require 'org-pdftools)
+;;     (org-pdftools-setup-link)))
 
 
 ;;;; tex
@@ -1030,68 +1121,6 @@ see command `isearch-forward' for more information."
 (elpaca (math-delimiters :host github :repo "oantolin/math-delimiters")
   (with-eval-after-load 'org
     (keymap-set org-mode-map "M-SPC" 'math-delimiters-insert)))
-
-
-;;;; org
-
-(elpaca org
-  (setq org-agenda-start-on-weekday nil
-        org-preview-latex-image-directory "/tmp/ltximg/"
-        org-agenda-include-diary t
-        org-src-window-setup 'plain
-        org-startup-truncated nil
-        org-insert-mode-line-in-empty-file t
-        org-confirm-babel-evaluate nil
-        org-startup-indented nil
-        org-agenda-files (list "~/Documents/notes/")
-        org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'")
-
-  (keymap-global-set "C-c p" 'org-capture)
-  (keymap-global-set "C-c o" 'org-store-link)
-  (keymap-global-set "C-c l" 'org-insert-link-global)
-  (keymap-global-set "C-c a" 'org-agenda)
-
-  (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
-  (add-hook 'org-mode-hook 'abbrev-mode)
-
-  (with-eval-after-load 'org
-    (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
-             (keymap-unset org-mode-map (concat "C-c " (string c)) t)
-             (keymap-unset org-mode-map (concat "C-c " (upcase (string c))) t)
-             (keymap-unset outline-mode-map (concat "C-c " (string c)) t)
-             (keymap-unset outline-mode-map (concat "C-c " (upcase (string c))) t))
-
-    (keymap-unset org-mode-map "C-'")
-    (keymap-unset org-mode-map "C-,")
-    (keymap-set org-mode-map "M-s s" 'org-sparse-tree)
-
-    (setf (plist-get org-format-latex-options :scale) 3)
-
-    (keymap-set org-mode-map "C-c v" 'latex-math-mode)
-    (autoload 'latex-math-mode "latex")
-
-    (defun my-org-edit-elem-ad (&rest app)
-      (let ((state conn-current-state))
-        (apply app)
-        (funcall state)))
-    (advice-add 'org-src--edit-element :around 'my-org-edit-elem-ad)
-
-    (defun mathematica-nb-link ()
-      "Insert an org link to a Mathematica notebook."
-      (interactive)
-      (let* ((notebook (read-file-name
-                        "Notebook: " nil nil t nil
-                        (lambda (filename)
-                          (or (directory-name-p filename)
-                              (member (file-name-extension filename)
-                                      '("nb" "ma" "m" "ws" "wls" "cdf" "nbp"))))))
-             (link (format "mathematica:%s" notebook)))
-        (insert (org-link-make-string link (read-string "Description: ")))))
-
-    (defun mathematica-nb-jump (notebook)
-      (call-process "Mathematica" nil 0 nil notebook))
-
-    (org-link-set-parameters "mathematica" :follow #'mathematica-nb-jump)))
 
 
 ;;;; dtrt-indent
