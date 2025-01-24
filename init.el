@@ -148,6 +148,8 @@
 (keymap-global-set "C-h A" #'describe-char)
 (keymap-global-set "C-x j" #'dired-jump)
 (keymap-global-set "C-/" #'undo-only)
+(keymap-global-set "C-x <" #'scroll-right)
+(keymap-global-set "C-x >" #'scroll-left)
 
 (put 'other-window 'repeat-map nil)
 
