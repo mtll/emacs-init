@@ -151,6 +151,11 @@
 (keymap-global-set "C-x <" #'scroll-right)
 (keymap-global-set "C-x >" #'scroll-left)
 
+(defvar-keymap scroll-repeat-map
+  :repeat t
+  "<" 'scroll-right
+  ">" 'scroll-left)
+
 (put 'other-window 'repeat-map nil)
 
 (keymap-set help-map "M-k" #'describe-keymap)
