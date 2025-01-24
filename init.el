@@ -379,9 +379,9 @@
 
     (org-link-set-parameters "mathematica" :follow #'mathematica-nb-jump)))
 
-(elpaca (org-luhmann :host github :repo "yibie/org-luhmann")
-  (with-eval-after-load 'org
-    (org-luhmann-setup)))
+;; (elpaca (org-luhmann :host github :repo "yibie/org-luhmann")
+;;   (with-eval-after-load 'org
+;;     (org-luhmann-setup)))
 
 ;; (elpaca org-fragtog
 ;;   (add-hook 'org-mode-hook 'org-fragtog-mode))
@@ -1854,133 +1854,133 @@ see command `isearch-forward' for more information."
 
 ;;;; company
 
-(elpaca company
-  (run-with-timer
-   2 nil
-   (lambda ()
-     (global-company-mode 1)))
+;; (elpaca company
+;;   (run-with-timer
+;;    2 nil
+;;    (lambda ()
+;;      (global-company-mode 1)))
 
-  (with-eval-after-load 'company
-    (diminish 'company-mode)
+;;   (with-eval-after-load 'company
+;;     (diminish 'company-mode)
 
-    (define-keymap
-      :keymap company-active-map
-      "<tab>" 'company-complete-selection
-      "C-n" nil
-      "C-p" nil
-      "<return>" nil
-      "RET" nil)
+;;     (define-keymap
+;;       :keymap company-active-map
+;;       "<tab>" 'company-complete-selection
+;;       "C-n" nil
+;;       "C-p" nil
+;;       "<return>" nil
+;;       "RET" nil)
 
-    (defun just-one-face (fn &rest args)
-      (let ((orderless-match-faces [completions-common-part]))
-        (apply fn args)))
-    (advice-add 'company-capf--candidates :around #'just-one-face)
+;;     (defun just-one-face (fn &rest args)
+;;       (let ((orderless-match-faces [completions-common-part]))
+;;         (apply fn args)))
+;;     (advice-add 'company-capf--candidates :around #'just-one-face)
 
-    (defun company-capf--candidates-ad (input suffix)
-      (require 'vertico)
-      (let* ((res (company--capf-data))
-             (table (nth 3 res))
-             (pred (plist-get (nthcdr 4 res) :predicate))
-             (meta (and res
-                        (completion-metadata
-                         (buffer-substring (nth 1 res) (nth 2 res))
-                         table pred))))
-        (company-capf--save-current-data res meta)
-        (when res
-          (let* ((interrupt (plist-get (nthcdr 4 res) :company-use-while-no-input))
-                 (all-result (company-capf--candidates-1 input suffix
-                                                         table pred
-                                                         meta
-                                                         (and non-essential
-                                                              (eq interrupt t))))
-                 (sortfun (or (cdr (assq 'display-sort-function meta))
-                              #'vertico-sort-length-alpha))
-                 (candidates (assoc-default :completions all-result)))
-            (setq company-capf--sorted (functionp sortfun))
-            (when candidates
-              (setq company-capf--current-boundaries
-                    (company--capf-boundaries-markers
-                     (assoc-default :boundaries all-result)
-                     company-capf--current-boundaries)))
-            (when sortfun
-              (setq candidates (funcall sortfun candidates)))
-            candidates))))
-    (advice-add 'company-capf--candidates :override 'company-capf--candidates-ad)))
+;;     (defun company-capf--candidates-ad (input suffix)
+;;       (require 'vertico)
+;;       (let* ((res (company--capf-data))
+;;              (table (nth 3 res))
+;;              (pred (plist-get (nthcdr 4 res) :predicate))
+;;              (meta (and res
+;;                         (completion-metadata
+;;                          (buffer-substring (nth 1 res) (nth 2 res))
+;;                          table pred))))
+;;         (company-capf--save-current-data res meta)
+;;         (when res
+;;           (let* ((interrupt (plist-get (nthcdr 4 res) :company-use-while-no-input))
+;;                  (all-result (company-capf--candidates-1 input suffix
+;;                                                          table pred
+;;                                                          meta
+;;                                                          (and non-essential
+;;                                                               (eq interrupt t))))
+;;                  (sortfun (or (cdr (assq 'display-sort-function meta))
+;;                               #'vertico-sort-length-alpha))
+;;                  (candidates (assoc-default :completions all-result)))
+;;             (setq company-capf--sorted (functionp sortfun))
+;;             (when candidates
+;;               (setq company-capf--current-boundaries
+;;                     (company--capf-boundaries-markers
+;;                      (assoc-default :boundaries all-result)
+;;                      company-capf--current-boundaries)))
+;;             (when sortfun
+;;               (setq candidates (funcall sortfun candidates)))
+;;             candidates))))
+;;     (advice-add 'company-capf--candidates :override 'company-capf--candidates-ad)))
 
 
 ;;;; corfu
 
-;; (elpaca corfu
-;;   (global-corfu-mode 1)
-;;   (corfu-echo-mode 1)
+(elpaca corfu
+  (global-corfu-mode 1)
+  (corfu-echo-mode 1)
 
-;;   (setq corfu-quit-at-boundary 'separator
-;;         corfu-quit-no-match nil
-;;         corfu-preview-current 'insert
-;;         corfu-on-exact-match nil
-;;         corfu-auto nil
-;;         corfu-preselect 'valid
-;;         corfu-auto-delay 0.3
-;;         corfu-auto-prefix 3
-;;         corfu-map (define-keymap
-;;                     "<remap> <forward-sentence>" 'corfu-prompt-end
-;;                     "<remap> <backward-sentence>" 'corfu-prompt-beginning
-;;                     "<remap> <scroll-down-command>" #'corfu-scroll-down
-;;                     "<remap> <scroll-up-command>" #'corfu-scroll-up
-;;                     "<tab>" #'corfu-complete
-;;                     "RET" nil
-;;                     "<return>" nil
-;;                     "M-SPC" 'corfu-insert-separator
-;;                     "C-h" #'corfu-info-documentation
-;;                     "M-h" #'corfu-info-location
-;;                     "M-<" #'corfu-first
-;;                     "M->" #'corfu-last
-;;                     "M-n" #'corfu-next
-;;                     "C-n" nil
-;;                     "C-j" nil
-;;                     "M-p" #'corfu-previous
-;;                     "C-p" #'corfu-previous
-;;                     "C-g" #'corfu-quit
-;;                     "TAB" #'corfu-complete))
+  (setq corfu-quit-at-boundary 'separator
+        corfu-quit-no-match nil
+        corfu-preview-current 'insert
+        corfu-on-exact-match nil
+        corfu-auto nil
+        corfu-preselect 'valid
+        corfu-auto-delay 0.2
+        corfu-auto-prefix 3
+        corfu-map (define-keymap
+                    "<remap> <forward-sentence>" 'corfu-prompt-end
+                    "<remap> <backward-sentence>" 'corfu-prompt-beginning
+                    "<remap> <scroll-down-command>" #'corfu-scroll-down
+                    "<remap> <scroll-up-command>" #'corfu-scroll-up
+                    "<tab>" #'corfu-complete
+                    "RET" nil
+                    "<return>" nil
+                    "M-SPC" 'corfu-insert-separator
+                    "C-h" #'corfu-info-documentation
+                    "M-h" #'corfu-info-location
+                    "M-<" #'corfu-first
+                    "M->" #'corfu-last
+                    "M-n" #'corfu-next
+                    "C-n" nil
+                    "C-j" nil
+                    "M-p" #'corfu-previous
+                    "C-p" #'corfu-previous
+                    "C-g" #'corfu-quit
+                    "TAB" #'corfu-complete))
 
-;;   (defun my-corfu-auto-on ()
-;;     (setq-local corfu-auto t))
-;;   (add-hook 'prog-mode-hook 'my-corfu-auto-on)
+  (defun my-corfu-auto-on ()
+    (setq-local corfu-auto t))
+  (add-hook 'prog-mode-hook 'my-corfu-auto-on)
 
-;;   (with-eval-after-load 'corfu
-;;     (defun corfu-sep-and-start ()
-;;       (interactive)
-;;       (completion-at-point)
-;;       (corfu-insert-separator))
+  (with-eval-after-load 'corfu
+    (defun corfu-sep-and-start ()
+      (interactive)
+      (completion-at-point)
+      (corfu-insert-separator))
 
-;;     (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start)
+    (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start)
 
-;;     (with-eval-after-load 'conn
-;;       (defun my-corfu-off ()
-;;         (global-corfu-mode -1))
-;;       (add-hook 'conn-macro-dispatch-start-hook 'my-corfu-off)
+    (with-eval-after-load 'conn
+      (defun my-corfu-off ()
+        (global-corfu-mode -1))
+      (add-hook 'conn-macro-dispatch-start-hook 'my-corfu-off)
 
-;;       (defun my-corfu-on ()
-;;         (global-corfu-mode 1))
-;;       (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on)))
+      (defun my-corfu-on ()
+        (global-corfu-mode 1))
+      (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on)))
 
-;;   (with-eval-after-load 'lsp-mode
-;;     (defun wrap-lsp-capf ()
-;;       (setq-local completion-at-point-functions
-;;                   (cl-nsubst
-;;                    (cape-capf-noninterruptible
-;;                     (cape-capf-buster #'lsp-completion-at-point))
-;;                    #'lsp-completion-at-point completion-at-point-functions)))
-;;     (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
+  (with-eval-after-load 'lsp-mode
+    (defun wrap-lsp-capf ()
+      (setq-local completion-at-point-functions
+                  (cl-nsubst
+                   (cape-capf-noninterruptible
+                    (cape-capf-buster #'lsp-completion-at-point))
+                   #'lsp-completion-at-point completion-at-point-functions)))
+    (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
 
-;;   (with-eval-after-load 'eglot
-;;     (defun wrap-eglot-capf ()
-;;       (setq-local completion-at-point-functions
-;;                   (cl-nsubst
-;;                    (cape-capf-noninterruptible
-;;                     (cape-capf-buster #'eglot-completion-at-point))
-;;                    #'eglot-completion-at-point completion-at-point-functions)))
-;;     (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
+  (with-eval-after-load 'eglot
+    (defun wrap-eglot-capf ()
+      (setq-local completion-at-point-functions
+                  (cl-nsubst
+                   (cape-capf-noninterruptible
+                    (cape-capf-buster #'eglot-completion-at-point))
+                   #'eglot-completion-at-point completion-at-point-functions)))
+    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
 
 ;;;; nerd icons
@@ -2384,13 +2384,15 @@ see command `isearch-forward' for more information."
         vertico-multiform-categories '((t buffer)))
 
   (face-spec-set 'vertico-current
-                 '((t :inherit region)))
+                  '((t :inherit region)))
   (face-spec-set 'vertico-group-title
-                 '((t :inherit modus-themes-heading-0 :italic t :bold t)))
+                  '((t :inherit modus-themes-heading-0 :italic t :bold t)))
 
   (vertico-mode 1)
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
+
+  (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
 
   (defun vertico-buffer--redisplay-ad (win)
     (let ((mbwin (active-minibuffer-window)))
@@ -2405,11 +2407,6 @@ see command `isearch-forward' for more information."
                                      2)))))
   (advice-add 'vertico-buffer--redisplay :after 'vertico-buffer--redisplay-ad)
 
-  (defun vertico--display-count-ad ()
-    (when vertico-flat-mode
-      (overlay-put vertico--count-ov 'before-string "")))
-  (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
-
   ;; I prefer it if the vertico buffer mode-line face
   ;; is not remapped to always appear active.
   (defun my-vertico-buffer-stop-face-remap ()
@@ -2419,11 +2416,6 @@ see command `isearch-forward' for more information."
                             face-remapping-alist)))
   (advice-add 'vertico-buffer--setup :after #'my-vertico-buffer-stop-face-remap)
 
-  (defun vertico--display-count-ad ()
-    (when vertico-flat-mode
-      (overlay-put vertico--count-ov 'before-string "")))
-  (advice-add 'vertico--display-count :before-until #'vertico--display-count-ad)
-
   ;; Refocus the minibuffer if vertico-repeat is called with a minibuffer open.
   (defun vertico-repeat-ad (&rest _)
     (when (> (minibuffer-depth) 0)
@@ -2432,9 +2424,11 @@ see command `isearch-forward' for more information."
                 (not (with-current-buffer
                          (window-buffer (minibuffer-selected-window))
                        (eq major-mode 'minibuffer-mode))))
-           (minibuffer-selected-window)
+           (let ((buf (minibuffer-selected-window)))
+             (message "Switched to %s" (buffer-name (window-buffer buf)))
+             buf)
+         (message "Switched to *MINIBUFFER*")
          (minibuffer-window)))
-      (message "Switched to *MINIBUFFER*")
       t))
   (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
 
@@ -2469,8 +2463,6 @@ see command `isearch-forward' for more information."
     "C-M-j" #'vertico-quick-jump
     "C-w" #'my-vertico-copy-or-kill)
 
-  (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
-
   (defun my-vertico-copy-or-kill (beg end)
     (interactive (list (region-beginning) (region-end)))
     (if (or (use-region-p) (not transient-mark-mode))
@@ -2479,6 +2471,23 @@ see command `isearch-forward' for more information."
                   (if (consult--tofu-p (aref cand (1- (length cand))))
                       (substring cand 0 -1)
                     cand))))))
+
+(elpaca vertico-posframe
+  (with-eval-after-load 'vertico
+    (require 'vertico-posframe)
+    (setq vertico-posframe-poshandler
+          (lambda (info)
+            (cons (/ (- (plist-get info :parent-frame-width)
+                        (plist-get info :posframe-width))
+                     2)
+                  -1)))
+
+    ;; Show minibuffer prompt when posframe is hidden
+    (defun vertico-posframe-hidehandler-advice (&rest app)
+      (when (apply app)
+        (set-window-vscroll (active-minibuffer-window) 0)
+        t))
+    (advice-add 'vertico-posframe-hidehandler :around 'my-vertico-posframe-hidehandler-ad)))
 
 
 ;;;; marginalia
@@ -2513,7 +2522,7 @@ see command `isearch-forward' for more information."
        (marginalia-annotate-alias cand)
        (marginalia--documentation (marginalia--function-doc sym)))))
   (cl-pushnew #'marginalia-annotate-command-with-alias
-              (alist-get 'command marginalia-annotator-registry))
+                (alist-get 'command marginalia-annotator-registry))
 
   (defvar marginalia-align-column 40)
 
@@ -2878,7 +2887,6 @@ see command `isearch-forward' for more information."
     "C-M-d" 'sp-down-sexp
     "C-M-p" 'sp-backward-down-sexp
     "C-M-n" 'sp-up-sexp
-    "C-M-k" 'sp-kill-sexp
     "C-M-w" 'sp-copy-sexp
     "C-S-d" 'sp-beginning-of-sexp
     "C-S-a" 'sp-end-of-sexp
