@@ -1284,7 +1284,8 @@ see command `isearch-forward' for more information."
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type '(hbar . 5)
         conn-mark-idle-timer 0.05
-        conn-read-string-timeout 0.35)
+        conn-read-string-timeout 0.35
+        conn-lighter " ⎈")
 
   (setq-default cursor-type '(hbar . 5))
 
