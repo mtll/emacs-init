@@ -2381,8 +2381,6 @@ see command `isearch-forward' for more information."
         vertico-preselect 'first
         vertico-buffer-hide-prompt nil
         vertico-cycle t
-        vertico-buffer-display-action '(display-buffer-reuse-mode-window
-                                        (mode . minibuffer-mode))
         vertico-multiform-categories '((t buffer)))
 
   (face-spec-set 'vertico-current
@@ -2465,11 +2463,13 @@ see command `isearch-forward' for more information."
     "M-DEL" #'vertico-directory-up
     "C-l" #'vertico-directory-up
     "M-RET" #'vertico-exit-input
-    "C-M-j" #'vertico-quick-jump
     "C-M-<return>" #'vertico-exit-input
+    "M-j" #'vertico-quick-exit
     "C-j" #'vertico-exit-input
-    "C-S-j" #'vertico-quick-exit
+    "C-M-j" #'vertico-quick-jump
     "C-w" #'my-vertico-copy-or-kill)
+
+  (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
 
   (defun my-vertico-copy-or-kill (beg end)
     (interactive (list (region-beginning) (region-end)))
