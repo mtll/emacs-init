@@ -1993,11 +1993,8 @@ see command `isearch-forward' for more information."
     (diminish 'nerd-icons-dired-mode)))
 
 (elpaca nerd-icons-completion
-  (run-with-timer
-   3 nil
-   (lambda ()
-     (with-eval-after-load 'marginalia
-       (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))))
+  (with-eval-after-load 'marginalia
+    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))
 
 
 ;;;; bicycle
