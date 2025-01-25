@@ -299,90 +299,6 @@
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
-
-  (with-eval-after-load 'embark
-    ;; An example org refile target
-    (defun embark-refile-buffers-targets ()
-      (cl-loop for buf in (buffer-list)
-               when (and (eq 'org-mode (buffer-local-value 'major-mode buf))
-                         (buffer-file-name buf))
-               collect buf))
-    (add-to-list 'org-refile-targets '(embark-refile-buffers-targets :maxlevel . 1))
-
-    (defun embark-refile-grep-candidates (cands)
-      (let* ((rfloc)
-             (org-refile-keep t)
-             (headings
-              (thread-first
-                (cl-loop for cand in cands
-                         for marker = (car (consult--grep-position cand))
-                         for heading = (with-current-buffer (marker-buffer marker)
-                                         (when (and (eq major-mode 'org-mode)
-                                                    (goto-char marker)
-                                                    (ignore-errors (org-back-to-heading))
-                                                    (org-at-heading-p))
-                                           (unless rfloc
-                                             (setq rfloc (org-refile-get-location
-                                                          "Refile"
-                                                          nil
-                                                          org-refile-allow-creating-parent-nodes)))
-                                           (point-marker)))
-                         when heading collect heading)
-                (delete-dups))))
-        (dolist (heading headings)
-          (with-current-buffer (marker-buffer heading)
-            (goto-char heading)
-            (org-refile nil nil rfloc)
-            ;; Add a refiled_from property to headings
-            ;; (catch 'undo
-            ;;   (atomic-change-group
-            ;;     (org-entry-put (point) "REFILED_FROM" (buffer-file-name))
-            ;;     (org-refile
-            ;;      nil nil
-            ;;      (org-refile
-            ;;       nil nil
-            ;;       (or rfloc
-            ;;           (setq rfloc (org-refile-get-location
-            ;;                        "Refile"
-            ;;                        nil
-            ;;                        org-refile-allow-creating-parent-nodes)))))
-            ;;     (throw 'undo nil)))
-            ))
-        (find-file (nth 1 rfloc))))
-    (add-to-list 'embark-multitarget-actions 'embark-refile-grep-candidates)
-
-    (defun embark-refile-copy-grep-candidates (cands)
-      (let* ((rfloc)
-             (org-refile-keep t)
-             (headings
-              (thread-first
-                (cl-loop for cand in cands
-                         for marker = (car (consult--grep-position cand))
-                         for heading = (with-current-buffer (marker-buffer marker)
-                                         (when (and (eq major-mode 'org-mode)
-                                                    (goto-char marker)
-                                                    (ignore-errors (org-back-to-heading))
-                                                    (org-at-heading-p))
-                                           (unless rfloc
-                                             (setq rfloc (org-refile-get-location
-                                                          "Copy"
-                                                          nil
-                                                          org-refile-allow-creating-parent-nodes)))
-                                           (point-marker)))
-                         when heading collect heading)
-                (delete-dups))))
-        (dolist (heading headings)
-          (with-current-buffer (marker-buffer heading)
-            (goto-char heading)
-            (org-refile nil nil rfloc)))
-        (find-file (nth 1 rfloc))))
-    (add-to-list 'embark-multitarget-actions 'embark-refile-copy-grep-candidates)
-
-    (defvar-keymap embark-refile-grep-map
-      "C-w" 'embark-refile-grep-candidates
-      "M-w" 'embark-refile-copy-grep-candidates)
-    (cl-pushnew 'embark-refile-grep-map (alist-get 'consult-grep embark-keymap-alist)))
-
   (defun my-org-refile-denote-targets ()
     (when (and (fboundp 'denote-directory-files)
                (buffer-file-name)
@@ -1841,7 +1757,88 @@ see command `isearch-forward' for more information."
         :keymap embark-bookmark-map
         "M-RET" 'embark-bookmark-link)
 
-      (add-hook 'embark-target-finders 'embark-org-target-link -85)))
+      (add-hook 'embark-target-finders 'embark-org-target-link -85)
+
+      (defun embark-refile-buffers-targets ()
+        (cl-loop for buf in (buffer-list)
+                 when (and (eq 'org-mode (buffer-local-value 'major-mode buf))
+                           (buffer-file-name buf))
+                 collect buf))
+      (add-to-list 'org-refile-targets '(embark-refile-buffers-targets :maxlevel . 1))
+
+      (defun embark-refile-grep-candidates (cands)
+        (let* ((rfloc)
+               (org-refile-keep t)
+               (headings
+                (thread-first
+                  (cl-loop for cand in cands
+                           for marker = (car (consult--grep-position cand))
+                           for heading = (with-current-buffer (marker-buffer marker)
+                                           (when (and (eq major-mode 'org-mode)
+                                                      (goto-char marker)
+                                                      (ignore-errors (org-back-to-heading))
+                                                      (org-at-heading-p))
+                                             (unless rfloc
+                                               (setq rfloc (org-refile-get-location
+                                                            "Refile"
+                                                            nil
+                                                            org-refile-allow-creating-parent-nodes)))
+                                             (point-marker)))
+                           when heading collect heading)
+                  (delete-dups))))
+          (dolist (heading headings)
+            (with-current-buffer (marker-buffer heading)
+              (goto-char heading)
+              (org-refile nil nil rfloc)
+              ;; Add a refiled_from property to headings
+              ;; (catch 'undo
+              ;;   (atomic-change-group
+              ;;     (org-entry-put (point) "REFILED_FROM" (buffer-file-name))
+              ;;     (org-refile
+              ;;      nil nil
+              ;;      (org-refile
+              ;;       nil nil
+              ;;       (or rfloc
+              ;;           (setq rfloc (org-refile-get-location
+              ;;                        "Refile"
+              ;;                        nil
+              ;;                        org-refile-allow-creating-parent-nodes)))))
+              ;;     (throw 'undo nil)))
+              ))
+          (find-file (nth 1 rfloc))))
+      (add-to-list 'embark-multitarget-actions 'embark-refile-grep-candidates)
+
+      (defun embark-refile-copy-grep-candidates (cands)
+        (let* ((rfloc)
+               (org-refile-keep t)
+               (headings
+                (thread-first
+                  (cl-loop for cand in cands
+                           for marker = (car (consult--grep-position cand))
+                           for heading = (with-current-buffer (marker-buffer marker)
+                                           (when (and (eq major-mode 'org-mode)
+                                                      (goto-char marker)
+                                                      (ignore-errors (org-back-to-heading))
+                                                      (org-at-heading-p))
+                                             (unless rfloc
+                                               (setq rfloc (org-refile-get-location
+                                                            "Copy"
+                                                            nil
+                                                            org-refile-allow-creating-parent-nodes)))
+                                             (point-marker)))
+                           when heading collect heading)
+                  (delete-dups))))
+          (dolist (heading headings)
+            (with-current-buffer (marker-buffer heading)
+              (goto-char heading)
+              (org-refile nil nil rfloc)))
+          (find-file (nth 1 rfloc))))
+      (add-to-list 'embark-multitarget-actions 'embark-refile-copy-grep-candidates)
+
+      (defvar-keymap embark-refile-grep-map
+        "C-w" 'embark-refile-grep-candidates
+        "M-w" 'embark-refile-copy-grep-candidates)
+      (cl-pushnew 'embark-refile-grep-map (alist-get 'consult-grep embark-keymap-alist))))
 
   (with-eval-after-load 'vertico
     (define-keymap
