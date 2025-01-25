@@ -125,7 +125,7 @@
 (column-number-mode 1)
 (line-number-mode 1)
 (undelete-frame-mode 1)
-(context-menu-mode 1)
+(context-menu-mode -1)
 (save-place-mode 1)
 
 (keymap-global-unset "C-x C-c")
@@ -299,20 +299,8 @@
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
-  (defun my-org-refile-denote-targets ()
-    (when (and (fboundp 'denote-directory-files)
-               (buffer-file-name)
-               (file-in-directory-p (buffer-file-name) denote-directory))
-      (denote-directory-files "\\.org$")))
-
-  (defun my-org-file-buffers-targets ()
-    (cl-loop for buf in (buffer-list)
-             when (and (eq 'org-mode (buffer-local-value 'major-mode buf))
-                       (buffer-file-name buf))
-             collect buf))
-
-  (setq org-refile-targets '((my-org-file-buffers-targets :maxlevel . 1))
-        org-refile-use-outline-path nil
+  (setq org-refile-use-outline-path nil
+        org-outline-path-complete-in-steps nil
         org-agenda-start-on-weekday nil
         org-preview-latex-image-directory "/tmp/ltximg/"
         org-agenda-include-diary t
@@ -870,7 +858,8 @@ see command `isearch-forward' for more information."
         (">" "Size" ibuffer-filter-by-size-gt :transient t)
         ("e" "Predicate" ibuffer-filter-by-predicate :transient t)
         ("b" "Basename" ibuffer-filter-by-basename :transient t)
-        ("E" "Process" ibuffer-filter-by-process :transient t)]])
+        ("E" "Process" ibuffer-filter-by-process :transient t)]]
+      [("q" "Exit" ignore)])
 
     (keymap-set ibuffer-mode-map "/" 'my-ibuffer-filter-prefix)))
 
@@ -1126,10 +1115,11 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'org
     (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent)
 
-    (defun my-special-edit-ad (&rest _)
-      (when (eq major-mode 'org-mode)
-        (org-edit-latex-environment)))
-    (advice-add 'cdlatex-environment :after 'my-special-edit-ad))
+    ;; (defun my-special-edit-ad (&rest _)
+    ;;   (when (eq major-mode 'org-mode)
+    ;;     (org-edit-latex-environment)))
+    ;; (advice-add 'cdlatex-environment :after 'my-special-edit-ad)
+    )
 
   (with-eval-after-load 'conn
     (define-keymap
