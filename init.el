@@ -1768,7 +1768,6 @@ see command `isearch-forward' for more information."
 
       (defun embark-refile-grep-candidates (cands)
         (let* ((rfloc)
-               (org-refile-keep t)
                (headings
                 (thread-first
                   (cl-loop for cand in cands
@@ -1789,22 +1788,7 @@ see command `isearch-forward' for more information."
           (dolist (heading headings)
             (with-current-buffer (marker-buffer heading)
               (goto-char heading)
-              (org-refile nil nil rfloc)
-              ;; Add a refiled_from property to headings
-              ;; (catch 'undo
-              ;;   (atomic-change-group
-              ;;     (org-entry-put (point) "REFILED_FROM" (buffer-file-name))
-              ;;     (org-refile
-              ;;      nil nil
-              ;;      (org-refile
-              ;;       nil nil
-              ;;       (or rfloc
-              ;;           (setq rfloc (org-refile-get-location
-              ;;                        "Refile"
-              ;;                        nil
-              ;;                        org-refile-allow-creating-parent-nodes)))))
-              ;;     (throw 'undo nil)))
-              ))
+              (org-refile nil nil rfloc)))
           (find-file (nth 1 rfloc))))
       (add-to-list 'embark-multitarget-actions 'embark-refile-grep-candidates)
 
@@ -1838,7 +1822,58 @@ see command `isearch-forward' for more information."
       (defvar-keymap embark-refile-grep-map
         "C-w" 'embark-refile-grep-candidates
         "M-w" 'embark-refile-copy-grep-candidates)
-      (cl-pushnew 'embark-refile-grep-map (alist-get 'consult-grep embark-keymap-alist))))
+      (cl-pushnew 'embark-refile-grep-map (alist-get 'consult-grep embark-keymap-alist))
+
+      (defun embark-refile-copy-location-candidates (cands)
+        (when (eq major-mode 'org-mode)
+          (let* ((rfloc (org-refile-get-location
+                         "Copy"
+                         nil
+                         org-refile-allow-creating-parent-nodes))
+                 (org-refile-keep t)
+                 (headings
+                  (thread-first
+                    (cl-loop for cand in cands
+                             for loc = (car (consult--get-location cand))
+                             for heading = (when (and (goto-char loc)
+                                                      (ignore-errors (org-back-to-heading))
+                                                      (org-at-heading-p))
+                                             (point))
+                             when heading collect heading)
+                    (delete-dups))))
+            (dolist (heading headings)
+              (goto-char heading)
+              (org-refile nil nil rfloc))
+            (find-file (nth 1 rfloc)))))
+      (add-to-list 'embark-multitarget-actions 'embark-refile-copy-location-candidates)
+
+      (defun embark-refile-location-candidates (cands)
+        (when (eq major-mode 'org-mode)
+          (let* ((rfloc (org-refile-get-location
+                         "Refile"
+                         nil
+                         org-refile-allow-creating-parent-nodes))
+                 (headings
+                  (thread-first
+                    (cl-loop for cand in cands
+                             for loc = (car (consult--get-location cand))
+                             for heading = (when (and (goto-char loc)
+                                                      (ignore-errors (org-back-to-heading))
+                                                      (org-at-heading-p))
+                                             (point))
+                             when heading collect heading)
+                    (delete-dups))))
+            (dolist (heading headings)
+              (goto-char heading)
+              (org-refile nil nil rfloc))
+            (find-file (nth 1 rfloc)))))
+      (add-to-list 'embark-multitarget-actions 'embark-refile-location-candidates)
+
+      (defvar-keymap embark-refile-location-map
+        "C-w" 'embark-refile-location-candidates
+        "M-w" 'embark-refile-copy-location-candidates)
+      (cl-pushnew 'embark-refile-location-map
+                  (alist-get 'consult-location embark-keymap-alist))))
 
   (with-eval-after-load 'vertico
     (define-keymap
