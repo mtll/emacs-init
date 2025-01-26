@@ -841,7 +841,19 @@ see command `isearch-forward' for more information."
 
     (transient-define-prefix my-ibuffer-filter-prefix ()
       "Ibuffer filter prefix"
-      [["Filters"
+      [:description
+       (lambda ()
+         (concat
+          (propertize "IBuffer Filters: " 'face 'transient-heading)
+          ()
+          (propertize (substring
+                       (mapconcat 'ibuffer-format-qualifier
+                                  ibuffer-filtering-qualifiers "")
+                       1)
+                      'face 'transient-value)
+          "
+"))
+       ["Filters"
         ("s" "Save" ibuffer-save-filters :transient t)
         ("x" "Delete Saved" ibuffer-delete-saved-filters :transient t)
         ("/" "Disable" ibuffer-filter-disable :transient t)
