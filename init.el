@@ -754,7 +754,23 @@ see command `isearch-forward' for more information."
     "/" 'dired-undo
     "C-<tab>" 'dired-maybe-insert-subdir
     "<backtab>" 'dired-kill-subdir
-    "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff))
+    "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff
+    "b" 'dired-up-directory
+    "* e" 'dired-mark-executables
+    "* l" 'dired-mark-symlinks
+    "* d" 'dired-mark-directories
+    "* r" 'dired-mark-files-regexp
+    "% c" 'dired-do-copy-regexp
+    "% h" 'dired-do-hardlink-regexp
+    "% s" 'dired-do-symlink-regexp
+    "% y" 'dired-do-relsymlink-regexp
+    "% t" 'dired-flag-garbage-files
+    ;; "z" available
+    )
+
+  (with-eval-after-load 'conn
+    (keymap-set dired-mode-map "r" (conn-remap-key (key-parse "%")))
+    (keymap-set dired-mode-map "h" (conn-remap-key (key-parse "*")))))
 
 
 ;;;; eldoc
@@ -2177,9 +2193,9 @@ see command `isearch-forward' for more information."
         orderless-style-dispatchers '(orderless-kwd-dispatch
                                       orderless-affix-dispatch
                                       flex-first-if-completing)
-        completion-category-overrides '((file (styles basic
+        completion-category-overrides '((file (styles orderless+flex
                                                       partial-completion
-                                                      orderless+flex))
+                                                      basic))
                                         (lsp-capf (styles orderless+flex))
                                         (consult-location (styles orderless-loc))
                                         (consult-grep (styles orderless-loc)))
