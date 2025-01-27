@@ -1091,7 +1091,9 @@ see command `isearch-forward' for more information."
     (require 'pdf-tools))
 
   (with-eval-after-load 'pdf-tools
-    (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode))
+    (setq pdf-annot-latex-header "")
+    (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode)
+    (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window))
 
   (setopt pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
   (pdf-loader-install))
@@ -1123,7 +1125,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'cdlatex
     (setq
-     ;; cdlatex-math-symbol-alist nil
+     cdlatex-math-symbol-alist '((?. ("\\cdot" "\\ldot")))
      cdlatex-math-modify-alist
      '((?w "\\mathbb" nil t nil nil ))
      cdlatex-command-alist
@@ -1350,7 +1352,7 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-o" 'conn-open-line-above)
   (keymap-global-set "M-o" 'conn-open-line)
-  (keymap-global-set "C-j" 'conn-open-line-and-indent)
+  (keymap-global-set "M-j" 'conn-open-line-and-indent)
   (keymap-global-set "C-c v" 'conn-toggle-mark-command)
   (keymap-global-set "C-;" 'conn-wincontrol)
   (keymap-global-set "C-x ," 'subword-mode)
@@ -1728,11 +1730,9 @@ see command `isearch-forward' for more information."
           (tab-bar-close-tab))))
 
     (defun embark-looking-at-page-target-finder ()
-      (when (and (or (save-excursion
-                       (beginning-of-line)
-                       (looking-at page-delimiter))
-                     (eobp)
-                     (bobp))
+      (when (and (save-excursion
+                   (beginning-of-line)
+                   (looking-at page-delimiter))
                  (not (window-minibuffer-p (selected-window))))
         (let ((bounds (bounds-of-thing-at-point 'page)))
           (cons 'page (cons
