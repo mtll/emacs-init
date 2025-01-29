@@ -1125,7 +1125,9 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'cdlatex
     (setq
-     cdlatex-math-symbol-alist '((?. ("\\cdot" "\\ldot")))
+     cdlatex-math-symbol-alist '((?. ("\\cdot" "\\ldot"))
+                                 (?c ("\\circ"))
+                                 (?j ("\\,d")))
      cdlatex-math-modify-alist
      '((?w "\\mathbb" nil t nil nil ))
      cdlatex-command-alist
