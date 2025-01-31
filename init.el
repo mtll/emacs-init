@@ -151,6 +151,12 @@
 (keymap-global-set "C-x <" #'scroll-right)
 (keymap-global-set "C-x >" #'scroll-left)
 
+(keymap-global-set "C-x t u" #'tab-previous)
+(keymap-global-set "C-x t /" #'tab-undo)
+
+(keymap-set tab-bar-switch-repeat-map "u" #'tab-previous)
+(keymap-unset tab-bar-switch-repeat-map "O")
+
 (defvar-keymap scroll-repeat-map
   :repeat t
   "<" 'scroll-right
@@ -1626,12 +1632,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'consult
     (require 'embark))
 
-  (with-eval-after-load 'embark
-    (defun my-embark-abbrev-target-finder ()
-      (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
-        (when sym `(abbrev ,name ,wordstart . ,wordend))))
-    (add-to-list 'embark-target-finders 'my-embark-abbrev-target-finder))
-
   (setq embark-quit-after-action t
         embark-indicators '(embark-minimal-indicator
                             embark-highlight-indicator
@@ -1647,8 +1647,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
-  (keymap-set embark-general-map "Q" 'embark-toggle-quit)
-  (keymap-unset embark-general-map "q")
 
   (defun embark-act-persist ()
     (interactive)
@@ -1680,6 +1678,20 @@ see command `isearch-forward' for more information."
     "t" 'embark-tab-detach)
 
   (with-eval-after-load 'embark
+    (keymap-set embark-file-map "C-s" 'multi-isearch-files)
+    (cl-pushnew 'multi-isearch-files embark-multitarget-actions)
+
+    (keymap-set embark-buffer-map "C-s" 'multi-isearch-buffers)
+    (cl-pushnew 'multi-isearch-buffers embark-multitarget-actions)
+
+    (keymap-set embark-general-map "Q" 'embark-toggle-quit)
+    (keymap-unset embark-general-map "q")
+
+    (defun my-embark-abbrev-target-finder ()
+      (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
+        (when sym `(abbrev ,name ,wordstart . ,wordend))))
+    (cl-pushnew 'my-embark-abbrev-target-finder embark-target-finders)
+
     (cl-pushnew 'my-embark-tab-map (alist-get 'tab embark-keymap-alist))
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
@@ -1810,7 +1822,7 @@ see command `isearch-forward' for more information."
               (goto-char heading)
               (org-refile nil nil rfloc)))
           (find-file (nth 1 rfloc))))
-      (add-to-list 'embark-multitarget-actions 'embark-refile-grep-candidates)
+      (cl-pushnew 'embark-refile-grep-candidates embark-multitarget-actions)
 
       (defun embark-refile-copy-grep-candidates (cands)
         (let* ((rfloc)
@@ -1837,7 +1849,7 @@ see command `isearch-forward' for more information."
               (goto-char heading)
               (org-refile nil nil rfloc)))
           (find-file (nth 1 rfloc))))
-      (add-to-list 'embark-multitarget-actions 'embark-refile-copy-grep-candidates)
+      (cl-pushnew 'embark-refile-copy-grep-candidates embark-multitarget-actions)
 
       (defvar-keymap embark-refile-grep-map
         "C-w" 'embark-refile-grep-candidates
@@ -1865,7 +1877,7 @@ see command `isearch-forward' for more information."
               (goto-char heading)
               (org-refile nil nil rfloc))
             (find-file (nth 1 rfloc)))))
-      (add-to-list 'embark-multitarget-actions 'embark-refile-copy-location-candidates)
+      (cl-pushnew 'embark-refile-copy-location-candidates embark-multitarget-actions)
 
       (defun embark-refile-location-candidates (cands)
         (when (eq major-mode 'org-mode)
@@ -1887,7 +1899,7 @@ see command `isearch-forward' for more information."
               (goto-char heading)
               (org-refile nil nil rfloc))
             (find-file (nth 1 rfloc)))))
-      (add-to-list 'embark-multitarget-actions 'embark-refile-location-candidates)
+      (cl-pushnew 'embark-refile-location-candidates embark-multitarget-actions)
 
       (defvar-keymap embark-refile-location-map
         "C-w" 'embark-refile-location-candidates
@@ -2519,7 +2531,7 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-projectile
   (with-eval-after-load 'projectile
-    (keymap-set projectile-command-map "f" 'consult-projectile)))
+    (keymap-global-set "C-c j" 'consult-projectile)))
 
 
 ;;;; vertico
