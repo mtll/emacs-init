@@ -844,16 +844,14 @@ see command `isearch-forward' for more information."
       [:description
        (lambda ()
          (concat
-          (propertize "IBuffer Filters: " 'face 'transient-heading)
-          ()
-          (propertize (substring
-                       (mapconcat 'ibuffer-format-qualifier
-                                  ibuffer-filtering-qualifiers "")
-                       1)
-                      'face 'transient-value)
-          "
-"))
-       ["Filters"
+          " "
+          (mapconcat
+           (lambda (q)
+             (propertize (substring (ibuffer-format-qualifier q) 1)
+                         'face 'transient-value))
+           ibuffer-filtering-qualifiers
+           " ")))
+       ["Filter"
         ("s" "Save" ibuffer-save-filters :transient t)
         ("x" "Delete Saved" ibuffer-delete-saved-filters :transient t)
         ("/" "Disable" ibuffer-filter-disable :transient t)
@@ -861,8 +859,8 @@ see command `isearch-forward' for more information."
         ("p" "Pop" ibuffer-pop-filter :transient t)]
        ["Ops"
         ("!" "Negate" ibuffer-negate-filter :transient t)
-        ("&" "And" ibuffer-and-filter :transient t)
-        ("|" "Or" ibuffer-or-filter :transient t)
+        ("+" "And" ibuffer-and-filter :transient t)
+        ("*" "Or" ibuffer-or-filter :transient t)
         ("D" "Decompose" ibuffer-decompose-filter :transient t)
         ("t" "Exchange" ibuffer-exchange-filters :transient t)]
        ["Groups"
@@ -886,8 +884,8 @@ see command `isearch-forward' for more information."
         (">" "Size" ibuffer-filter-by-size-gt :transient t)
         ("e" "Predicate" ibuffer-filter-by-predicate :transient t)
         ("b" "Basename" ibuffer-filter-by-basename :transient t)
-        ("E" "Process" ibuffer-filter-by-process :transient t)]]
-      [("q" "Exit" ignore)])
+        ("E" "Process" ibuffer-filter-by-process :transient t)]
+       [("q" "quit" ignore)]])
 
     (keymap-set ibuffer-mode-map "/" 'my-ibuffer-filter-prefix)))
 
@@ -1649,6 +1647,8 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
+  (keymap-set embark-general-map "Q" 'embark-toggle-quit)
+  (keymap-unset embark-general-map "q")
 
   (defun embark-act-persist ()
     (interactive)
@@ -3085,6 +3085,39 @@ see command `isearch-forward' for more information."
 
 (elpaca aggressive-indent
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
+
+
+;;;; org-ql
+
+(elpaca org-ql
+  (with-eval-after-load 'org
+    (require 'org-ql))
+
+  (with-eval-after-load 'denote
+    (defun my-org-ql-search-denote-files ()
+      (interactive)
+      (require 'org-ql)
+      (let ((org-directory denote-directory))
+        (org-ql-search
+          (org-ql-search-directories-files)
+          (read-string "Query: " (when org-ql-view-query
+                                   (format "%S" org-ql-view-query)))
+          :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
+          :super-groups (org-ql-view--complete-super-groups)
+          :sort (org-ql-view--complete-sort))))
+    (keymap-global-set "C-c n q" 'my-org-ql-search-denote-files)
+
+    (defun my-embark-org-ql-files (files)
+      (let ((org-directory files))
+        (org-ql-search
+          files
+          (read-string "Query: " (when org-ql-view-query
+                                   (format "%S" org-ql-view-query)))
+          :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
+          :super-groups (org-ql-view--complete-super-groups)
+          :sort (org-ql-view--complete-sort))))
+    (cl-pushnew 'my-embark-org-ql-files embark-multitarget-actions)
+    (keymap-set embark-file-map "q" 'my-embark-org-ql-files)))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
