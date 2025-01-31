@@ -834,7 +834,7 @@ see command `isearch-forward' for more information."
 
 (elpaca transient
   (setq transient-enable-popup-navigation nil
-        transient-mode-line-format nil)
+        transient-mode-line-format 'line)
 
   (with-eval-after-load 'ibuffer
     (require 'transient)
@@ -2968,7 +2968,7 @@ see command `isearch-forward' for more information."
       (dolist (cmd '(jinx-correct-nearest
                      jinx-correct
                      jinx-correct-all))
-        (setf (alist-get cmd conn-dispatch-default-actions-alist)
+        (setf (alist-get cmd conn-dispatch-default-action-alist)
               'my-jinx-dispatch-check)))))
 
 
