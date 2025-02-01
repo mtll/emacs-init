@@ -412,11 +412,6 @@
 
 (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
 
-;; (keymap-unset completion-preview-active-mode-map "TAB")
-;; (keymap-unset completion-preview-active-mode-map "M-i")
-
-(keymap-global-set "M-n" 'hippie-expand)
-
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
 
@@ -1388,7 +1383,7 @@ see command `isearch-forward' for more information."
   (keymap-set conn-state-map "$" 'ispell-word)
   (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
   (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
-  (keymap-global-set "M-u" 'conn-region-case-prefix)
+  ;; (keymap-global-set "M-u" 'conn-region-case-prefix)
   (keymap-global-set "M-SPC" 'conn-toggle-mark-command)
   (keymap-global-set "C-SPC" 'conn-set-mark-command)
   (keymap-global-set "M-z" 'conn-exchange-mark-command)
@@ -1424,7 +1419,7 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
-  (keymap-set conn-state-map "," 'embark-act)
+  ;; (keymap-set conn-state-map "," 'embark-act)
   (keymap-set conn-state-map "TAB" 'conn-embark-dwim-either)
   (keymap-set conn-state-map "<tab>" 'conn-embark-dwim-either)
   (keymap-set conn-org-edit-state-map "TAB" 'conn-embark-dwim-either)
@@ -1434,6 +1429,39 @@ see command `isearch-forward' for more information."
     (interactive "P")
     (require 'embark)
     (if arg (conn-embark-alt-dwim) (embark-dwim)))
+
+  (defvar my-embark-smart-tab-target-finders
+    '(;; embark-target-active-region
+      my-embark-commit-target-finder
+      my-embark-button-target
+      my-embark-cve-target-finder
+      my-embark-gnu-bug-finder
+      my-embark-gh-issue-finder
+      my-embark-abbrev-target-finder
+      embark-org-target-link
+      embark-target-collect-candidate
+      embark-target-text-heading-at-point
+      embark-target-flymake-at-point
+      embark-target-package-at-point
+      embark-target-url-at-point
+      embark-target-file-at-point
+      embark-target-custom-variable-at-point
+      embark-target-identifier-at-point
+      embark-target-prog-heading-at-point))
+
+  (defun my-embark-smart-tab (arg)
+    (interactive "P")
+    (require 'embark)
+    (condition-case _cond
+        (conn--with-advice
+            (( 'completion-at-point :override
+               (lambda ()
+                 (let ((embark-target-finders my-embark-smart-tab-target-finders))
+                   (conn-embark-dwim-either arg)))))
+          (indent-for-tab-command))
+      (user-error (completion-at-point))))
+
+  (keymap-global-set "TAB" 'my-embark-smart-tab)
 
   (with-eval-after-load 'embark
     (require 'conn-embark)
@@ -1599,6 +1627,7 @@ see command `isearch-forward' for more information."
 (elpaca cape
   (keymap-global-set "M-L" #'cape-line)
   (keymap-global-set "M-K" #'cape-dict)
+  ;; M-h C-M-j M-u M-n M-p
 
   (add-to-list 'completion-at-point-functions #'cape-file)
 
@@ -1687,11 +1716,6 @@ see command `isearch-forward' for more information."
     (keymap-set embark-general-map "M-<tab>" 'embark-toggle-quit)
     (keymap-unset embark-general-map "q")
 
-    (defun my-embark-abbrev-target-finder ()
-      (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
-        (when sym `(abbrev ,name ,wordstart . ,wordend))))
-    (cl-pushnew 'my-embark-abbrev-target-finder embark-target-finders)
-
     (cl-pushnew 'my-embark-tab-map (alist-get 'tab embark-keymap-alist))
     (setf (alist-get 'page embark-keymap-alist) (list 'embark-page-map))
 
@@ -1715,7 +1739,7 @@ see command `isearch-forward' for more information."
     (defun my-embark-abbrev-target-finder ()
       (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
         (when sym `(abbrev ,name ,wordstart . ,wordend))))
-    (add-to-list 'embark-target-finders 'my-embark-abbrev-target-finder)
+    (cl-pushnew 'my-embark-abbrev-target-finder embark-target-finders)
 
     (defvar-keymap my-embark-abbrev-map
       "RET" 'expand-abbrev
@@ -2682,7 +2706,7 @@ see command `isearch-forward' for more information."
        (marginalia-annotate-alias cand)
        (marginalia--documentation (marginalia--function-doc sym)))))
   (cl-pushnew #'marginalia-annotate-command-with-alias
-                (alist-get 'command marginalia-annotator-registry))
+              (alist-get 'command marginalia-annotator-registry))
 
   (defvar marginalia-align-column 40)
 
@@ -2730,7 +2754,7 @@ see command `isearch-forward' for more information."
 (elpaca tempel
   (keymap-global-set "M-I" 'tempel-insert)
   (keymap-global-set "M-TAB" 'my-tempel-expand-or-complete)
-  ;; (global-tempel-abbrev-mode -1)
+  (global-tempel-abbrev-mode 1)
 
   (defun my-tempel-expand-or-complete (&optional interactive)
     (interactive (list t))
