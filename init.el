@@ -1159,7 +1159,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn
     (define-keymap
-      :keymap (conn-get-mode-map 'conn-state 'org-mode)
+      :keymap (conn-get-mode-map 'conn-state 'org-cdlatex-mode)
       "'" 'org-cdlatex-math-modify)))
 
 
@@ -1392,7 +1392,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-SPC" 'conn-toggle-mark-command)
   (keymap-global-set "C-SPC" 'conn-set-mark-command)
   (keymap-global-set "M-z" 'conn-exchange-mark-command)
-  (keymap-global-set "C-t" 'conn-transpose-regions)
   (keymap-global-set "M-U" 'conn-wincontrol-maximize-vertically)
   (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
 
@@ -1684,7 +1683,8 @@ see command `isearch-forward' for more information."
     (keymap-set embark-buffer-map "C-s" 'multi-isearch-buffers)
     (cl-pushnew 'multi-isearch-buffers embark-multitarget-actions)
 
-    (keymap-set embark-general-map "Q" 'embark-toggle-quit)
+    (keymap-set embark-general-map "M-TAB" 'embark-toggle-quit)
+    (keymap-set embark-general-map "M-<tab>" 'embark-toggle-quit)
     (keymap-unset embark-general-map "q")
 
     (defun my-embark-abbrev-target-finder ()
