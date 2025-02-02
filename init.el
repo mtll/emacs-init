@@ -1372,11 +1372,6 @@ see command `isearch-forward' for more information."
         conn-mark-idle-timer 0.05
         conn-read-string-timeout 0.35)
 
-  (custom-set-faces
-   '(conn-state-lighter-face ((default (:background "#f3bdbd"))))
-   '(conn-emacs-state-lighter-face ((default (:background "#cae1ff"))))
-   '(conn-org-edit-state-lighter-face ((default (:background "#f5c5ff")))))
-
   (setq-default cursor-type '(hbar . 5))
 
   (defun conn-mark-emacs-state-hook ()
@@ -1444,6 +1439,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-z" 'conn-exchange-mark-command)
   (keymap-global-set "M-U" 'conn-wincontrol-maximize-vertically)
   (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
+  (keymap-set conn-state-map "D" 'dired)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1503,7 +1499,7 @@ see command `isearch-forward' for more information."
       embark-org-target-link
       embark-target-collect-candidate
       embark-target-text-heading-at-point
-      embark-target-flymake-at-point
+      ;; embark-target-flymake-at-point
       ;; embark-target-package-at-point
       embark-target-url-at-point
       embark-target-file-at-point
@@ -2629,10 +2625,7 @@ see command `isearch-forward' for more information."
 ;;;;; consult-dir
 
 (elpaca consult-dir
-  (keymap-global-set "C-x C-d" 'consult-dir)
-
-  (with-eval-after-load 'conn
-    (keymap-set conn-state-map "D" 'consult-dir))
+  (keymap-global-set "C-x d" 'consult-dir)
 
   (with-eval-after-load 'vertico
     (define-keymap
