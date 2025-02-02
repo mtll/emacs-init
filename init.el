@@ -3146,7 +3146,7 @@ see command `isearch-forward' for more information."
       (if (or all (not (projectile-project-root)))
           (ibuffer)
         (projectile-ibuffer nil)))
-    (keymap-global-set "<remap> <ibuffer>" 'my-ibuffer-maybe-project)
+    (keymap-set projectile-mode-map "<remap> <ibuffer>" 'my-ibuffer-maybe-project)
 
     (define-keymap
       :keymap projectile-command-map
