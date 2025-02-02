@@ -358,7 +358,7 @@
   (keymap-global-set "C-c a" 'org-agenda)
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
-  (add-hook 'org-mode-hook 'abbrev-mode)
+  ;; (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
     ;; Increase preview width
@@ -444,7 +444,8 @@
       hippie-expand-try-functions-list '(try-expand-list
                                          try-expand-line))
 
-(add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
+;; (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
+;; (add-hook 'text-mode-hook (lambda () (abbrev-mode 1)))
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
@@ -768,8 +769,12 @@ see command `isearch-forward' for more information."
 
 (keymap-global-set "C-c L" 'outline-minor-mode)
 (with-eval-after-load 'outline
-  (with-eval-after-load 'diminish
-    (diminish 'outline-minor-mode " *")))
+  (setf (alist-get 'outline-minor-mode minor-mode-alist)
+        (list (concat (nerd-icons-codicon "nf-cod-blank")
+                      (nerd-icons-mdicon "nf-md-file_tree_outline"))))
+  ;; (with-eval-after-load 'diminish
+  ;;   (diminish 'outline-minor-mode " *"))
+  )
 
 
 ;;;; ibuffer
@@ -800,6 +805,7 @@ see command `isearch-forward' for more information."
     "% s" 'dired-do-symlink-regexp
     "% y" 'dired-do-relsymlink-regexp
     "% t" 'dired-flag-garbage-files
+    "F" 'dired-create-empty-file
     ;; "z" available
     )
 
@@ -1323,6 +1329,17 @@ see command `isearch-forward' for more information."
   (setopt isearchp-initiate-edit-commands nil)
 
   (with-eval-after-load 'isearch+
+    (define-keymap
+      :keymap isearch-mode-map
+      "C-y m" 'isearchp-yank-sexp-symbol-or-char
+      "C-y o" 'isearchp-yank-word-or-char-forward
+      "C-y u" 'isearchp-yank-word-or-char-backward
+      "C-y i" 'isearchp-yank-line-backward
+      "C-y k" 'isearchp-yank-line-forward
+      "C-y l" 'isearchp-yank-char
+      "M-o"   isearchp-filter-map
+      "M-."   'conn-isearch-in-dot-toggle)
+
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
 
@@ -1353,8 +1370,12 @@ see command `isearch-forward' for more information."
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type '(hbar . 5)
         conn-mark-idle-timer 0.05
-        conn-read-string-timeout 0.35
-        conn-lighter " ⎈")
+        conn-read-string-timeout 0.35)
+
+  (custom-set-faces
+   '(conn-state-lighter-face ((default (:background "#f3bdbd"))))
+   '(conn-emacs-state-lighter-face ((default (:background "#cae1ff"))))
+   '(conn-org-edit-state-lighter-face ((default (:background "#f5c5ff")))))
 
   (setq-default cursor-type '(hbar . 5))
 
@@ -1439,6 +1460,12 @@ see command `isearch-forward' for more information."
 
 ;;;;; conn extensions
 
+(elpaca (conn-nerd-icons :host github
+                         :repo "mtll/conn"
+                         :files ("extensions/conn-nerd-icons.el"))
+  (with-eval-after-load 'conn
+    (require 'conn-nerd-icons)))
+
 (elpaca (conn-consult :host github
                       :repo "mtll/conn"
                       :files ("extensions/conn-consult.el"))
@@ -1477,24 +1504,40 @@ see command `isearch-forward' for more information."
       embark-target-collect-candidate
       embark-target-text-heading-at-point
       embark-target-flymake-at-point
-      embark-target-package-at-point
+      ;; embark-target-package-at-point
       embark-target-url-at-point
       embark-target-file-at-point
-      embark-target-custom-variable-at-point
-      embark-target-identifier-at-point
+      ;; embark-target-custom-variable-at-point
+      ;; embark-target-identifier-at-point
       embark-target-prog-heading-at-point))
 
   (defun my-embark-smart-tab (arg)
     (interactive "P")
     (require 'embark)
-    (condition-case _
-        (conn--with-advice
-            (( 'completion-at-point :override
-               (lambda ()
-                 (let ((embark-target-finders my-embark-smart-tab-target-finders))
-                   (conn-embark-dwim-either arg)))))
-          (indent-for-tab-command))
-      (user-error (completion-at-point))))
+    (pcase indent-line-function
+      ('indent-relative
+       (or (indent-relative nil t)
+           (condition-case _
+               (conn-embark-dwim-either arg)
+             (user-error (completion-at-point)))))
+      ((or 'indent-relative-first-indent-point
+           'indent-relative-maybe)
+       (or (marker-position (indent-relative nil t))
+           (condition-case _
+               (conn-embark-dwim-either arg)
+             (user-error (completion-at-point)))))
+      (_
+       (condition-case _
+           (conn--with-advice
+               (( 'completion-at-point :override
+                  (lambda ()
+                    (let ((embark-target-finders
+                           (seq-intersection my-embark-smart-tab-target-finders
+                                             embark-target-finders
+                                             #'eq)))
+                      (conn-embark-dwim-either arg)))))
+             (indent-for-tab-command))
+         (user-error (completion-at-point))))))
 
   (keymap-global-set "TAB" 'my-embark-smart-tab)
 
@@ -1596,12 +1639,6 @@ see command `isearch-forward' for more information."
                      :repo "mtll/conn"
                      :files ("extensions/conn-expreg.el"))
   (cl-pushnew 'conn-expreg-expansions conn-expansion-functions))
-
-(elpaca (conn-isearch+ :host github
-                       :repo "mtll/conn"
-                       :files ("extensions/conn-isearch+.el"))
-  (with-eval-after-load 'isearch+
-    (require 'conn-isearch+)))
 
 (elpaca (conn-calc :host github
                    :repo "mtll/conn"
@@ -2142,32 +2179,41 @@ see command `isearch-forward' for more information."
         corfu-on-exact-match nil
         corfu-auto nil
         corfu-preselect 'valid
-        corfu-auto-delay 0.2
+        corfu-auto-delay nil
         corfu-auto-prefix 3
-        corfu-map (define-keymap
-                    "<remap> <forward-sentence>" 'corfu-prompt-end
-                    "<remap> <backward-sentence>" 'corfu-prompt-beginning
-                    "<remap> <scroll-down-command>" #'corfu-scroll-down
-                    "<remap> <scroll-up-command>" #'corfu-scroll-up
-                    "<tab>" #'corfu-complete
-                    "RET" nil
-                    "<return>" nil
-                    "M-SPC" 'corfu-insert-separator
-                    "C-h" #'corfu-info-documentation
-                    "M-h" #'corfu-info-location
-                    "M-<" #'corfu-first
-                    "M->" #'corfu-last
-                    "M-n" #'corfu-next
-                    "C-n" nil
-                    "C-j" nil
-                    "M-p" #'corfu-previous
-                    "C-p" #'corfu-previous
-                    "C-g" #'corfu-quit
-                    "TAB" #'corfu-complete))
+        ;; corfu-map (define-keymap
+        ;;             "<remap> <forward-sentence>" 'corfu-prompt-end
+        ;;             "<remap> <backward-sentence>" 'corfu-prompt-beginning
+        ;;             "<remap> <scroll-down-command>" #'corfu-scroll-down
+        ;;             "<remap> <scroll-up-command>" #'corfu-scroll-up
+        ;;             "<tab>" #'corfu-complete
+        ;;             ;; "RET" nil
+        ;;             ;; "<return>" nil
+        ;;             "SPC" 'corfu-insert-separator
+        ;;             "C-h" #'corfu-info-documentation
+        ;;             "M-h" #'corfu-info-location
+        ;;             "M-<" #'corfu-first
+        ;;             "M->" #'corfu-last
+        ;;             "M-n" #'corfu-next
+        ;;             ;; "C-n" nil
+        ;;             ;; "C-j" nil
+        ;;             "M-p" #'corfu-previous
+        ;;             ;; "C-p" #'corfu-previous
+        ;;             "C-g" #'corfu-quit
+        ;;             "TAB" #'corfu-complete)
+        )
+
+  (define-keymap
+    :keymap corfu-map
+    "SPC" 'corfu-insert-separator)
+
+  (define-keymap
+    :keymap corfu-mode-map
+    "M-TAB" 'corfu-sep-and-start)
 
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
-  (add-hook 'prog-mode-hook 'my-corfu-auto-on)
+  ;; (add-hook 'prog-mode-hook 'my-corfu-auto-on)
 
   (with-eval-after-load 'corfu
     (defun corfu-sep-and-start ()
@@ -2207,12 +2253,28 @@ see command `isearch-forward' for more information."
 
 ;;;; nerd icons
 
-(elpaca nerd-icons)
+(elpaca nerd-icons
+  (with-eval-after-load 'conn
+    (require 'nerd-icons)))
 
 (elpaca nerd-icons-dired
   (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
   (with-eval-after-load 'diminish
     (diminish 'nerd-icons-dired-mode)))
+
+(elpaca nerd-icons-corfu
+  (with-eval-after-load 'corfu
+    ;; (setq nerd-icons-corfu-mapping
+    ;;       '((array :style "cod" :icon "symbol_array" :face font-lock-type-face)
+    ;;         (boolean :style "cod" :icon "symbol_boolean" :face font-lock-builtin-face)
+    ;;         ;; ...
+    ;;         (t :style "cod" :icon "code" :face font-lock-warning-face)))
+    (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)))
+
+(elpaca nerd-icons-ibuffer
+  (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
+  (with-eval-after-load 'diminish
+    (diminish 'nerd-icons-ibuffer-mode)))
 
 (elpaca nerd-icons-completion
   (with-eval-after-load 'marginalia
@@ -2786,46 +2848,46 @@ see command `isearch-forward' for more information."
 
 ;;;; tempel
 
-(elpaca tempel
-  (keymap-global-set "M-I" 'tempel-insert)
-  (keymap-global-set "M-TAB" 'my-tempel-expand-or-complete)
-  (global-tempel-abbrev-mode 1)
+;; (elpaca tempel
+;;   (keymap-global-set "M-I" 'tempel-insert)
+;;   (keymap-global-set "M-TAB" 'my-tempel-expand-or-complete)
+;;   (global-tempel-abbrev-mode 1)
 
-  (defun my-tempel-expand-or-complete (&optional interactive)
-    (interactive (list t))
-    (require 'tempel)
-    (if interactive
-        (tempel--interactive #'my-tempel-expand-or-complete)
-      (if-let ((templates (tempel--templates))
-               (bounds (tempel--prefix-bounds))
-               (name (buffer-substring-no-properties
-                      (car bounds) (cdr bounds)))
-               (sym (intern-soft name))
-               (template (assq sym templates)))
-          (progn
-            (setq templates (list template))
-            (list (car bounds) (cdr bounds) templates
-                  :category 'tempel
-                  :exclusive 'no
-                  :exit-function (apply-partially #'tempel--exit templates nil)))
-        (tempel-complete))))
+;;   (defun my-tempel-expand-or-complete (&optional interactive)
+;;     (interactive (list t))
+;;     (require 'tempel)
+;;     (if interactive
+;;         (tempel--interactive #'my-tempel-expand-or-complete)
+;;       (if-let ((templates (tempel--templates))
+;;                (bounds (tempel--prefix-bounds))
+;;                (name (buffer-substring-no-properties
+;;                       (car bounds) (cdr bounds)))
+;;                (sym (intern-soft name))
+;;                (template (assq sym templates)))
+;;           (progn
+;;             (setq templates (list template))
+;;             (list (car bounds) (cdr bounds) templates
+;;                   :category 'tempel
+;;                   :exclusive 'no
+;;                   :exit-function (apply-partially #'tempel--exit templates nil)))
+;;         (tempel-complete))))
 
-  (with-eval-after-load 'tempel
-    (keymap-set tempel-map "M-n" 'tempel-next)
-    (keymap-set tempel-map "M-p" 'tempel-previous)
-    (keymap-set tempel-map "M-i" 'tempel-done)
+;;   (with-eval-after-load 'tempel
+;;     (keymap-set tempel-map "M-n" 'tempel-next)
+;;     (keymap-set tempel-map "M-p" 'tempel-previous)
+;;     (keymap-set tempel-map "M-i" 'tempel-done)
 
-    (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
+;;     (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
-    (defun tempel-edit-template ()
-      (interactive)
-      (let ((default-directory (expand-file-name "templates/" user-emacs-directory)))
-        (call-interactively 'find-file)))
+;;     (defun tempel-edit-template ()
+;;       (interactive)
+;;       (let ((default-directory (expand-file-name "templates/" user-emacs-directory)))
+;;         (call-interactively 'find-file)))
 
-    (defun conn-tempel-insert-ad (fn &rest args)
-      (apply fn args)
-      (when tempel--active (conn-emacs-state)))
-    (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
+;;     (defun conn-tempel-insert-ad (fn &rest args)
+;;       (apply fn args)
+;;       (when tempel--active (conn-emacs-state)))
+;;     (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
 
 
 ;;;; vundo
@@ -3006,8 +3068,12 @@ see command `isearch-forward' for more information."
   (run-with-idle-timer 2 nil (lambda () (global-jinx-mode 1)))
 
   (with-eval-after-load 'jinx
-    (with-eval-after-load 'diminish
-      (diminish 'jinx-mode " $"))
+    ;; (with-eval-after-load 'diminish
+    ;;   (diminish 'jinx-mode " $"))
+
+    (setf (alist-get 'jinx-mode minor-mode-alist)
+          (list (concat (nerd-icons-codicon "nf-cod-blank")
+                        (nerd-icons-mdicon "nf-md-spellcheck"))))
 
     (define-keymap
       :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
@@ -3074,6 +3140,13 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'projectile
     (keymap-global-unset "C-x p")
     (keymap-global-set "C-x p" 'projectile-command-map)
+
+    (defun my-ibuffer-maybe-project (&optional all)
+      (interactive "P")
+      (if (or all (not (projectile-project-root)))
+          (ibuffer)
+        (projectile-ibuffer nil)))
+    (keymap-global-set "<remap> <ibuffer>" 'my-ibuffer-maybe-project)
 
     (define-keymap
       :keymap projectile-command-map
@@ -3155,6 +3228,10 @@ see command `isearch-forward' for more information."
 ;;;; aggressive indent mode
 
 (elpaca aggressive-indent
+  (with-eval-after-load 'aggressive-indent
+    (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
+          (list (concat (nerd-icons-codicon "nf-cod-blank")
+                        (nerd-icons-octicon "nf-oct-tab")))))
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
 
 
@@ -3189,6 +3266,41 @@ see command `isearch-forward' for more information."
           :sort (org-ql-view--complete-sort))))
     (cl-pushnew 'my-embark-org-ql-files embark-multitarget-actions)
     (keymap-set embark-file-map "q" 'my-embark-org-ql-files)))
+
+
+;;;; yasnippet
+
+(elpaca yasnippet
+  (run-with-timer 1 nil (lambda () (yas-global-mode 1)))
+
+  (with-eval-after-load 'yasnippet
+    ;; Can't do this through diminish since it wants to append a
+    ;; space.
+    (setf (alist-get 'yas-minor-mode minor-mode-alist)
+          (list (concat (nerd-icons-codicon "nf-cod-blank")
+                        (nerd-icons-codicon "nf-cod-symbol_snippet"))))
+
+    (define-keymap
+      :keymap yas-minor-mode-map
+      "C-c y" 'yas-new-snippet
+      "C-c Y" 'yas-visit-snippet-file)
+
+    (define-keymap
+      :keymap yas-keymap
+      "TAB" nil
+      "M-n" 'yas-next-field
+      "M-p" 'yas-prev-field)))
+
+(elpaca consult-yasnippet
+  (with-eval-after-load 'consult-yasnippet
+    (consult-customize consult-yasnippet :preview-key nil))
+
+  (with-eval-after-load 'yasnippet
+    (define-keymap
+      :keymap yas-minor-mode-map
+      "M-I" 'consult-yasnippet)))
+
+;; (elpaca yasnippet-snippets)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
