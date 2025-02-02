@@ -296,6 +296,40 @@
 (require 'c-ts-mode)
 (setq c-ts-mode-indent-offset 4)
 
+;;;; paren context
+
+;; Fix bug causing indent commands to delete text when
+;; show-paren-context-when-offscreen is set to 'overlay
+
+(with-eval-after-load 'paren
+  (defun show-paren--delete-context-overlay ()
+    (when show-paren--context-overlay
+      (delete-overlay show-paren--context-overlay)
+      (setq show-paren--context-overlay nil))
+    (remove-hook 'pre-command-hook #'show-paren--delete-overlays
+                 'local))
+
+  (defun show-paren--show-context-in-overlay (text)
+    "Show TEXT in an overlay at the top-left of the current window."
+    (setq text (replace-regexp-in-string "\n" " " text))
+    (show-paren--delete-context-overlay)
+    (let* ((beg (window-start))
+           (end (save-excursion
+                  (goto-char beg)
+                  (line-end-position))))
+      (setq show-paren--context-overlay (make-overlay beg end)))
+    (overlay-put show-paren--context-overlay 'display text)
+    ;; Use the (default very high) `show-paren-priority' ensuring that
+    ;; not other overlays shine through (bug#59527).
+    (overlay-put show-paren--context-overlay 'priority
+                 show-paren-priority)
+    (overlay-put show-paren--context-overlay
+                 'face `(:box
+                         ( :line-width (1 . -1)
+                           :color ,(face-attribute 'shadow :foreground))))
+    (add-hook 'pre-command-hook #'show-paren--delete-context-overlay
+              nil 'local)))
+
 
 ;;;; org
 
@@ -1432,6 +1466,7 @@ see command `isearch-forward' for more information."
 
   (defvar my-embark-smart-tab-target-finders
     '(;; embark-target-active-region
+      my-embark-abbrev-target-finder
       my-embark-commit-target-finder
       my-embark-button-target
       my-embark-cve-target-finder
@@ -1452,7 +1487,7 @@ see command `isearch-forward' for more information."
   (defun my-embark-smart-tab (arg)
     (interactive "P")
     (require 'embark)
-    (condition-case _cond
+    (condition-case _
         (conn--with-advice
             (( 'completion-at-point :override
                (lambda ()
