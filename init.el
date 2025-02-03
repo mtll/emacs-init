@@ -1457,6 +1457,13 @@ see command `isearch-forward' for more information."
 
 ;;;;; conn extensions
 
+(elpaca (conn-posframe :host github
+                       :repo "mtll/conn"
+                       :files ("extensions/conn-posframe.el"))
+  (with-eval-after-load 'conn
+    (require 'posframe)
+    (conn-posframe-mode 1)))
+
 (elpaca (conn-nerd-icons :host github
                          :repo "mtll/conn"
                          :files ("extensions/conn-nerd-icons.el"))
@@ -1589,8 +1596,6 @@ see command `isearch-forward' for more information."
                            target)
                          (embark--quit-p action)))
         (user-error "No target found.")))
-
-    (keymap-set embark-heading-map "N" 'conn-narrow-indirect-to-heading)
 
     (keymap-global-unset "S-<down-mouse-1>")
 
