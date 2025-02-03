@@ -787,7 +787,8 @@ see command `isearch-forward' for more information."
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
                                  (seq string-start (1+ "#"))))
-        dired-dwim-target 'dired-dwim-target-recent)
+        dired-dwim-target 'dired-dwim-target-recent
+        dired-movement-style 'bounded)
 
   (define-keymap
     :keymap dired-mode-map
@@ -1366,6 +1367,13 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+
+  (with-eval-after-load 'dired
+    (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
+
+  (with-eval-after-load 'ibuffer
+    (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
+
   (setq conn-wincontrol-initial-help nil
         conn-state-cursor-type 'box
         conn-emacs-state-cursor-type '(hbar . 5)
@@ -1416,14 +1424,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
   (keymap-global-set "C-," 'embark-dwim)
   (keymap-global-set "C-<backspace>" 'kill-whole-line)
-  (keymap-global-set "C-0" 'delete-window)
-  (keymap-global-set "C-1" 'delete-other-windows)
-  (keymap-global-set "C-2" 'split-window-below)
-  (keymap-global-set "C-3" 'split-window-right)
   (keymap-global-set "C-." 'conn-dispatch-on-things)
-  (keymap-global-set "C-6" 'conn-swap-buffers)
-  (keymap-global-set "C-7" 'conn-swap-windows)
-  (keymap-global-set "C-9" 'tab-close)
   (keymap-set conn-state-map "B" 'ibuffer)
   (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
   (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
@@ -2201,7 +2202,8 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap corfu-map
-    "SPC" 'corfu-insert-separator)
+    "SPC" 'corfu-insert-separator
+    "TAB" 'corfu-complete)
 
   (define-keymap
     :keymap corfu-mode-map
