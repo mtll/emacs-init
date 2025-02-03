@@ -1506,7 +1506,8 @@ see command `isearch-forward' for more information."
       embark-target-file-at-point
       ;; embark-target-custom-variable-at-point
       ;; embark-target-identifier-at-point
-      embark-target-prog-heading-at-point))
+      ;; embark-target-prog-heading-at-point
+      ))
 
   (defun my-embark-smart-tab (arg)
     (interactive "P")
@@ -1678,6 +1679,8 @@ see command `isearch-forward' for more information."
 
 
 ;;;; magit
+
+(elpaca llama)
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
