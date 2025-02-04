@@ -2210,8 +2210,11 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap corfu-map
+    "C-h" 'corfu-info-documentation
+    "M-h" 'corfu-info-location
     "SPC" 'corfu-insert-separator
-    "TAB" 'corfu-complete)
+    "TAB" 'corfu-complete
+    "C-g" 'corfu-quit)
 
   (define-keymap
     :keymap corfu-mode-map
@@ -3170,9 +3173,12 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
+  (setq sp-highlight-pair-overlay nil
+        sp-highlight-wrap-overlay nil)
+
   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
-  (show-smartparens-global-mode 1)
+  ;; (show-smartparens-global-mode -1)
 
   (define-keymap
     :keymap smartparens-mode-map
