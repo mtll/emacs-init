@@ -71,7 +71,7 @@
       read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       translate-upper-case-key-bindings nil
-      show-paren-context-when-offscreen 'overlay
+      show-paren-context-when-offscreen 'child-frame
       sentence-end-double-space t
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
@@ -3174,11 +3174,11 @@ see command `isearch-forward' for more information."
       (diminish 'smartparens-mode)))
 
   (setq sp-highlight-pair-overlay nil
-        sp-highlight-wrap-overlay nil)
+        sp-highlight-wrap-overlay t)
 
   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
-  ;; (show-smartparens-global-mode -1)
+  (show-smartparens-global-mode 1)
 
   (define-keymap
     :keymap smartparens-mode-map
