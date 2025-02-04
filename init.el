@@ -2176,11 +2176,15 @@ see command `isearch-forward' for more information."
 
 (elpaca corfu
   (global-corfu-mode 1)
+  (corfu-popupinfo-mode 1)
   (corfu-echo-mode 1)
+  (corfu-history-mode 1)
 
-  (setq corfu-quit-at-boundary 'separator
+  (setq corfu-scroll-margin 2
+        corfu-bar-width 0.4
+        corfu-quit-at-boundary 'separator
         corfu-quit-no-match nil
-        corfu-preview-current 'insert
+        corfu-preview-current nil
         corfu-on-exact-match nil
         corfu-auto nil
         corfu-preselect 'valid
@@ -2213,7 +2217,7 @@ see command `isearch-forward' for more information."
     "C-h" 'corfu-info-documentation
     "M-h" 'corfu-info-location
     "SPC" 'corfu-insert-separator
-    "TAB" 'corfu-complete
+    "TAB" 'corfu-insert
     "C-g" 'corfu-quit)
 
   (define-keymap
