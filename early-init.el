@@ -22,12 +22,21 @@
                 (add-hook 'focus-out-hook 'garbage-collect)))))
 (setq-default mode-line-format nil)
 
-(fringe-mode '(8 . 8))
+(setq-default ;; truncate-lines t
+              ;; truncate-partial-width-windows nil
+              window-resize-pixelwise nil)
+
+(set-default-coding-systems 'utf-8)
+
+;; (fringe-mode '(10 . 10))
 (push '(tool-bar-lines . 0) default-frame-alist)
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (blink-cursor-mode -1)
 (menu-bar-mode -1)
+
+(set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
+(set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
 
 (setq window-resize-pixelwise t
       custom-file (make-temp-file "emacs-custom-")
@@ -75,6 +84,7 @@
   (load-theme 'modus-operandi-tinted t)
 
   (custom-set-faces
+   `(fringe ((t :inherit default)))
    `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
    `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
    `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900")))))

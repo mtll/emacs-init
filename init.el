@@ -47,7 +47,16 @@
 ;;;; emacs
 
 ;; help-window-select t
-(setq help-enable-symbol-autoload t
+(setq comint-prompt-read-only t
+      comint-buffer-maximum-size 2048
+      find-file-suppress-same-file-warnings t
+      find-file-visit-truename t
+      ffap-machine-p-known 'reject
+      word-wrap t
+      fast-but-imprecise-scrolling t
+      truncate-string-ellipsis "…"
+      comment-multi-line t
+      help-enable-symbol-autoload t
       mac-option-modifier 'meta
       mac-command-modifier 'super
       hi-lock-auto-select-face t
@@ -746,7 +755,8 @@ see command `isearch-forward' for more information."
 
 (with-eval-after-load 'no-littering
   (setq recentf-max-saved-items 100
-        recentf-max-menu-items 15)
+        recentf-max-menu-items 15
+        recentf-auto-cleanup (if (daemonp) 300 'mode))
 
   (recentf-mode 1)
 
@@ -788,7 +798,12 @@ see command `isearch-forward' for more information."
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
                                  (seq string-start (1+ "#"))))
         dired-dwim-target 'dired-dwim-target-recent
-        dired-movement-style 'bounded)
+        dired-movement-style 'bounded
+        dired-recursive-deletes 'top
+        dired-recursive-copies 'always
+        dired-create-destination-dirs 'ask
+        ;; dired-auto-revert-buffer #'dired-buffer-stale-p
+        )
 
   (define-keymap
     :keymap dired-mode-map
@@ -3244,7 +3259,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'aggressive-indent
     (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
           (list (concat (nerd-icons-codicon "nf-cod-blank")
-                        (nerd-icons-octicon "nf-oct-tab")))))
+                        (nerd-icons-mdicon "nf-md-keyboard_tab")))))
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
 
 
@@ -3293,6 +3308,9 @@ see command `isearch-forward' for more information."
           (list (concat (nerd-icons-codicon "nf-cod-blank")
                         (nerd-icons-codicon "nf-cod-symbol_snippet"))))
 
+    (setq yas-wrap-around-region t
+          yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
+
     (define-keymap
       :keymap yas-minor-mode-map
       "C-c y" 'yas-new-snippet
@@ -3312,6 +3330,19 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap yas-minor-mode-map
       "M-I" 'consult-yasnippet)))
+
+
+;;;; spacious padding
+
+(elpaca spacious-padding
+  (setq spacious-padding-widths '( :internal-border-width 16
+                                   :header-line-width 4
+                                   :mode-line-width 1
+                                   :tab-width 4
+                                   :right-divider-width 20
+                                   :scroll-bar-width 8
+                                   :fringe-width 10))
+  (spacious-padding-mode 1))
 
 ;; (elpaca yasnippet-snippets)
 
