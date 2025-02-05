@@ -47,7 +47,8 @@
 ;;;; emacs
 
 ;; help-window-select t
-(setq comint-prompt-read-only t
+(setq vc-display-status 'no-backend
+      comint-prompt-read-only t
       comint-buffer-maximum-size 2048
       find-file-suppress-same-file-warnings t
       find-file-visit-truename t
