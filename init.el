@@ -108,11 +108,11 @@
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
       edebug-inhibit-emacs-lisp-mode-bindings t
       bidi-inhibit-bpa t
-      cycle-spacing-actions '(just-one-space
-                              delete-all-space
-                              delete-space-after
-                              delete-space-before
-                              restore)
+      cycle-spacing-actions '( just-one-space
+                               delete-all-space
+                               delete-space-after
+                               delete-space-before
+                               restore)
       project-vc-extra-root-markers '(".projectile" ".project"))
 
 (defun my-kill-buffer ()
@@ -453,6 +453,8 @@
 (setq abbrev-all-caps t
       hippie-expand-try-functions-list '(try-expand-list
                                          try-expand-line))
+
+(keymap-global-set "C-M-h" 'hippie-expand)
 
 ;; (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
 ;; (add-hook 'text-mode-hook (lambda () (abbrev-mode 1)))
@@ -1720,9 +1722,10 @@ see command `isearch-forward' for more information."
 (elpaca cape
   (keymap-global-set "M-L" #'cape-line)
   (keymap-global-set "M-K" #'cape-dict)
+  (keymap-global-set "M-h" #'cape-dabbrev)
   ;; M-h C-M-j M-u M-n M-p
 
-  (add-to-list 'completion-at-point-functions #'cape-file)
+  (cl-pushnew #'cape-file completion-at-point-functions)
 
   (defun dictionary-doc-lookup (cand)
     (let* ((buffer)
