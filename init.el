@@ -1427,36 +1427,37 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
-  (keymap-global-set "C-o" 'conn-open-line-above)
-  (keymap-global-set "M-o" 'conn-open-line)
-  (keymap-global-set "M-j" 'conn-open-line-and-indent)
-  (keymap-global-set "C-c v" 'conn-toggle-mark-command)
-  (keymap-global-set "C-;" 'conn-wincontrol)
-  (keymap-global-set "C-x ," 'subword-mode)
-  (keymap-global-set "M-\\"  'conn-kapply-prefix)
-  (keymap-global-set "C-M-y" 'conn-yank-lines-as-rectangle)
+  (keymap-set conn-global-map "M-'" 'conn-toggle-mark-command)
+  (keymap-set conn-global-map "C-o" 'conn-open-line-above)
+  (keymap-set conn-global-map "M-o" 'conn-open-line)
+  (keymap-set conn-global-map "M-j" 'conn-open-line-and-indent)
+  (keymap-set conn-global-map "C-c v" 'conn-toggle-mark-command)
+  (keymap-set conn-global-map "C-;" 'conn-wincontrol)
+  (keymap-set conn-global-map "C-x ," 'subword-mode)
+  (keymap-set conn-global-map "M-\\"  'conn-kapply-prefix)
+  (keymap-set conn-global-map "C-M-y" 'conn-yank-lines-as-rectangle)
   (keymap-set conn-emacs-state-map "<f8>" 'conn-state)
   (keymap-set conn-org-edit-state-map "<f8>" 'conn-state)
   (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
-  (keymap-global-set "S-<return>" 'conn-open-line-and-indent)
-  (keymap-global-set "C-," 'embark-dwim)
-  (keymap-global-set "C-<backspace>" 'kill-whole-line)
-  (keymap-global-set "C-." 'conn-dispatch-on-things)
+  (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
+  (keymap-set conn-global-map "C-," 'embark-dwim)
+  (keymap-set conn-global-map "C-<backspace>" 'kill-whole-line)
+  (keymap-set conn-global-map "C-." 'conn-dispatch-on-things)
   (keymap-set conn-state-map "B" 'ibuffer)
   (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
   (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
   (keymap-set conn-state-map "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-global-set "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
+  (keymap-set conn-global-map "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "$" 'ispell-word)
   (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
   (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
   ;; (keymap-global-set "M-u" 'conn-region-case-prefix)
-  (keymap-global-set "M-SPC" 'conn-toggle-mark-command)
-  (keymap-global-set "C-SPC" 'conn-set-mark-command)
-  (keymap-global-set "M-z" 'conn-exchange-mark-command)
-  (keymap-global-set "M-U" 'conn-wincontrol-maximize-vertically)
+  (keymap-set conn-global-map "M-SPC" 'conn-toggle-mark-command)
+  (keymap-set conn-global-map "C-SPC" 'conn-set-mark-command)
+  (keymap-set conn-global-map "M-z" 'conn-exchange-mark-command)
+  (keymap-set conn-global-map "M-U" 'conn-wincontrol-maximize-vertically)
   (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
 
   (dolist (state '(conn-state conn-emacs-state))
@@ -1707,6 +1708,11 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
+
+(elpaca (magit-todos :host github :repo "alphapapa/magit-todos")
+  (with-eval-after-load 'magit
+    (require 'magit-todos)
+    (magit-todos-mode 1)))
 
 
 ;;;; flycheck
@@ -3268,24 +3274,26 @@ see command `isearch-forward' for more information."
 ;;;; org-ql
 
 (elpaca org-ql
-  (with-eval-after-load 'org
-    (require 'org-ql))
+  (defun my-org-ql-search-denote-files ()
+    (interactive)
+    (require 'denote)
+    (require 'org)
+    (require 'org-ql)
+    (let ((org-directory denote-directory))
+      (org-ql-search
+        (org-ql-search-directories-files)
+        (read-string "Query: " (when org-ql-view-query
+                                 (format "%S" org-ql-view-query)))
+        :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
+        :super-groups (org-ql-view--complete-super-groups)
+        :sort (org-ql-view--complete-sort))))
+  (keymap-global-set "C-c n q" 'my-org-ql-search-denote-files)
 
-  (with-eval-after-load 'denote
-    (defun my-org-ql-search-denote-files ()
-      (interactive)
-      (require 'org-ql)
-      (let ((org-directory denote-directory))
-        (org-ql-search
-          (org-ql-search-directories-files)
-          (read-string "Query: " (when org-ql-view-query
-                                   (format "%S" org-ql-view-query)))
-          :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
-          :super-groups (org-ql-view--complete-super-groups)
-          :sort (org-ql-view--complete-sort))))
-    (keymap-global-set "C-c n q" 'my-org-ql-search-denote-files)
-
+  (with-eval-after-load 'embark
     (defun my-embark-org-ql-files (files)
+      (require 'denote)
+      (require 'org)
+      (require 'org-ql)
       (let ((org-directory files))
         (org-ql-search
           files
@@ -3295,7 +3303,15 @@ see command `isearch-forward' for more information."
           :super-groups (org-ql-view--complete-super-groups)
           :sort (org-ql-view--complete-sort))))
     (cl-pushnew 'my-embark-org-ql-files embark-multitarget-actions)
-    (keymap-set embark-file-map "q" 'my-embark-org-ql-files)))
+    (keymap-set embark-file-map "q" 'my-embark-org-ql-files))
+
+  (with-eval-after-load 'org
+    (require 'org-ql)))
+
+
+;;;; org-super-agenda
+
+;; (elpaca (org-super-agenda :host github :repo "alphapapa/org-super-agenda"))
 
 
 ;;;; yasnippet
@@ -3333,6 +3349,8 @@ see command `isearch-forward' for more information."
       :keymap yas-minor-mode-map
       "M-I" 'consult-yasnippet)))
 
+;; (elpaca yasnippet-snippets)
+
 
 ;;;; spacious padding
 
@@ -3345,8 +3363,6 @@ see command `isearch-forward' for more information."
                                    :scroll-bar-width 8
                                    :fringe-width 10))
   (spacious-padding-mode 1))
-
-;; (elpaca yasnippet-snippets)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
