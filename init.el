@@ -1458,7 +1458,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-z" 'conn-exchange-mark-command)
   (keymap-global-set "M-U" 'conn-wincontrol-maximize-vertically)
   (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
-  (keymap-set conn-state-map "D" 'dired)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1495,9 +1494,8 @@ see command `isearch-forward' for more information."
     (require 'conn-consult))
   (with-eval-after-load 'conn
     (keymap-set conn-region-map "o" 'conn-consult-line-region)
-    (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
-    (keymap-set conn-region-map "h" 'conn-consult-region-search-map)
-    (keymap-global-set "M-s T" 'conn-consult-thing)))
+    (keymap-set conn-region-map "O" 'conn-consult-line-multi-region)
+    (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)))
 
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
@@ -2081,25 +2079,25 @@ see command `isearch-forward' for more information."
         ,(match-beginning 0) . ,(match-end 0))))
   (add-hook 'embark-target-finders 'my-embark-gh-issue-finder)
 
-  (defun my-embark-gnu-bug-finder ()
-    (when-let ((button (and (not (minibufferp))
-                            (my-inside-regexp-in-line
-                             "bug#\\([0-9]*\\)"))))
-      `(url
-        ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
-                 (match-string-no-properties 1))
-        ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
+  ;; (defun my-embark-gnu-bug-finder ()
+  ;;   (when-let ((button (and (not (minibufferp))
+  ;;                           (my-inside-regexp-in-line
+  ;;                            "bug#\\([0-9]*\\)"))))
+  ;;     `(url
+  ;;       ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
+  ;;                (match-string-no-properties 1))
+  ;;       ,(match-beginning 0) . ,(match-end 0))))
+  ;; (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
 
-  (defun my-embark-cve-target-finder ()
-    (when-let ((button (and (not (minibufferp))
-                            (my-inside-regexp-in-line
-                             "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
-      `(url
-        ,(format "https://www.cve.org/CVERecord?id=%s"
-                 (match-string-no-properties 1))
-        ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my-embark-cve-target-finder)
+  ;; (defun my-embark-cve-target-finder ()
+  ;;   (when-let ((button (and (not (minibufferp))
+  ;;                           (my-inside-regexp-in-line
+  ;;                            "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
+  ;;     `(url
+  ;;       ,(format "https://www.cve.org/CVERecord?id=%s"
+  ;;                (match-string-no-properties 1))
+  ;;       ,(match-beginning 0) . ,(match-end 0))))
+  ;; (add-hook 'embark-target-finders 'my-embark-cve-target-finder)
 
   (with-eval-after-load 'magit
     (defun my-embark-commit-target-finder ()
@@ -2694,9 +2692,9 @@ see command `isearch-forward' for more information."
         vertico-multiform-categories '((t buffer)))
 
   (face-spec-set 'vertico-current
-                  '((t :inherit region)))
+                 '((t :inherit region)))
   (face-spec-set 'vertico-group-title
-                  '((t :inherit modus-themes-heading-0 :italic t :bold t)))
+                 '((t :inherit modus-themes-heading-0 :italic t :bold t)))
 
   (vertico-mode 1)
   (vertico-multiform-mode 1)
