@@ -571,9 +571,9 @@
 
 ;;;; dictionary
 
-;; (require 'dictionary)
-;; (setopt dictionary-server "localhost")
-;; (keymap-global-set "C-c t d" #'dictionary-lookup-definition)
+(require 'dictionary)
+(setopt dictionary-server "dict.org")
+(keymap-global-set "C-c d" #'dictionary-lookup-definition)
 
 
 ;;;; isearch
@@ -811,7 +811,7 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap dired-mode-map
     "/" 'dired-undo
-    "C-<tab>" 'dired-maybe-insert-subdir
+    "C-TAB" 'dired-maybe-insert-subdir
     "<backtab>" 'dired-kill-subdir
     "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff
     "b" 'dired-up-directory
@@ -1772,7 +1772,7 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "M-." 'embark-act)
   (keymap-global-set "C-TAB" 'embark-act)
-  (keymap-global-set "C-<tab>" 'embark-act)
+  ;; (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
@@ -1809,6 +1809,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-file-map "C-s" 'multi-isearch-files)
     (cl-pushnew 'multi-isearch-files embark-multitarget-actions)
 
+    (keymap-set embark-buffer-map "t" 'switch-to-buffer-other-tab)
     (keymap-set embark-buffer-map "C-s" 'multi-isearch-buffers)
     (cl-pushnew 'multi-isearch-buffers embark-multitarget-actions)
 
@@ -2035,7 +2036,7 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap vertico-map
       "C-TAB" 'embark-act-all
-      "C-<tab>" 'embark-act-all
+      ;; "C-<tab>" 'embark-act-all
       "M-TAB" 'embark-act-persist
       "M-<tab>" 'embark-act-persist
       "C-SPC" 'embark-select
