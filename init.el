@@ -697,7 +697,7 @@ see command `isearch-forward' for more information."
 (with-eval-after-load 'cc-mode
   (define-keymap
     :keymap c-mode-base-map
-    "<tab>" 'c-indent-then-complete
+    "TAB"'c-indent-then-complete
     "RET" 'newline-and-indent)
 
   (defun c-indent-then-complete ()
@@ -1503,7 +1503,7 @@ see command `isearch-forward' for more information."
                      :files ("extensions/conn-embark.el"))
   ;; (keymap-set conn-state-map "," 'embark-act)
   (keymap-set conn-state-map "TAB" 'conn-embark-dwim-either)
-  (keymap-set conn-state-map "<tab>" 'conn-embark-dwim-either)
+  ;; (keymap-set conn-state-map "<tab>" 'conn-embark-dwim-either)
   (keymap-set conn-org-edit-state-map "TAB" 'conn-embark-dwim-either)
   (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
@@ -2040,7 +2040,8 @@ see command `isearch-forward' for more information."
       "M-<tab>" 'embark-act-persist
       "C-SPC" 'embark-select
       "TAB" 'embark-act-marked
-      "<tab>" 'embark-act-marked)))
+      ;; "<tab>" 'embark-act-marked
+      )))
 
 ;;;;; embark-consult
 
