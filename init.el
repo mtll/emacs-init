@@ -1422,6 +1422,7 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
+  (keymap-set conn-global-map "C-t" (conn-remap-key (key-parse "C-x t")))
   (keymap-set conn-global-map "M-'" 'conn-toggle-mark-command)
   (keymap-set conn-global-map "C-o" 'conn-open-line-above)
   (keymap-set conn-global-map "M-o" 'conn-open-line)
