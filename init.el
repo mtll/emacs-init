@@ -152,7 +152,6 @@
 (keymap-global-set "M-;" #'comment-line)
 (keymap-global-set "C-c c" #'compile)
 (keymap-global-set "C-S-w" #'delete-region)
-(keymap-global-set "C-S-o" #'other-window)
 (keymap-global-set "<f2>" #'other-window)
 (keymap-global-set "C-z" #'transient-resume)
 (keymap-global-set "C-h A" #'describe-char)
@@ -450,14 +449,9 @@
 
 ;;;; Abbrev
 
-(setq abbrev-all-caps t
-      hippie-expand-try-functions-list '(try-expand-list
-                                         try-expand-line))
+(setq abbrev-all-caps t)
 
-(keymap-global-set "C-M-h" 'hippie-expand)
-
-;; (add-hook 'prog-mode-hook (lambda () (abbrev-mode 1)))
-;; (add-hook 'text-mode-hook (lambda () (abbrev-mode 1)))
+(keymap-global-set "M-h" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
@@ -811,7 +805,7 @@ see command `isearch-forward' for more information."
   (define-keymap
     :keymap dired-mode-map
     "/" 'dired-undo
-    "C-TAB" 'dired-maybe-insert-subdir
+    "C-<tab>" 'dired-maybe-insert-subdir
     "<backtab>" 'dired-kill-subdir
     "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff
     "b" 'dired-up-directory
@@ -1299,6 +1293,7 @@ see command `isearch-forward' for more information."
 
 (elpaca crux
   ;; (keymap-global-set "C-<return>"   'crux-smart-open-line)
+  ;; (keymap-global-set "C-S-h" #'crux-other-window-or-switch-buffer)
   (keymap-global-set "S-<return>"    'crux-smart-open-line)
   (keymap-global-set "C-x F"         'crux-sudo-edit)
   (keymap-global-set "C-x W"         'crux-open-with)
@@ -1485,7 +1480,7 @@ see command `isearch-forward' for more information."
 (elpaca (conn-nerd-icons :host github
                          :repo "mtll/conn"
                          :files ("extensions/conn-nerd-icons.el"))
-  (with-eval-after-load 'conn
+  (with-eval-after-load 'nerd-icons
     (require 'conn-nerd-icons)))
 
 (elpaca (conn-consult :host github
@@ -1726,7 +1721,7 @@ see command `isearch-forward' for more information."
 (elpaca cape
   (keymap-global-set "M-L" #'cape-line)
   (keymap-global-set "M-K" #'cape-dict)
-  (keymap-global-set "M-h" #'cape-dabbrev)
+  (keymap-global-set "C-M-h" #'cape-dabbrev)
   ;; M-h C-M-j M-u M-n M-p
 
   (cl-pushnew #'cape-file completion-at-point-functions)
@@ -1771,7 +1766,7 @@ see command `isearch-forward' for more information."
         prefix-help-command 'embark-prefix-help-command)
 
   (keymap-global-set "M-." 'embark-act)
-  (keymap-global-set "C-TAB" 'embark-act)
+  (keymap-global-set "C-<tab>" 'embark-act)
   ;; (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
@@ -2035,7 +2030,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'vertico
     (define-keymap
       :keymap vertico-map
-      "C-TAB" 'embark-act-all
+      "C-<tab>" 'embark-act-all
       ;; "C-<tab>" 'embark-act-all
       "M-TAB" 'embark-act-persist
       "M-<tab>" 'embark-act-persist
@@ -2259,7 +2254,7 @@ see command `isearch-forward' for more information."
       (completion-at-point)
       (corfu-insert-separator))
 
-    (keymap-set corfu-map "M-SPC" #'corfu-sep-and-start)
+    (keymap-set corfu-map "<remap> <completion-at-point>" #'corfu-sep-and-start)
 
     (with-eval-after-load 'conn
       (defun my-corfu-off ()
@@ -2292,8 +2287,7 @@ see command `isearch-forward' for more information."
 ;;;; nerd icons
 
 (elpaca nerd-icons
-  (with-eval-after-load 'conn
-    (require 'nerd-icons)))
+  (require 'nerd-icons))
 
 (elpaca nerd-icons-dired
   (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
@@ -2302,11 +2296,6 @@ see command `isearch-forward' for more information."
 
 (elpaca nerd-icons-corfu
   (with-eval-after-load 'corfu
-    ;; (setq nerd-icons-corfu-mapping
-    ;;       '((array :style "cod" :icon "symbol_array" :face font-lock-type-face)
-    ;;         (boolean :style "cod" :icon "symbol_boolean" :face font-lock-builtin-face)
-    ;;         ;; ...
-    ;;         (t :style "cod" :icon "code" :face font-lock-warning-face)))
     (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)))
 
 (elpaca nerd-icons-ibuffer
@@ -2457,6 +2446,7 @@ see command `isearch-forward' for more information."
                                  consult--source-project-buffer-hidden
                                  consult--source-project-recent-file-hidden))
 
+  (keymap-global-set "<remap> <pop-global-mark>" #'consult-global-mark)
   (keymap-global-set "<remap> <Info-search>" #'consult-info)
   (keymap-global-set "<remap> <bookmark-jump>" #'consult-bookmark)
   (keymap-global-set "<remap> <yank-pop>" #'consult-yank-pop)
@@ -2787,23 +2777,6 @@ see command `isearch-forward' for more information."
                   (if (consult--tofu-p (aref cand (1- (length cand))))
                       (substring cand 0 -1)
                     cand))))))
-
-(elpaca vertico-posframe
-  (with-eval-after-load 'vertico
-    (require 'vertico-posframe)
-    (setq vertico-posframe-poshandler
-          (lambda (info)
-            (cons (/ (- (plist-get info :parent-frame-width)
-                        (plist-get info :posframe-width))
-                     2)
-                  -1)))
-
-    ;; Show minibuffer prompt when posframe is hidden
-    (defun vertico-posframe-hidehandler-advice (&rest app)
-      (when (apply app)
-        (set-window-vscroll (active-minibuffer-window) 0)
-        t))
-    (advice-add 'vertico-posframe-hidehandler :around 'my-vertico-posframe-hidehandler-ad)))
 
 
 ;;;; marginalia
