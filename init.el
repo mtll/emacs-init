@@ -1465,9 +1465,7 @@ see command `isearch-forward' for more information."
     (save-excursion
       (let ((last-command-event ?\ ))
         (self-insert-command N))))
-  (keymap-global-set "S-SPC" 'my-space-after-point)
-
-  (keymap-set conn-state-map "M-<tab>" 'indent-region))
+  (keymap-global-set "S-SPC" 'my-space-after-point))
 
 ;;;;; conn extensions
 
@@ -1701,6 +1699,7 @@ see command `isearch-forward' for more information."
 (elpaca llama)
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
+  (setq magit-format-file-function #'magit-format-file-nerd-icons)
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
