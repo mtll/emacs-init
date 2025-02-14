@@ -47,7 +47,8 @@
 ;;;; emacs
 
 ;; help-window-select t
-(setq vc-display-status 'no-backend
+(setq comment-empty-lines 'eol
+      vc-display-status 'no-backend
       comint-prompt-read-only t
       comint-buffer-maximum-size 2048
       find-file-suppress-same-file-warnings t
@@ -1395,16 +1396,15 @@ see command `isearch-forward' for more information."
 
   (setq-default cursor-type '(hbar . 5))
 
-  (defun conn-mark-emacs-state-hook ()
-    (when (and conn-emacs-state
-               (not (use-region-p)))
-      (conn--push-ephemeral-mark (point))))
+  ;; (defun conn-mark-emacs-state-hook ()
+  ;;   (when (and conn-emacs-state
+  ;;              (not (use-region-p)))
+  ;;     (conn--push-ephemeral-mark (point))))
+  ;; (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
 
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
     (add-mode-abbrev (or arg 0)))
-
-  (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
 
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
