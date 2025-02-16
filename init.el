@@ -1356,133 +1356,133 @@ see command `isearch-forward' for more information."
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
 
-    (transient-define-prefix my-isearch+-do-filter (filter)
-      "Isearch+ add filter prefix"
+    (transient-define-prefix my-isearch+-do-filter (filter-action)
+      "Isearch+ add filter-action prefix"
       [ :description "And Filters"
         [("c" "in comment"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[;]"         isearchp-in-comment-p               "[;]")))
           :transient transient--do-return)
          ("C" "not in comment"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[;]"         isearchp-not-in-comment-p           "~[;]")))
           :transient transient--do-return)
 
          ("'" "in string"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[\"]"        isearchp-in-string-p                "[\"]")))
           :transient transient--do-return)
          ("\"" "not in string"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[\"]"        isearchp-not-in-string-p            "~[\"]")))
           :transient transient--do-return)]
 
         [(";" "in string/comment"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[\"|;]"      isearchp-in-string-or-comment-p     "[\"|;]")))
           :transient transient--do-return)
          (":" "not in string/comment"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[\"|;]"      isearchp-not-in-string-or-comment-p "~[\"|;]")))
           :transient transient--do-return)
 
          ("d" "in defun"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[defun]"     isearchp-in-defun-p                 "[DEFUN]")))
           :transient transient--do-return
           )
          ("D" "not in defun"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[defun]"     isearchp-not-in-defun-p             "~[DEFUN]")))
           :transient transient--do-return)]
 
         [("(" "in list"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[()]"        isearchp-in-list-p                  "[()]")))
           :transient transient--do-return)
          (")" "not in list"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[()]"        isearchp-not-in-list-p              "~[()]")))
           :transient transient--do-return
           )
 
          ("[" "in page"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[page]"      isearchp-in-page-p                  "[PAGE]")))
           :transient transient--do-return
           )
          ("]" "not in page"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[page]"      isearchp-not-in-page-p              "~[PAGE]")))
           :transient transient--do-return)]
 
         [("f" "in file/url"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[file|url])" isearchp-in-file-or-url-p           "[FILE|URL])")))
           :transient transient--do-return)
          ("F" "not in file/url"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
           :transient transient--do-return)
 
          ("e" "in email"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '( "[email]"     isearchp-in-email-address-p         "[EMAIL]")))
           :transient transient--do-return)
          ("E" "not in email"
-          (lambda (filter)
+          (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
-             filter
+             filter-action
              '("~[email]"     isearchp-not-in-email-address-p     "~[EMAIL]")))
           :transient transient--do-return)]]
       (interactive (list nil))
-      (transient-setup 'my-isearch+-do-filter nil nil :scope filter))
+      (transient-setup 'my-isearch+-do-filter nil nil :scope filter-action))
 
     (transient-define-prefix my-isearch+-filter-prefix ()
       "Isearch+ filter prefix"
