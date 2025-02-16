@@ -598,7 +598,7 @@
                     string 'fixedcase 'literal)
                    (concat quoted "+")))))
 
-(defun isearch-wildcards-compile (string &optional lax)
+(defun isearch-globs-compile (string &optional lax)
   (string-join
    (mapcar (lambda (string)
              (string-join
@@ -613,12 +613,12 @@
            (isearch-escapable-split-on-char string " "))
    search-whitespace-regexp))
 
-(isearch-define-mode-toggle wildcards "*" isearch-wildcards-compile "\
-Turning on wildcards turns off regexp mode.")
-(put 'isearch-wildcards-compile 'isearch-message-prefix
-     (propertize "Wildcard " 'face 'minibuffer-prompt))
+(isearch-define-mode-toggle globs "*" isearch-globs-compile "\
+Turning on globs turns off regexp mode.")
+(put 'isearch-globs-compile 'isearch-message-prefix
+     (propertize "glob " 'face 'minibuffer-prompt))
 
-(defun isearch-forward-wildcard (&optional arg no-recursive-edit)
+(defun isearch-forward-glob (&optional arg no-recursive-edit)
   "Do incremental search forward.
 See command `isearch-forward' for more information."
   (interactive "P\np")
@@ -628,10 +628,10 @@ See command `isearch-forward' for more information."
           ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
            (call-interactively #'multi-isearch-buffers))
           (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
-                           #'isearch-wildcards-compile)))))
-(keymap-global-set "<remap> <isearch-forward>" 'isearch-forward-wildcard)
+                           #'isearch-globs-compile)))))
+(keymap-global-set "<remap> <isearch-forward>" 'isearch-forward-glob)
 
-(defun isearch-backward-wildcard (&optional arg no-recursive-edit)
+(defun isearch-backward-glob (&optional arg no-recursive-edit)
   "do incremental search backward.
 see command `isearch-forward' for more information."
   (interactive "p\np")
@@ -641,8 +641,8 @@ see command `isearch-forward' for more information."
           ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
            (call-interactively #'multi-isearch-buffers))
           (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
-                           #'isearch-wildcards-compile)))))
-(keymap-global-set "<remap> <isearch-backward>" 'isearch-backward-wildcard)
+                           #'isearch-globs-compile)))))
+(keymap-global-set "<remap> <isearch-backward>" 'isearch-backward-glob)
 
 (defun isearch-repeat-direction ()
   (interactive)
@@ -887,6 +887,9 @@ see command `isearch-forward' for more information."
 
 (elpaca transient
   (setq transient-enable-popup-navigation nil
+        transient-display-buffer-action '(display-buffer-below-selected
+                                          (dedicated . t)
+                                          (inhibit-same-window . t))
         transient-mode-line-format 'line)
 
   (with-eval-after-load 'ibuffer
@@ -1326,8 +1329,6 @@ see command `isearch-forward' for more information."
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
-  (run-with-timer 0.33 nil (lambda () (require 'isearch+)))
-
   (setq isearchp-dimming-color "#cddfcc"
         isearchp-lazy-dim-filter-failures-flag nil
         isearchp-restrict-to-region-flag nil
@@ -1339,9 +1340,12 @@ see command `isearch-forward' for more information."
                                        (?c . forward-char)
                                        (?l . forward-line)))
 
-  (setopt isearchp-initiate-edit-commands nil)
+  (with-eval-after-load 'isearch
+    (require 'isearch+)
+    (require 'transient)
 
-  (with-eval-after-load 'isearch+
+    (setopt isearchp-initiate-edit-commands nil)
+
     (define-keymap
       :keymap isearch-mode-map
       "C-y m" 'isearchp-yank-sexp-symbol-or-char
@@ -1359,14 +1363,14 @@ see command `isearch-forward' for more information."
     (transient-define-prefix my-isearch+-do-filter (filter-action)
       "Isearch+ add filter-action prefix"
       [ :description "And Filters"
-        [("c" "in comment"
+        [("c" " [;]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[;]"         isearchp-in-comment-p               "[;]")))
           :transient transient--do-return)
-         ("C" "not in comment"
+         ("C" "~[;]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
@@ -1374,14 +1378,14 @@ see command `isearch-forward' for more information."
              '("~[;]"         isearchp-not-in-comment-p           "~[;]")))
           :transient transient--do-return)
 
-         ("'" "in string"
+         ("'" " [\"]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[\"]"        isearchp-in-string-p                "[\"]")))
           :transient transient--do-return)
-         ("\"" "not in string"
+         ("\"" "~[\"]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
@@ -1389,14 +1393,14 @@ see command `isearch-forward' for more information."
              '("~[\"]"        isearchp-not-in-string-p            "~[\"]")))
           :transient transient--do-return)]
 
-        [(";" "in string/comment"
+        [(";" " [\"|;]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[\"|;]"      isearchp-in-string-or-comment-p     "[\"|;]")))
           :transient transient--do-return)
-         (":" "not in string/comment"
+         (":" "~[\"|;]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
@@ -1404,15 +1408,14 @@ see command `isearch-forward' for more information."
              '("~[\"|;]"      isearchp-not-in-string-or-comment-p "~[\"|;]")))
           :transient transient--do-return)
 
-         ("d" "in defun"
+         ("d" " [defun]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[defun]"     isearchp-in-defun-p                 "[DEFUN]")))
-          :transient transient--do-return
-          )
-         ("D" "not in defun"
+          :transient transient--do-return)
+         ("D" "~[defun]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
@@ -1420,31 +1423,29 @@ see command `isearch-forward' for more information."
              '("~[defun]"     isearchp-not-in-defun-p             "~[DEFUN]")))
           :transient transient--do-return)]
 
-        [("(" "in list"
+        [("(" " [()]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[()]"        isearchp-in-list-p                  "[()]")))
           :transient transient--do-return)
-         (")" "not in list"
+         (")" "~[()]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '("~[()]"        isearchp-not-in-list-p              "~[()]")))
-          :transient transient--do-return
-          )
+          :transient transient--do-return)
 
-         ("[" "in page"
+         ("[" " [page]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[page]"      isearchp-in-page-p                  "[PAGE]")))
-          :transient transient--do-return
-          )
-         ("]" "not in page"
+          :transient transient--do-return)
+         ("]" "~[page]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
@@ -1452,14 +1453,14 @@ see command `isearch-forward' for more information."
              '("~[page]"      isearchp-not-in-page-p              "~[PAGE]")))
           :transient transient--do-return)]
 
-        [("f" "in file/url"
+        [("f" " [file|url]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[file|url])" isearchp-in-file-or-url-p           "[FILE|URL])")))
           :transient transient--do-return)
-         ("F" "not in file/url"
+         ("F" "~[file|url]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
@@ -1467,14 +1468,14 @@ see command `isearch-forward' for more information."
              '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
           :transient transient--do-return)
 
-         ("e" "in email"
+         ("e" " [email]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
              '( "[email]"     isearchp-in-email-address-p         "[EMAIL]")))
           :transient transient--do-return)
-         ("E" "not in email"
+         ("E" "~[email]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
