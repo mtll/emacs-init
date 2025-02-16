@@ -81,7 +81,7 @@
       read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       translate-upper-case-key-bindings nil
-      show-paren-context-when-offscreen 'child-frame
+      show-paren-context-when-offscreen nil
       sentence-end-double-space t
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
@@ -1356,8 +1356,172 @@ see command `isearch-forward' for more information."
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
 
+    (transient-define-prefix my-isearch+-do-filter (filter)
+      "Isearch+ add filter prefix"
+      [ :description "And Filters"
+        [("c" "in comment"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[;]"         isearchp-in-comment-p               "[;]")))
+          :transient transient--do-return)
+         ("C" "not in comment"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[;]"         isearchp-not-in-comment-p           "~[;]")))
+          :transient transient--do-return)
+
+         ("'" "in string"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[\"]"        isearchp-in-string-p                "[\"]")))
+          :transient transient--do-return)
+         ("\"" "not in string"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[\"]"        isearchp-not-in-string-p            "~[\"]")))
+          :transient transient--do-return)]
+
+        [(";" "in string/comment"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[\"|;]"      isearchp-in-string-or-comment-p     "[\"|;]")))
+          :transient transient--do-return)
+         (":" "not in string/comment"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[\"|;]"      isearchp-not-in-string-or-comment-p "~[\"|;]")))
+          :transient transient--do-return)
+
+         ("d" "in defun"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[defun]"     isearchp-in-defun-p                 "[DEFUN]")))
+          :transient transient--do-return
+          )
+         ("D" "not in defun"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[defun]"     isearchp-not-in-defun-p             "~[DEFUN]")))
+          :transient transient--do-return)]
+
+        [("(" "in list"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[()]"        isearchp-in-list-p                  "[()]")))
+          :transient transient--do-return)
+         (")" "not in list"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[()]"        isearchp-not-in-list-p              "~[()]")))
+          :transient transient--do-return
+          )
+
+         ("[" "in page"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[page]"      isearchp-in-page-p                  "[PAGE]")))
+          :transient transient--do-return
+          )
+         ("]" "not in page"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[page]"      isearchp-not-in-page-p              "~[PAGE]")))
+          :transient transient--do-return)]
+
+        [("f" "in file/url"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[file|url])" isearchp-in-file-or-url-p           "[FILE|URL])")))
+          :transient transient--do-return)
+         ("F" "not in file/url"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
+          :transient transient--do-return)
+
+         ("e" "in email"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '( "[email]"     isearchp-in-email-address-p         "[EMAIL]")))
+          :transient transient--do-return)
+         ("E" "not in email"
+          (lambda (filter)
+            (interactive (list (oref transient-current-prefix scope)))
+            (funcall
+             filter
+             '("~[email]"     isearchp-not-in-email-address-p     "~[EMAIL]")))
+          :transient transient--do-return)]]
+      (interactive (list nil))
+      (transient-setup 'my-isearch+-do-filter nil nil :scope filter))
+
+    (transient-define-prefix my-isearch+-filter-prefix ()
+      "Isearch+ filter prefix"
+      :transient-non-suffix 'transient--do-leave
+      [["Misc"
+        ("k" "Keep Filter" isearchp-keep-filter-predicate :transient t)
+        ("s" "Set Filter" isearchp-keep-filter-predicate :transient t)
+        ("0" "Reset Filter" isearchp-reset-filter-predicate :transient t)]
+       ["Last Filter"
+        ("l" "Or Last"
+         (lambda ()
+           (interactive)
+           (my-isearch+-do-filter 'isearchp-or-last-filter))
+         :transient transient--do-recurse)
+        ("n" "Negate Last" isearchp-negate-last-filter :transient t)
+        ("p" "Pop Last Filter"
+         (lambda ()
+           (interactive)
+           (isearchp-remove-filter-predicate
+            (format "%s"
+                    (and (advice--p isearch-filter-predicate)
+                         (isearchp-last-isearch-advice)))
+            t))
+         :transient t)]
+       ["Add Filters"
+        ("a" "And"
+         (lambda ()
+           (interactive)
+           (my-isearch+-do-filter 'isearchp-add-filter-predicate))
+         :transient transient--do-recurse)
+        ("o" "Or"
+         (lambda ()
+           (interactive)
+           (my-isearch+-do-filter 'isearchp-or-filter-predicate))
+         :transient transient--do-recurse)
+        ("c" "Complement" isearchp-complement-filter :transient t)]])
+
     (keymap-unset isearch-mode-map "C-t")
-    (keymap-set isearch-mode-map "C-;" 'isearchp-filter-map)
+    (keymap-set isearch-mode-map "C-;" 'my-isearch+-filter-prefix)
     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
@@ -2463,6 +2627,8 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap search-map
+    "c" 'occur
+    "y" 'rgrep
     "p" 'consult-page
     "K" 'consult-kmacro
     "w" 'consult-man
@@ -2474,8 +2640,8 @@ see command `isearch-forward' for more information."
     "g" 'consult-ripgrep
     "f" 'consult-find
     "L" 'consult-locate
-    "v" 'consult-focus-lines
-    "k" 'consult-keep-lines)
+    "k" 'consult-keep-lines
+    "h f" 'consult-focus-lines)
 
   (keymap-set goto-map "g" 'consult-goto-line)
   (keymap-global-set "<remap> <project-switch-to-buffer>" 'consult-project-buffer)
@@ -3211,7 +3377,9 @@ see command `isearch-forward' for more information."
     "C-S-j" 'sp-backward-slurp-sexp
     "C-S-u" 'sp-backward-barf-sexp
     "C-S-i" 'sp-convolute-sexp
-    "C-S-k" 'sp-join-sexps))
+    "C-S-k" 'sp-join-sexps
+    "C-S-n" 'sp-backward-parallel-sexp
+    "C-S-m" 'sp-forward-parallel-sexp))
 
 
 ;;;; puni
@@ -3338,6 +3506,15 @@ see command `isearch-forward' for more information."
                                    :scroll-bar-width 8
                                    :fringe-width 10))
   (spacious-padding-mode 1))
+
+
+;;;; rg
+
+(elpaca rg
+  (define-keymap
+    :keymap search-map
+    "y" 'rg-menu
+    "u" 'rg))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
