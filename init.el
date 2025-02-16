@@ -55,7 +55,6 @@
       find-file-visit-truename t
       ffap-machine-p-known 'reject
       word-wrap t
-      fast-but-imprecise-scrolling t
       truncate-string-ellipsis "…"
       comment-multi-line t
       help-enable-symbol-autoload t
@@ -108,7 +107,6 @@
                                       face minibuffer-prompt)
       exec-path (cons (expand-file-name "scripts/" user-emacs-directory) exec-path)
       edebug-inhibit-emacs-lisp-mode-bindings t
-      bidi-inhibit-bpa t
       cycle-spacing-actions '( just-one-space
                                delete-all-space
                                delete-space-after
@@ -1396,11 +1394,11 @@ see command `isearch-forward' for more information."
 
   (setq-default cursor-type '(hbar . 5))
 
-  ;; (defun conn-mark-emacs-state-hook ()
-  ;;   (when (and conn-emacs-state
+  ;; (defun conn-mark-emacs-state-hook (state)
+  ;;   (when (and (eq state 'conn-emacs-state)
   ;;              (not (use-region-p)))
   ;;     (conn--push-ephemeral-mark (point))))
-  ;; (add-hook 'conn-transition-hook 'conn-mark-emacs-state-hook)
+  ;; (add-hook 'conn-entry-function 'conn-mark-emacs-state-hook)
 
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
@@ -2698,6 +2696,7 @@ see command `isearch-forward' for more information."
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
+  (keymap-set vertico-multiform-map "M-i" 'vertico-multiform-buffer)
   (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
 
   (defun vertico-buffer--redisplay-ad (win)
@@ -3180,6 +3179,7 @@ see command `isearch-forward' for more information."
 
   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
+  (smartparens-global-mode 1)
   (show-smartparens-global-mode 1)
 
   (define-keymap

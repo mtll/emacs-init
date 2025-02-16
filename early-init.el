@@ -23,8 +23,14 @@
 (setq-default mode-line-format nil)
 
 (setq-default ;; truncate-lines t
-              ;; truncate-partial-width-windows nil
-              window-resize-pixelwise nil)
+ ;; truncate-partial-width-windows nil
+ window-resize-pixelwise nil)
+
+;; redisplay
+(setq redisplay-skip-fontification-on-input t
+      fast-but-imprecise-scrolling t
+      inhibit-compacting-font-caches t
+      bidi-inhibit-bpa t)
 
 (set-default-coding-systems 'utf-8)
 
