@@ -572,7 +572,8 @@
 ;;;; isearch
 
 (setq isearch-lazy-count t
-      isearch-allow-motion t)
+      isearch-allow-motion t
+      isearch-resume-in-command-history t)
 
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
@@ -1362,7 +1363,7 @@ see command `isearch-forward' for more information."
 
     (transient-define-prefix my-isearch+-do-filter (filter-action)
       "Isearch+ add filter-action prefix"
-      [ :description "And Filters"
+      [ :description "Filter"
         [("c" " [;]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
@@ -1488,18 +1489,12 @@ see command `isearch-forward' for more information."
     (transient-define-prefix my-isearch+-filter-prefix ()
       "Isearch+ filter prefix"
       :transient-non-suffix 'transient--do-leave
-      [["Misc"
-        ("k" "Keep Filter" isearchp-keep-filter-predicate :transient t)
-        ("s" "Set Filter" isearchp-keep-filter-predicate :transient t)
-        ("0" "Reset Filter" isearchp-reset-filter-predicate :transient t)]
+      [["Filter"
+        ("k" "Keep" isearchp-keep-filter-predicate :transient t)
+        ("s" "Set" isearchp-keep-filter-predicate :transient t)
+        ("0" "Reset" isearchp-reset-filter-predicate :transient t)]
        ["Last Filter"
-        ("l" "Or Last"
-         (lambda ()
-           (interactive)
-           (my-isearch+-do-filter 'isearchp-or-last-filter))
-         :transient transient--do-recurse)
-        ("n" "Negate Last" isearchp-negate-last-filter :transient t)
-        ("p" "Pop Last Filter"
+        ("p" "Pop"
          (lambda ()
            (interactive)
            (isearchp-remove-filter-predicate
@@ -1507,8 +1502,14 @@ see command `isearch-forward' for more information."
                     (and (advice--p isearch-filter-predicate)
                          (isearchp-last-isearch-advice)))
             t))
-         :transient t)]
-       ["Add Filters"
+         :transient t)
+        ("l" "Or"
+         (lambda ()
+           (interactive)
+           (my-isearch+-do-filter 'isearchp-or-last-filter))
+         :transient transient--do-recurse)
+        ("n" "Negate" isearchp-negate-last-filter :transient t)]
+       ["Add Filter"
         ("a" "And"
          (lambda ()
            (interactive)
@@ -2874,9 +2875,14 @@ see command `isearch-forward' for more information."
                  ;; Without this check we would be running this
                  ;; in any vertico-posframe windows every time.
                  (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
-        (setq-local vertico-count (- (/ (window-pixel-height win)
-                                        (default-line-height))
-                                     2)))))
+        (setq-local vertico-count
+                    (- (/ (window-pixel-height win)
+                          (default-line-height))
+                       1
+                       (if (length> (buffer-local-value
+                                     'header-line-format (window-buffer win)) 0)
+                           1 0))
+                    mode-line-format nil))))
   (advice-add 'vertico-buffer--redisplay :after 'vertico-buffer--redisplay-ad)
 
   ;; I prefer it if the vertico buffer mode-line face
@@ -2886,7 +2892,8 @@ see command `isearch-forward' for more information."
                 (seq-remove (lambda (cons)
                               (eq (car cons) 'mode-line-inactive))
                             face-remapping-alist)))
-  (advice-add 'vertico-buffer--setup :after #'my-vertico-buffer-stop-face-remap)
+  ;; not needed since I am hiding the mode-line above
+  ;; (advice-add 'vertico-buffer--setup :after #'my-vertico-buffer-stop-face-remap)
 
   ;; Refocus the minibuffer if vertico-repeat is called with a minibuffer open.
   (defun vertico-repeat-ad (&rest _)
