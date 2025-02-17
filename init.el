@@ -1468,19 +1468,19 @@ see command `isearch-forward' for more information."
              '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
           :transient transient--do-return)
 
-         ("e" " [email]"
+         ("n" " [narrow]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
-             '( "[email]"     isearchp-in-email-address-p         "[EMAIL]")))
+             '( "[narrow]"     conn-isearch-in-narrow-p         "[NARROW]")))
           :transient transient--do-return)
-         ("E" "~[email]"
+         ("N" "~[narrow]"
           (lambda (filter-action)
             (interactive (list (oref transient-current-prefix scope)))
             (funcall
              filter-action
-             '("~[email]"     isearchp-not-in-email-address-p     "~[EMAIL]")))
+             '("~[narrow]"     conn-isearch-in-narrow-p     "~[NARROW]")))
           :transient transient--do-return)]]
       (interactive (list nil))
       (transient-setup 'my-isearch+-do-filter nil nil :scope filter-action))
