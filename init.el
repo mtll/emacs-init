@@ -2867,6 +2867,12 @@ see command `isearch-forward' for more information."
   (keymap-set vertico-multiform-map "M-i" 'vertico-multiform-buffer)
   (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
 
+  (defun vertico-buffer-setup-ad ()
+    (with-selected-window (active-minibuffer-window)
+      (setq-local mode-line-format nil
+                  header-line-format (or header-line-format "Sets:"))))
+  (advice-add 'vertico-buffer--setup :after #'vertico-buffer-setup-ad)
+
   (defun vertico-buffer--redisplay-ad (win)
     (let ((mbwin (active-minibuffer-window)))
       (when (and mbwin vertico-buffer-mode
@@ -2875,15 +2881,9 @@ see command `isearch-forward' for more information."
                  ;; Without this check we would be running this
                  ;; in any vertico-posframe windows every time.
                  (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
-        (setq-local vertico-count
-                    (- (/ (window-pixel-height win)
-                          (default-line-height))
-                       1
-                       (if (length> (buffer-local-value
-                                     'header-line-format (window-buffer win)) 0)
-                           1 0))
-                    mode-line-format nil))))
-  (advice-add 'vertico-buffer--redisplay :after 'vertico-buffer--redisplay-ad)
+        (setq-local mode-line-format nil
+                    header-line-format (or header-line-format "Sets:")))))
+  (advice-remove 'vertico-buffer--redisplay 'vertico-buffer--redisplay-ad)
 
   ;; I prefer it if the vertico buffer mode-line face
   ;; is not remapped to always appear active.
