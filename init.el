@@ -819,6 +819,8 @@ see command `isearch-forward' for more information."
     "% y" 'dired-do-relsymlink-regexp
     "% t" 'dired-flag-garbage-files
     "F" 'dired-create-empty-file
+    "M-s M-s" 'dired-do-isearch
+    "M-s M-r" 'dired-do-isearch-regexp
     ;; "z" available
     )
 
@@ -2404,10 +2406,6 @@ see command `isearch-forward' for more information."
     "TAB" 'corfu-insert
     "C-g" 'corfu-quit)
 
-  (define-keymap
-    :keymap corfu-mode-map
-    "M-TAB" 'corfu-sep-and-start)
-
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
   ;; (add-hook 'prog-mode-hook 'my-corfu-auto-on)
@@ -2654,8 +2652,6 @@ see command `isearch-forward' for more information."
     "M-s J" 'consult-line-multi)
 
   (with-eval-after-load 'consult
-    (setq consult-ripgrep-args (concat consult-ripgrep-args " --multiline"))
-
     (consult-customize consult-completion-in-region :preview-key nil)
     (consult-customize consult--source-bookmark :preview-key "C-o")
     (consult-customize consult-bookmark :preview-key "C-o")
@@ -2667,7 +2663,7 @@ see command `isearch-forward' for more information."
     (cons
      (mapcar (lambda (r) (consult--convert-regexp r type)) input)
      (lambda (str) (orderless--highlight input t str))))
-  (setq consult--regexp-compiler #'consult--orderless-regexp-compiler)
+  (setq consult--regexp-compiler #'consult--default-regexp-compiler)
 
   (defun consult-async-pause (&optional arg)
     (interactive "P")
@@ -2870,7 +2866,7 @@ see command `isearch-forward' for more information."
   (defun vertico-buffer-setup-ad ()
     (with-selected-window (active-minibuffer-window)
       (setq-local mode-line-format nil
-                  header-line-format (or header-line-format "Sets:"))))
+                  header-line-format nil)))
   (advice-add 'vertico-buffer--setup :after #'vertico-buffer-setup-ad)
 
   (defun vertico-buffer--redisplay-ad (win)
@@ -2883,7 +2879,7 @@ see command `isearch-forward' for more information."
                  (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
         (setq-local mode-line-format nil
                     header-line-format (or header-line-format "Sets:")))))
-  (advice-remove 'vertico-buffer--redisplay 'vertico-buffer--redisplay-ad)
+  ;; (advice-remove 'vertico-buffer--redisplay 'vertico-buffer--redisplay-ad)
 
   ;; I prefer it if the vertico buffer mode-line face
   ;; is not remapped to always appear active.
