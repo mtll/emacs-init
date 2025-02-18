@@ -2663,7 +2663,7 @@ see command `isearch-forward' for more information."
     (cons
      (mapcar (lambda (r) (consult--convert-regexp r type)) input)
      (lambda (str) (orderless--highlight input t str))))
-  (setq consult--regexp-compiler #'consult--default-regexp-compiler)
+  (setq consult--regexp-compiler #'consult--orderless-regexp-compiler)
 
   (defun consult-async-pause (&optional arg)
     (interactive "P")
