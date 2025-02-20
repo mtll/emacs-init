@@ -146,6 +146,7 @@
 (keymap-global-set "S-<backspace>" #'cycle-spacing)
 (keymap-global-set "M-N" #'tab-bar-switch-to-next-tab)
 (keymap-global-set "M-P" #'tab-bar-switch-to-prev-tab)
+(keymap-global-set "C-j" #'join-line)
 (keymap-global-set "C-:" #'read-only-mode)
 (keymap-global-set "C-x C-b" #'ibuffer)
 (keymap-global-set "M-;" #'comment-line)
@@ -339,6 +340,24 @@
               nil 'local)))
 
 
+;;;; hideshow
+
+(add-hook 'prog-mode-hook 'hs-minor-mode)
+
+(defun my-hs-toggle-hiding ()
+  (interactive)
+  (require 'hideshow)
+  (save-excursion (hs-toggle-hiding)))
+
+(with-eval-after-load 'hideshow
+  (define-keymap
+    :keymap hs-minor-mode-map
+    "C-," 'my-hs-toggle-hiding
+    "M-s h h" #'hs-hide-all
+    "M-s h s" #'hs-show-all
+    "M-s h v" #'hs-hide-level))
+
+
 ;;;; org
 
 (elpaca (org :repo ("https://code.tecosaur.net/tec/org-mode.git/" . "org")
@@ -448,7 +467,17 @@
 
 ;;;; Abbrev
 
-(setq abbrev-all-caps t)
+(setq abbrev-all-caps t
+      hippie-expand-try-functions-list '( try-complete-file-name-partially
+                                          try-complete-file-name
+                                          try-expand-all-abbrevs
+                                          ;; try-expand-list
+                                          ;; try-expand-line
+                                          try-expand-dabbrev
+                                          try-expand-dabbrev-all-buffers
+                                          try-expand-dabbrev-from-kill
+                                          try-complete-lisp-symbol-partially
+                                          try-complete-lisp-symbol))
 
 (keymap-global-set "M-h" 'hippie-expand)
 
@@ -997,7 +1026,8 @@ see command `isearch-forward' for more information."
   (push '(help-mode . helpful-mode) major-mode-remap-alist)
 
   (with-eval-after-load 'helpful
-    (fset 'helpful--source #'ignore))
+    ;; (fset 'helpful--source #'ignore)
+    )
 
   (with-eval-after-load 'embark
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
@@ -1588,39 +1618,40 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
-  (keymap-set conn-global-map "C-t" (conn-remap-key (key-parse "C-x t")))
-  (keymap-set conn-global-map "M-'" 'conn-toggle-mark-command)
-  (keymap-set conn-global-map "C-o" 'conn-open-line-above)
-  (keymap-set conn-global-map "M-o" 'conn-open-line)
-  (keymap-set conn-global-map "M-j" 'conn-open-line-and-indent)
-  (keymap-set conn-global-map "C-c v" 'conn-toggle-mark-command)
-  (keymap-set conn-global-map "C-;" 'conn-wincontrol)
-  (keymap-set conn-global-map "C-x ," 'subword-mode)
-  (keymap-set conn-global-map "M-\\"  'conn-kapply-prefix)
-  (keymap-set conn-global-map "C-M-y" 'conn-yank-lines-as-rectangle)
+  (define-keymap
+    :keymap conn-global-map
+    "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
+    "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
+    "C-M-y" 'conn-yank-lines-as-rectangle
+    "M-\\"  'conn-kapply-prefix
+    "C-x ," 'subword-mode
+    "C-;" 'conn-wincontrol
+    "C-c v" 'conn-toggle-mark-command
+    "M-j" 'conn-open-line-and-indent
+    "M-o" 'conn-open-line
+    "C-o" 'conn-open-line-above
+    "M-'" 'conn-toggle-mark-command
+    "C-=" 'balance-windows
+    "C-." 'conn-dispatch-on-things
+    "C-<backspace>" 'kill-whole-line
+    "S-<return>" 'conn-open-line-and-indent
+    "M-`" 'conn-wincontrol-quit-other-window-for-scrolling
+    "M-U" 'conn-wincontrol-maximize-vertically
+    "M-z" 'conn-exchange-mark-command
+    "C-SPC" 'conn-set-mark-command
+    "M-SPC" 'conn-toggle-mark-command)
+
   (keymap-set conn-emacs-state-map "<f8>" 'conn-state)
   (keymap-set conn-org-edit-state-map "<f8>" 'conn-state)
   (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
-  (keymap-set conn-global-map "S-<return>" 'conn-open-line-and-indent)
-  (keymap-set conn-global-map "C-," 'embark-dwim)
-  (keymap-set conn-global-map "C-<backspace>" 'kill-whole-line)
-  (keymap-set conn-global-map "C-." 'conn-dispatch-on-things)
-  (keymap-set conn-state-map "B" 'ibuffer)
-  (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
   (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
+  ;; (keymap-set conn-state-map "B" 'ibuffer)
+  (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
   (keymap-set conn-state-map "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-set conn-global-map "M-`" 'conn-wincontrol-quit-other-window-for-scrolling)
   (keymap-set conn-state-map "*" 'calc-dispatch)
-  (keymap-set conn-state-map "$" 'ispell-word)
   (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
   (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
-  ;; (keymap-global-set "M-u" 'conn-region-case-prefix)
-  (keymap-set conn-global-map "M-SPC" 'conn-toggle-mark-command)
-  (keymap-set conn-global-map "C-SPC" 'conn-set-mark-command)
-  (keymap-set conn-global-map "M-z" 'conn-exchange-mark-command)
-  (keymap-set conn-global-map "M-U" 'conn-wincontrol-maximize-vertically)
-  (keymap-set conn-state-map "C-'" 'conn-dispatch-on-things)
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1684,6 +1715,7 @@ see command `isearch-forward' for more information."
       embark-org-target-link
       embark-target-collect-candidate
       embark-target-text-heading-at-point
+      embark-start-of-defun-target-finder
       ;; embark-target-flymake-at-point
       ;; embark-target-package-at-point
       embark-target-url-at-point
@@ -1727,8 +1759,7 @@ see command `isearch-forward' for more information."
     (require 'conn-embark)
 
     (defcustom conn-embark-alt-default-action-overrides
-      '((defun . comment-defun)
-        (identifier . xref-find-references))
+      '((identifier . xref-find-references))
       "`embark-default-action-overrides' for alternate actions."
       :type '(alist :key-type (choice (symbol :tag "Type")
                                       (cons (symbol :tag "Type")
@@ -1937,6 +1968,12 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
+  (defun embark-start-of-defun-target-finder ()
+    (when-let ((bounds (bounds-of-thing-at-point 'defun))
+               ((= (point) (car bounds))))
+      (cons 'defun (cons (buffer-substring (car bounds) (cdr bounds))
+                         bounds))))
+
   (defun embark-act-persist ()
     (interactive)
     (require 'embark)
@@ -1985,7 +2022,6 @@ see command `isearch-forward' for more information."
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    (keymap-set embark-defun-map "M-RET" 'comment-or-uncomment-region)
     (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
@@ -2402,7 +2438,7 @@ see command `isearch-forward' for more information."
     :keymap corfu-map
     "C-h" 'corfu-info-documentation
     "M-h" 'corfu-info-location
-    "SPC" 'corfu-insert-separator
+    "M-TAB" 'corfu-insert-separator
     "TAB" 'corfu-insert
     "C-g" 'corfu-quit)
 
@@ -2416,7 +2452,7 @@ see command `isearch-forward' for more information."
       (completion-at-point)
       (corfu-insert-separator))
 
-    (keymap-set corfu-map "<remap> <completion-at-point>" #'corfu-sep-and-start)
+    (keymap-set corfu-mode-map "<remap> <completion-at-point>" #'corfu-sep-and-start)
 
     (with-eval-after-load 'conn
       (defun my-corfu-off ()
@@ -3330,11 +3366,7 @@ see command `isearch-forward' for more information."
       "e" 'projectile-run-eshell
       "d" 'projectile-dired
       "D" 'projectile-find-dir
-      "j" 'projectile-run-gdb))
-
-  (with-eval-after-load 'conn
-    (keymap-set (conn-get-mode-map 'conn-state 'projectile-mode)
-                "," 'projectile-command-map)))
+      "j" 'projectile-run-gdb)))
 
 ;;;; smart parens
 
