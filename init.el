@@ -366,7 +366,8 @@
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
-  (setq org-refile-use-outline-path nil
+  (setq org-highlight-latex-and-related '(native script entities)
+        org-refile-use-outline-path nil
         org-outline-path-complete-in-steps nil
         org-agenda-start-on-weekday nil
         org-preview-latex-image-directory "/tmp/ltximg/"
@@ -1386,8 +1387,7 @@ see command `isearch-forward' for more information."
       "C-y u" 'isearchp-yank-word-or-char-backward
       "C-y i" 'isearchp-yank-line-backward
       "C-y k" 'isearchp-yank-line-forward
-      "C-y l" 'isearchp-yank-char
-      "M-o" 'isearchp-open-recursive-edit)
+      "C-y l" 'isearchp-yank-char)
 
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
@@ -1513,6 +1513,42 @@ see command `isearch-forward' for more information."
             (funcall
              filter-action
              '("~[narrow]"     conn-isearch-in-narrow-p     "~[NARROW]")))
+          :transient transient--do-return)]
+
+        [("t" " [thing]"
+          (lambda (filter-action)
+            (interactive (list (oref transient-current-prefix scope)))
+            (let* ((regions
+                    (catch 'regions
+                      (with-isearch-suspended
+                       (throw 'regions
+                              (cdr (conn-read-thing-region "Thing Mover"))))))
+                   (regions (or (conn--merge-regions (cdr regions) t)
+                                regions))
+                   (in-regions-p (lambda (beg end)
+                                   (cl-loop for (nbeg . nend) in regions
+                                            thereis (<= nbeg beg end nend)))))
+              (funcall
+               filter-action
+               `("[thing]"     ,in-regions-p     "[THING]"))))
+          :transient transient--do-return)
+         ("T" " ~[thing]"
+          (lambda (filter-action)
+            (interactive (list (oref transient-current-prefix scope)))
+            (let* ((regions
+                    (catch 'regions
+                      (with-isearch-suspended
+                       (throw 'regions
+                              (cdr (conn-read-thing-region "Thing Mover"))))))
+                   (regions (or (conn--merge-regions (cdr regions) t)
+                                regions))
+                   (not-in-regions-p (lambda (beg end)
+                                       (cl-loop for (nbeg . nend) in regions
+                                                never (or (<= nbeg beg nend)
+                                                          (<= nbeg end nend))))))
+              (funcall
+               filter-action
+               `("~[thing]"     ,not-in-regions-p     "~[THING]"))))
           :transient transient--do-return)]]
       (interactive (list nil))
       (transient-setup 'my-isearch+-do-filter nil nil :scope filter-action))
@@ -1899,11 +1935,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
-
-(elpaca (magit-todos :host github :repo "alphapapa/magit-todos")
-  (with-eval-after-load 'magit
-    (require 'magit-todos)
-    (magit-todos-mode 1)))
 
 
 ;;;; flycheck
