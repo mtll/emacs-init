@@ -1387,8 +1387,7 @@ see command `isearch-forward' for more information."
       "C-y i" 'isearchp-yank-line-backward
       "C-y k" 'isearchp-yank-line-forward
       "C-y l" 'isearchp-yank-char
-      "M-o"   isearchp-filter-map
-      "M-."   'conn-isearch-in-dot-toggle)
+      "M-o" 'isearchp-open-recursive-edit)
 
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
