@@ -1681,8 +1681,7 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
-  ;; (keymap-set conn-state-map "B" 'ibuffer)
-  (keymap-set conn-state-map "M-;" 'conn-wincontrol-one-command)
+  (keymap-set conn-state-map "B" 'my-ibuffer-maybe-project)
   (keymap-set conn-state-map "C-M-;" 'conn-wincontrol-one-command)
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
@@ -3380,16 +3379,16 @@ see command `isearch-forward' for more information."
         projectile-dynamic-mode-line nil)
   (run-with-timer 2 nil (lambda () (projectile-mode 1)))
 
+  (defun my-ibuffer-maybe-project (&optional all)
+    (interactive "P")
+    (require 'projectile)
+    (if (or all (not (cdr (project-current))))
+        (ibuffer)
+      (projectile-ibuffer nil)))
+
   (with-eval-after-load 'projectile
     (keymap-global-unset "C-x p")
     (keymap-global-set "C-x p" 'projectile-command-map)
-
-    (defun my-ibuffer-maybe-project (&optional all)
-      (interactive "P")
-      (if (or all (not (projectile-project-root)))
-          (ibuffer)
-        (projectile-ibuffer nil)))
-    (keymap-set projectile-mode-map "<remap> <ibuffer>" 'my-ibuffer-maybe-project)
 
     (define-keymap
       :keymap projectile-command-map
@@ -3414,6 +3413,105 @@ see command `isearch-forward' for more information."
   (smartparens-global-mode 1)
   (show-smartparens-global-mode 1)
 
+  ;; (defun conn-progressive-read (prompt collection)
+  ;;   (let ((so-far "")
+  ;;         (narrowed collection)
+  ;;         (prompt (propertize (concat prompt ": ")
+  ;;                             'face 'minibuffer-prompt))
+  ;;         (display "")
+  ;;         (next nil)
+  ;;         (next-char nil))
+  ;;     (while (not (length= narrowed 1))
+  ;;       (while (not next)
+  ;;         (setq display (cl-loop with display = ""
+  ;;                                for i from 0
+  ;;                                for item in narrowed
+  ;;                                while (length< display 100)
+  ;;                                do (setq display
+  ;;                                         (concat display item
+  ;;                                                 (propertize " | " 'face 'shadow)))
+  ;;                                finally return
+  ;;                                (concat (propertize "{" 'face 'minibuffer-prompt)
+  ;;                                        (substring display 0 -3)
+  ;;                                        (when (length> narrowed i)
+  ;;                                          (propertize "..." 'face 'minibuffer-prompt))
+  ;;                                        (propertize "}" 'face 'minibuffer-prompt))))
+  ;;         (setq next-char (read-char (concat prompt so-far "  " display) t))
+  ;;         (setq next (cl-loop for item in narrowed
+  ;;                             when (eql (aref item (length so-far))
+  ;;                                       next-char)
+  ;;                             collect item)))
+  ;;       (setq narrowed next
+  ;;             next nil)
+  ;;       (setq so-far (concat so-far (string next-char))))
+  ;;     (car narrowed)))
+
+  (with-eval-after-load 'conn
+    (defun conn-progressive-read (prompt collection)
+      (let ((so-far "")
+            (narrowed (mapcar #'copy-sequence
+                              (vertico-sort-length-alpha
+                               (delete-dups (copy-sequence collection)))))
+            (prompt (propertize (concat prompt ": ")
+                                'face 'minibuffer-prompt))
+            (display "")
+            (next nil)
+            (next-char nil))
+        (unwind-protect
+            (while (not (length= narrowed 1))
+              (while (not next)
+                (setq display (cl-loop with display = ""
+                                       for i from 0 below 10
+                                       for item in narrowed
+                                       do (setq display (concat display item "\n"))
+                                       finally return display))
+                (posframe-show " *conn pair posframe*"
+                               :string display
+                               :left-fringe 0
+                               :right-fringe 0
+                               :background-color (face-attribute 'menu :background)
+                               :border-width conn-posframe-border-width
+                               :border-color conn-posframe-border-color
+                               :min-width 8)
+                (setq next-char (read-char (concat prompt so-far) t))
+                (setq next (cl-loop for item in narrowed
+                                    when (eql (aref item (length so-far))
+                                              next-char)
+                                    do (add-text-properties
+                                        0 (1+ (length so-far))
+                                        '(face completions-highlight)
+                                        item)
+                                    and collect item)))
+              (setq narrowed next
+                    next nil)
+              (setq so-far (concat so-far (string next-char))))
+          (posframe-hide " *conn pair posframe*"))
+        (car narrowed)))
+
+    (defun conn-sp-wrap-region ()
+      (interactive)
+      (activate-mark)
+      (unwind-protect
+          (sp-wrap-with-pair (conn-progressive-read
+                              "Pair"
+                              (mapcar (lambda (pair)
+                                        (or (plist-get pair :trigger)
+                                            (plist-get pair :open)))
+                                      (append
+                                       (alist-get t sp-pairs)
+                                       (alist-get major-mode sp-pairs
+                                                  nil nil
+                                                  (lambda (a b)
+                                                    (or (eq t a)
+                                                        (provided-mode-derived-p b a))))))))
+        (deactivate-mark)))
+
+    (define-keymap
+      :keymap (conn-get-mode-map 'conn-state 'smartparens-mode)
+      "M-s" 'sp-splice-sexp
+      "M-r" 'sp-splice-sexp-killing-around
+      "r i" 'conn-sp-wrap-region))
+
   (define-keymap
     :keymap smartparens-mode-map
     "C-M-f" 'sp-forward-sexp ;; navigation
@@ -3423,29 +3521,21 @@ see command `isearch-forward' for more information."
     "C-M-p" 'sp-backward-down-sexp
     "C-M-n" 'sp-up-sexp
     "C-M-w" 'sp-copy-sexp
-    "C-S-d" 'sp-beginning-of-sexp
-    "C-S-a" 'sp-end-of-sexp
-    "M-<up>" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-    "M-<down>" 'sp-splice-sexp-killing-forward
-    "M-l" 'sp-splice-sexp
-    "M-r" 'sp-splice-sexp-killing-around
-    "M-(" 'sp-wrap-round
-    "C-)" 'sp-forward-slurp-sexp ;; barf/slurp
+    "C-S-i" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+    "C-S-k" 'sp-splice-sexp-killing-forward
+    ;; "M-(" 'sp-wrap-round
     "C-<right>" 'sp-forward-slurp-sexp
-    "C-}" 'sp-forward-barf-sexp
     "C-<left>" 'sp-forward-barf-sexp
-    "C-(" 'sp-backward-slurp-sexp
     "C-M-<left>" 'sp-backward-slurp-sexp
-    "C-{" 'sp-backward-barf-sexp
     "C-M-<right>" 'sp-backward-barf-sexp
     "C-S-l" 'sp-forward-slurp-sexp
     "C-S-o" 'sp-forward-barf-sexp
     "C-S-j" 'sp-backward-slurp-sexp
     "C-S-u" 'sp-backward-barf-sexp
-    "C-S-i" 'sp-convolute-sexp
-    "C-S-k" 'sp-join-sexps
-    "C-S-n" 'sp-backward-parallel-sexp
-    "C-S-m" 'sp-forward-parallel-sexp))
+    "C-<" 'sp-convolute-sexp
+    "C-S-h" 'sp-join-sexp
+    "C-S-n" 'sp-beginning-of-sexp
+    "C-S-m" 'sp-end-of-sexp))
 
 
 ;;;; puni
