@@ -160,6 +160,10 @@
 (keymap-global-set "C-x <" #'scroll-right)
 (keymap-global-set "C-x >" #'scroll-left)
 
+(keymap-global-set "M-l" 'downcase-dwim)
+(keymap-global-set "M-u" 'upcase-dwim)
+(keymap-global-set "M-c" 'capitalize-dwim)
+
 (keymap-global-set "C-x t u" #'tab-previous)
 (keymap-global-set "C-x t /" #'tab-undo)
 
@@ -3492,18 +3496,20 @@ see command `isearch-forward' for more information."
       (interactive)
       (activate-mark)
       (unwind-protect
-          (sp-wrap-with-pair (conn-progressive-read
-                              "Pair"
-                              (mapcar (lambda (pair)
-                                        (or (plist-get pair :trigger)
-                                            (plist-get pair :open)))
-                                      (append
-                                       (alist-get t sp-pairs)
-                                       (alist-get major-mode sp-pairs
-                                                  nil nil
-                                                  (lambda (a b)
-                                                    (or (eq t a)
-                                                        (provided-mode-derived-p b a))))))))
+          (save-excursion
+            (sp-wrap-with-pair
+             (conn-progressive-read
+              "Pair"
+              (mapcar
+               (pcase-lambda ((map :trigger :open))
+                 (or trigger open))
+               (append
+                (alist-get t sp-pairs)
+                (alist-get major-mode sp-pairs
+                           nil nil
+                           (lambda (a b)
+                             (or (eq t a)
+                                 (provided-mode-derived-p b a)))))))))
         (deactivate-mark)))
 
     (define-keymap
@@ -3514,8 +3520,20 @@ see command `isearch-forward' for more information."
 
   (define-keymap
     :keymap smartparens-mode-map
-    "C-M-f" 'sp-forward-sexp ;; navigation
-    "C-M-b" 'sp-backward-sexp
+    "C-M-f" `(menu-item
+              "forward-sexp"
+              sp-forward-sexp
+              :filter ,(lambda (&rest _)
+                         (if treesit-primary-parser
+                             'forward-sexp
+                           'sp-forward-sexp)))
+    "C-M-b" `(menu-item
+              "forward-sexp"
+              sp-backward-sexp
+              :filter ,(lambda (&rest _)
+                         (if treesit-primary-parser
+                             'backward-sexp
+                           'sp-backward-sexp)))
     "C-M-u" 'sp-backward-up-sexp
     "C-M-d" 'sp-down-sexp
     "C-M-p" 'sp-backward-down-sexp
