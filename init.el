@@ -2,7 +2,8 @@
 
 ;;; Elpaca
 
-(defvar elpaca-installer-version 0.9)
+(defvar elpaca-core-date '(20250223))
+(defvar elpaca-installer-version 0.10)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
@@ -17,7 +18,7 @@
   (add-to-list 'load-path (if (file-exists-p build) build repo))
   (unless (file-exists-p repo)
     (make-directory repo t)
-    (when (< emacs-major-version 28) (require 'subr-x))
+    (when (<= emacs-major-version 28) (require 'subr-x))
     (condition-case-unless-debug err
         (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
                   ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
@@ -144,8 +145,6 @@
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
 (keymap-global-set "C-M-<return>"#'default-indent-new-line)
 (keymap-global-set "S-<backspace>" #'cycle-spacing)
-(keymap-global-set "M-N" #'tab-bar-switch-to-next-tab)
-(keymap-global-set "M-P" #'tab-bar-switch-to-prev-tab)
 (keymap-global-set "C-j" #'join-line)
 (keymap-global-set "C-:" #'read-only-mode)
 (keymap-global-set "C-x C-b" #'ibuffer)
@@ -1949,9 +1948,9 @@ see command `isearch-forward' for more information."
 ;;;; cape
 
 (elpaca cape
-  (keymap-global-set "M-L" #'cape-line)
-  (keymap-global-set "M-K" #'cape-dict)
-  (keymap-global-set "C-M-h" #'cape-dabbrev)
+  ;; (keymap-global-set "M-L" #'cape-line)
+  ;; (keymap-global-set "M-K" #'cape-dict)
+  ;; (keymap-global-set "C-M-h" #'cape-dabbrev)
   ;; M-h C-M-j M-u M-n M-p
 
   (cl-pushnew #'cape-file completion-at-point-functions)
@@ -3539,8 +3538,8 @@ see command `isearch-forward' for more information."
     "C-M-p" 'sp-backward-down-sexp
     "C-M-n" 'sp-up-sexp
     "C-M-w" 'sp-copy-sexp
-    "C-S-i" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-    "C-S-k" 'sp-splice-sexp-killing-forward
+    "M-I" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+    "M-K" 'sp-splice-sexp-killing-forward
     ;; "M-(" 'sp-wrap-round
     "C-<right>" 'sp-forward-slurp-sexp
     "C-<left>" 'sp-forward-barf-sexp
@@ -3552,8 +3551,8 @@ see command `isearch-forward' for more information."
     "C-S-u" 'sp-backward-barf-sexp
     "C-<" 'sp-convolute-sexp
     "C-S-h" 'sp-join-sexp
-    "C-S-n" 'sp-beginning-of-sexp
-    "C-S-m" 'sp-end-of-sexp))
+    "M-N" 'sp-beginning-of-sexp
+    "M-M" 'sp-end-of-sexp))
 
 
 ;;;; puni
@@ -3664,7 +3663,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'yasnippet
     (define-keymap
       :keymap yas-minor-mode-map
-      "M-I" 'consult-yasnippet)))
+      "M-P" 'consult-yasnippet)))
 
 ;; (elpaca yasnippet-snippets)
 
