@@ -388,6 +388,11 @@
   (keymap-global-set "C-c l" 'org-insert-link-global)
   (keymap-global-set "C-c a" 'org-agenda)
 
+  (with-eval-after-load 'conn
+    (keymap-set org-mode-map "C-c b" (conn-remap-key (key-parse "C-c C-b")))
+    (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
+    (keymap-set org-mode-map "C-c c" (conn-remap-key (key-parse "C-c C-c"))))
+
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   ;; (add-hook 'org-mode-hook 'abbrev-mode)
 
@@ -1630,12 +1635,6 @@ see command `isearch-forward' for more information."
 
   (setq-default cursor-type '(hbar . 5))
 
-  ;; (defun conn-mark-emacs-state-hook (state)
-  ;;   (when (and (eq state 'conn-emacs-state)
-  ;;              (not (use-region-p)))
-  ;;     (conn--push-ephemeral-mark (point))))
-  ;; (add-hook 'conn-entry-function 'conn-mark-emacs-state-hook)
-
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
     (add-mode-abbrev (or arg 0)))
@@ -1651,7 +1650,8 @@ see command `isearch-forward' for more information."
   (add-to-list 'conn-buffer-default-state-alist
                (cons "\\*Edit Macro\\*" 'conn-state))
   (add-to-list 'conn-buffer-default-state-alist
-               (cons (lambda (buffer &rest _args) (bound-and-true-p org-capture-mode))
+               (cons (lambda (buffer &rest _args)
+                       (bound-and-true-p org-capture-mode))
                      'conn-state))
 
   (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
@@ -1669,7 +1669,6 @@ see command `isearch-forward' for more information."
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
     "M-'" 'conn-toggle-mark-command
-    "C-=" 'balance-windows
     "C-." 'conn-dispatch-on-things
     "C-<backspace>" 'kill-whole-line
     "S-<return>" 'conn-open-line-and-indent
@@ -3538,8 +3537,8 @@ see command `isearch-forward' for more information."
     "C-M-p" 'sp-backward-down-sexp
     "C-M-n" 'sp-up-sexp
     "C-M-w" 'sp-copy-sexp
-    "M-I" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-    "M-K" 'sp-splice-sexp-killing-forward
+    "M-J" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+    "M-L" 'sp-splice-sexp-killing-forward
     ;; "M-(" 'sp-wrap-round
     "C-<right>" 'sp-forward-slurp-sexp
     "C-<left>" 'sp-forward-barf-sexp
