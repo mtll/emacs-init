@@ -48,7 +48,8 @@
 ;;;; emacs
 
 ;; help-window-select t
-(setq comment-empty-lines 'eol
+(setq register-use-preview nil
+      comment-empty-lines 'eol
       vc-display-status 'no-backend
       comint-prompt-read-only t
       comint-buffer-maximum-size 2048
@@ -388,15 +389,17 @@
   (keymap-global-set "C-c l" 'org-insert-link-global)
   (keymap-global-set "C-c a" 'org-agenda)
 
-  (with-eval-after-load 'conn
-    (keymap-set org-mode-map "C-c b" (conn-remap-key (key-parse "C-c C-b")))
-    (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
-    (keymap-set org-mode-map "C-c c" (conn-remap-key (key-parse "C-c C-c"))))
-
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   ;; (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
+    (with-eval-after-load 'conn
+      (keymap-set org-mode-map "C-c b" (conn-remap-key (key-parse "C-c C-v")))
+      (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
+      (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
+      (keymap-unset org-mode-map "C-j")
+      (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "TAB" 'org-cycle))
+
     ;; Increase preview width
     (plist-put org-latex-preview-appearance-options
                :page-width 0.8)
@@ -616,6 +619,11 @@
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 (keymap-set isearch-mode-map "C-z"   'transient-resume)
+
+(defun my-isearch-yank-region ()
+  (interactive)
+  (isearch-yank-internal (lambda () (mark t))))
+(keymap-set isearch-mode-map "M-Y" 'my-isearch-yank-region)
 
 (defun isearch-kill-region (&optional arg)
   (interactive "P")
@@ -1395,7 +1403,8 @@ see command `isearch-forward' for more information."
       "C-y u" 'isearchp-yank-word-or-char-backward
       "C-y i" 'isearchp-yank-line-backward
       "C-y k" 'isearchp-yank-line-forward
-      "C-y l" 'isearchp-yank-char)
+      "C-y l" 'isearchp-yank-char
+      "C-y r" 'my-isearch-yank-region)
 
     (defun my-supress-in-macro () executing-kbd-macro)
     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
@@ -1660,7 +1669,6 @@ see command `isearch-forward' for more information."
     :keymap conn-global-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
-    "C-M-y" 'conn-yank-lines-as-rectangle
     "M-\\"  'conn-kapply-prefix
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol
@@ -1688,6 +1696,7 @@ see command `isearch-forward' for more information."
   (keymap-set conn-state-map "*" 'calc-dispatch)
   (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
   (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
+  (keymap-global-set "C-c c" (conn-remap-key (key-parse "C-c C-c")))
 
   (dolist (state '(conn-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -3536,20 +3545,17 @@ see command `isearch-forward' for more information."
     "C-M-d" 'sp-down-sexp
     "C-M-p" 'sp-backward-down-sexp
     "C-M-n" 'sp-up-sexp
-    "C-M-w" 'sp-copy-sexp
-    "M-J" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-    "M-L" 'sp-splice-sexp-killing-forward
-    ;; "M-(" 'sp-wrap-round
-    "C-<right>" 'sp-forward-slurp-sexp
-    "C-<left>" 'sp-forward-barf-sexp
-    "C-M-<left>" 'sp-backward-slurp-sexp
-    "C-M-<right>" 'sp-backward-barf-sexp
+    "M-C" 'sp-copy-sexp
+    "M-U" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+    "M-O" 'sp-splice-sexp-killing-forward
+    "M-K" 'sp-raise-sexp
+    "M-I" 'sp-splice-sexp
     "C-S-l" 'sp-forward-slurp-sexp
     "C-S-o" 'sp-forward-barf-sexp
     "C-S-j" 'sp-backward-slurp-sexp
     "C-S-u" 'sp-backward-barf-sexp
     "C-<" 'sp-convolute-sexp
-    "C-S-h" 'sp-join-sexp
+    "M-J" 'sp-join-sexp
     "M-N" 'sp-beginning-of-sexp
     "M-M" 'sp-end-of-sexp))
 
