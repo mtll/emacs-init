@@ -3330,8 +3330,9 @@ see command `isearch-forward' for more information."
 
     (define-keymap
       :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
+      "<remap> <ispell-word>" 'jinx-correct-nearest
       "$" 'jinx-correct-nearest
-      "C-$" 'jinx-correct-all)
+      "b $" 'jinx-correct-all)
 
     (defun my-jinx-dispatch-check (window pt _thing)
       (interactive)
