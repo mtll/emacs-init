@@ -1315,12 +1315,13 @@ see command `isearch-forward' for more information."
 
     (load-theme 'modus-operandi-tinted t)
 
-    (custom-set-faces
-     `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
-     `(transient-argument ((t :inherit font-lock-string-face :weight bold
-                              :foreground "#930c93" :background "#f4caf4")))
-     `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
-     `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))))
+    ;; (custom-set-faces
+    ;;  `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+    ;;  `(transient-argument ((t :inherit font-lock-string-face :weight bold
+    ;;                           :foreground "#930c93" :background "#f4caf4")))
+    ;;  `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
+    ;;  `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))
+    ))
 
 (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
                               "modus-themes-subtle-red"
@@ -1662,8 +1663,6 @@ see command `isearch-forward' for more information."
                (cons (lambda (buffer &rest _args)
                        (bound-and-true-p org-capture-mode))
                      'conn-state))
-
-  (cl-pushnew 'conn-emacs-state conn-ephemeral-mark-states)
 
   (define-keymap
     :keymap conn-global-map
@@ -3547,30 +3546,18 @@ see command `isearch-forward' for more information."
     "C-M-p" 'sp-backward-down-sexp
     "C-M-n" 'sp-up-sexp
     "M-C" 'sp-copy-sexp
-    "M-U" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-    "M-O" 'sp-splice-sexp-killing-forward
+    "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+    "M-)" 'sp-splice-sexp-killing-forward
     "M-K" 'sp-raise-sexp
     "M-I" 'sp-splice-sexp
-    "C-S-l" 'sp-forward-slurp-sexp
-    "C-S-o" 'sp-forward-barf-sexp
-    "C-S-j" 'sp-backward-slurp-sexp
-    "C-S-u" 'sp-backward-barf-sexp
-    "C-<" 'sp-convolute-sexp
-    "M-J" 'sp-join-sexp
+    "M-J" 'sp-backward-slurp-sexp
+    "M-L" 'sp-forward-slurp-sexp
+    "M-O" 'sp-forward-barf-sexp
+    "M-U" 'sp-backward-barf-sexp
+    "M-B" 'sp-convolute-sexp
+    "M-H" 'sp-join-sexp
     "M-N" 'sp-beginning-of-sexp
     "M-M" 'sp-end-of-sexp))
-
-
-;;;; puni
-
-;; (elpaca puni
-;;   (add-hook 'prog-mode-hook #'puni-mode)
-;;   (keymap-unset puni-mode-map "C-M-f")
-;;   (keymap-unset puni-mode-map "C-M-b")
-;;   (keymap-unset puni-mode-map "C-M-a")
-;;   (keymap-unset puni-mode-map "C-M-e")
-;;   (keymap-unset puni-mode-map "M-(")
-;;   (keymap-unset puni-mode-map "M-)"))
 
 
 ;;;; djvu

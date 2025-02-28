@@ -90,9 +90,11 @@
   (load-theme 'modus-operandi-tinted t)
 
   (custom-set-faces
-   `(fringe ((t :inherit default)))
-   `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
-   `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
-   `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900")))))
+   ;; `(fringe ((t :inherit default)))
+   ;; `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+   ;; `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
+   `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900")))
+   )
+  )
 
 (provide 'early-init)
