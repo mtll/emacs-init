@@ -398,7 +398,7 @@
       (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
-      (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "TAB" 'org-cycle))
+      (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle))
 
     ;; Increase preview width
     (plist-put org-latex-preview-appearance-options
@@ -1259,7 +1259,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn
     (define-keymap
-      :keymap (conn-get-mode-map 'conn-state 'org-cdlatex-mode)
+      :keymap (conn-get-mode-map 'conn-command-state 'org-cdlatex-mode)
       "'" 'org-cdlatex-math-modify)))
 
 
@@ -1359,7 +1359,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c S" 'crux-visit-shell-buffer)
 
   (with-eval-after-load 'conn
-    (keymap-set conn-state-map "S" 'crux-visit-shell-buffer)
+    (keymap-set conn-command-state-map "S" 'crux-visit-shell-buffer)
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
@@ -1638,12 +1638,7 @@ see command `isearch-forward' for more information."
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
   (setq conn-wincontrol-initial-help nil
-        conn-state-cursor-type 'box
-        conn-emacs-state-cursor-type '(hbar . 5)
-        conn-mark-idle-timer 0.05
         conn-read-string-timeout 0.35)
-
-  (setq-default cursor-type '(hbar . 5))
 
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
@@ -1658,11 +1653,11 @@ see command `isearch-forward' for more information."
   (add-to-list 'conn-buffer-default-state-alist
                (cons "COMMIT_EDITMSG.*" 'conn-emacs-state))
   (add-to-list 'conn-buffer-default-state-alist
-               (cons "\\*Edit Macro\\*" 'conn-state))
+               (cons "\\*Edit Macro\\*" 'conn-command-state))
   (add-to-list 'conn-buffer-default-state-alist
                (cons (lambda (buffer &rest _args)
                        (bound-and-true-p org-capture-mode))
-                     'conn-state))
+                     'conn-command-state))
 
   (define-keymap
     :keymap conn-global-map
@@ -1685,19 +1680,19 @@ see command `isearch-forward' for more information."
     "C-SPC" 'conn-set-mark-command
     "M-SPC" 'conn-toggle-mark-command)
 
-  (keymap-set conn-emacs-state-map "<f8>" 'conn-state)
-  (keymap-set conn-org-edit-state-map "<f8>" 'conn-state)
-  (keymap-set (conn-get-mode-map 'conn-state 'org-mode) "<f9>" 'conn-org-edit-state)
+  (keymap-set conn-emacs-state-map "<f8>" 'conn-command-state)
+  (keymap-set conn-org-edit-state-map "<f8>" 'conn-command-state)
+  (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-set conn-state-map "B" 'my-ibuffer-maybe-project)
-  (keymap-set conn-state-map "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-set conn-state-map "*" 'calc-dispatch)
-  (keymap-set conn-state-map "!" 'my-add-mode-abbrev)
-  (keymap-set conn-state-map "@" 'inverse-add-mode-abbrev)
+  (keymap-set conn-command-state-map "B" 'my-ibuffer-maybe-project)
+  (keymap-set conn-command-state-map "C-M-;" 'conn-wincontrol-one-command)
+  (keymap-set conn-command-state-map "*" 'calc-dispatch)
+  (keymap-set conn-command-state-map "!" 'my-add-mode-abbrev)
+  (keymap-set conn-command-state-map "@" 'inverse-add-mode-abbrev)
   (keymap-global-set "C-c c" (conn-remap-key (key-parse "C-c C-c")))
 
-  (dolist (state '(conn-state conn-emacs-state))
+  (dolist (state '(conn-command-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
                 "<escape>" 'exit-recursive-edit))
 
@@ -1736,9 +1731,9 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
-  ;; (keymap-set conn-state-map "," 'embark-act)
-  (keymap-set conn-state-map "TAB" 'conn-embark-dwim-either)
-  ;; (keymap-set conn-state-map "<tab>" 'conn-embark-dwim-either)
+  ;; (keymap-set conn-command-state-map "," 'embark-act)
+  (keymap-set conn-command-state-map "TAB" 'conn-embark-dwim-either)
+  ;; (keymap-set conn-command-state-map "<tab>" 'conn-embark-dwim-either)
   (keymap-set conn-org-edit-state-map "TAB" 'conn-embark-dwim-either)
   (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
@@ -1895,11 +1890,11 @@ see command `isearch-forward' for more information."
                      :files ("extensions/conn-expreg.el"))
   (cl-pushnew 'conn-expreg-expansions conn-expansion-functions))
 
-(elpaca (conn-calc :host github
-                   :repo "mtll/conn"
-                   :files ("extensions/conn-calc.el"))
-  (with-eval-after-load 'calc
-    (require 'conn-calc)))
+(elpaca (conn-smartparens :host github
+                          :repo "mtll/conn"
+                          :files ("extensions/conn-smartparens.el"))
+  (with-eval-after-load 'smartparens
+    (require 'conn-smartparens)))
 
 (when (>= emacs-major-version 30)
   (elpaca (conn-treesit :host github
@@ -2914,6 +2909,8 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-projectile
   (with-eval-after-load 'projectile
+    (with-eval-after-load 'consult
+      (consult-customize consult-projectile :preview-key "C-o"))
     (keymap-global-set "C-c j" 'consult-projectile)))
 
 
@@ -2940,8 +2937,7 @@ see command `isearch-forward' for more information."
 
   (defun vertico-buffer-setup-ad ()
     (with-selected-window (active-minibuffer-window)
-      (setq-local mode-line-format nil
-                  header-line-format nil)))
+      (setq-local header-line-format nil)))
   (advice-add 'vertico-buffer--setup :after #'vertico-buffer-setup-ad)
 
   (defun vertico-buffer--redisplay-ad (win)
@@ -3010,8 +3006,7 @@ see command `isearch-forward' for more information."
     "C-M-<return>" #'vertico-exit-input
     "M-j" #'vertico-quick-exit
     "C-j" #'vertico-exit-input
-    "C-M-j" #'vertico-quick-jump
-    "C-w" #'my-vertico-copy-or-kill)
+    "C-M-j" #'vertico-quick-jump)
 
   (defun my-vertico-copy-or-kill (beg end)
     (interactive (list (region-beginning) (region-end)))
@@ -3328,7 +3323,7 @@ see command `isearch-forward' for more information."
                         (nerd-icons-mdicon "nf-md-spellcheck"))))
 
     (define-keymap
-      :keymap (conn-get-mode-map 'conn-state 'jinx-mode)
+      :keymap (conn-get-mode-map 'conn-command-state 'jinx-mode)
       "<remap> <ispell-word>" 'jinx-correct-nearest
       "$" 'jinx-correct-nearest
       "b $" 'jinx-correct-all)
@@ -3520,7 +3515,7 @@ see command `isearch-forward' for more information."
         (deactivate-mark)))
 
     (define-keymap
-      :keymap (conn-get-mode-map 'conn-state 'smartparens-mode)
+      :keymap (conn-get-mode-map 'conn-command-state 'smartparens-mode)
       "M-s" 'sp-splice-sexp
       "M-r" 'sp-splice-sexp-killing-around
       "r i" 'conn-sp-wrap-region))
