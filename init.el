@@ -306,8 +306,8 @@
   (pulse-momentary-highlight-one-line))
 (advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
 
-(require 'c-ts-mode)
-(setq c-ts-mode-indent-offset 4)
+(with-eval-after-load 'c-ts-mode
+  (setq c-ts-mode-indent-offset 4))
 
 ;;;; paren context
 
@@ -591,23 +591,22 @@
 
 ;;;; line numbers
 
-(require 'display-line-numbers)
+(with-eval-after-load 'display-line-numbers
+  (face-spec-set 'line-number-current-line '((t :background "#ccdee3")))
 
-(face-spec-set 'line-number-current-line '((t :background "#ccdee3")))
-
-(setq-default display-line-numbers-width 2)
-(setq display-line-numbers-width-start nil
-      display-line-numbers-grow-only nil
-      display-line-numbers-type 'visual
-      display-line-numbers-current-absolute nil
-      display-line-numbers-major-tick 0)
+  (setq-default display-line-numbers-width 2)
+  (setq display-line-numbers-width-start nil
+        display-line-numbers-grow-only nil
+        display-line-numbers-type 'visual
+        display-line-numbers-current-absolute nil
+        display-line-numbers-major-tick 0))
 
 
 ;;;; dictionary
 
-(require 'dictionary)
-(setopt dictionary-server "dict.org")
-(keymap-global-set "C-c d" #'dictionary-lookup-definition)
+(with-eval-after-load 'dictionary
+  (setopt dictionary-server "dict.org")
+  (keymap-global-set "C-c d" #'dictionary-lookup-definition))
 
 
 ;;;; isearch
@@ -1015,16 +1014,6 @@ see command `isearch-forward' for more information."
   (diminish 'visual-line-mode))
 
 
-;;;; benchmark-init
-
-;; (elpaca benchmark-init
-;;   (require 'benchmark-init)
-;;   (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate))
-
-;; (profiler-start 'cpu+mem)
-;; (add-hook 'elpaca-after-init-hook (lambda () (profiler-stop) (profiler-report)))
-
-
 ;;;; expreg
 
 (elpaca (expreg :host github :repo "casouri/expreg"))
@@ -1391,8 +1380,9 @@ see command `isearch-forward' for more information."
                                        (?c . forward-char)
                                        (?l . forward-line)))
 
-  (with-eval-after-load 'isearch
-    (require 'isearch+)
+  (run-with-timer 2 nil (lambda () (require 'isearch+)))
+  (with-eval-after-load 'isearch+
+    ;; (require 'isearch+)
     (require 'transient)
 
     (setopt isearchp-initiate-edit-commands nil)
@@ -1630,7 +1620,6 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
-
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
 
@@ -1638,7 +1627,8 @@ see command `isearch-forward' for more information."
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
   (setq conn-wincontrol-initial-help nil
-        conn-read-string-timeout 0.35)
+        conn-read-string-timeout 0.35
+        conn-bind-isearch-mode-keys t)
 
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
@@ -1647,6 +1637,8 @@ see command `isearch-forward' for more information."
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
+
+  (conn-enable-global-bindings)
 
   (add-to-list 'conn-buffer-default-state-alist
                (cons "^\\*Echo.*" 'conn-emacs-state))
@@ -1660,7 +1652,7 @@ see command `isearch-forward' for more information."
                      'conn-command-state))
 
   (define-keymap
-    :keymap conn-global-map
+    :keymap conn-mode-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "M-\\"  'conn-kapply-prefix
@@ -1670,7 +1662,6 @@ see command `isearch-forward' for more information."
     "M-j" 'conn-open-line-and-indent
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
-    "M-'" 'conn-toggle-mark-command
     "C-." 'conn-dispatch-on-things
     "C-<backspace>" 'kill-whole-line
     "S-<return>" 'conn-open-line-and-indent
