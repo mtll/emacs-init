@@ -48,6 +48,7 @@
 ;;;; emacs
 
 ;; help-window-select t
+;; visual-order-cursor-movement t
 (setq register-use-preview nil
       comment-empty-lines 'eol
       vc-display-status 'no-backend
@@ -166,6 +167,8 @@
 
 (keymap-global-set "C-x t u" #'tab-previous)
 (keymap-global-set "C-x t /" #'tab-undo)
+
+(keymap-global-set "C-x C-b" #'scratch-buffer)
 
 (keymap-set tab-bar-switch-repeat-map "u" #'tab-previous)
 (keymap-unset tab-bar-switch-repeat-map "O")
@@ -354,10 +357,14 @@
   (save-excursion (hs-toggle-hiding)))
 
 (with-eval-after-load 'hideshow
+  (with-eval-after-load 'diminish
+    (diminish 'hs-minor-mode ""))
+
   (define-keymap
     :keymap hs-minor-mode-map
     "C-," 'my-hs-toggle-hiding
     "M-s h h" #'hs-hide-all
+    "M-s h ," #'hs-hide-all
     "M-s h s" #'hs-show-all
     "M-s h v" #'hs-hide-level))
 
@@ -480,16 +487,14 @@
 ;;;; Abbrev
 
 (setq abbrev-all-caps t
-      hippie-expand-try-functions-list '( try-complete-file-name-partially
-                                          try-complete-file-name
-                                          try-expand-all-abbrevs
-                                          ;; try-expand-list
-                                          ;; try-expand-line
-                                          try-expand-dabbrev
-                                          try-expand-dabbrev-all-buffers
-                                          try-expand-dabbrev-from-kill
-                                          try-complete-lisp-symbol-partially
-                                          try-complete-lisp-symbol))
+      hippie-expand-try-functions-list '( ;; try-complete-file-name-partially
+                                         ;; try-complete-file-name
+                                         try-expand-all-abbrevs
+                                         ;; try-expand-list
+                                         ;; try-expand-line
+                                         try-expand-dabbrev
+                                         try-expand-dabbrev-all-buffers
+                                         try-expand-dabbrev-from-kill))
 
 (keymap-global-set "M-h" 'hippie-expand)
 
@@ -1112,6 +1117,7 @@ see command `isearch-forward' for more information."
 
 (elpaca lsp-mode
   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
+  (add-hook 'lsp-mode-hook 'lsp-modeline-code-actions-mode)
 
   (setq lsp-keymap-prefix "C-c s"
         lsp-eldoc-render-all nil
@@ -1348,7 +1354,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c S" 'crux-visit-shell-buffer)
 
   (with-eval-after-load 'conn
-    (keymap-set conn-command-state-map "S" 'crux-visit-shell-buffer)
+    (keymap-set (conn-get-state-map 'conn-command-state) "S" 'crux-visit-shell-buffer)
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
@@ -1651,6 +1657,8 @@ see command `isearch-forward' for more information."
                        (bound-and-true-p org-capture-mode))
                      'conn-command-state))
 
+  (keymap-set conn-wincontrol-map "`" 'quit-window)
+
   (define-keymap
     :keymap conn-mode-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
@@ -1671,20 +1679,23 @@ see command `isearch-forward' for more information."
     "C-SPC" 'conn-set-mark-command
     "M-SPC" 'conn-toggle-mark-command)
 
-  (keymap-set conn-emacs-state-map "<f8>" 'conn-command-state)
-  (keymap-set conn-org-edit-state-map "<f8>" 'conn-command-state)
-  (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "<f9>" 'conn-org-edit-state)
-  (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
-  (keymap-set conn-emacs-state-map "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-set conn-command-state-map "B" 'my-ibuffer-maybe-project)
-  (keymap-set conn-command-state-map "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-set conn-command-state-map "*" 'calc-dispatch)
-  (keymap-set conn-command-state-map "!" 'my-add-mode-abbrev)
-  (keymap-set conn-command-state-map "@" 'inverse-add-mode-abbrev)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "<f8>" 'conn-command-state)
+  (keymap-set (conn-get-state-map 'conn-org-edit-state) "<f8>" 'conn-command-state)
+  ;; (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "," 'conn-org-edit-state)
+  ;; (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
+  (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command)
+  (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
+  (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
+  (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
+  (keymap-set (conn-get-state-map 'conn-command-state) "," 'conn-goto-char-2)
   (keymap-global-set "C-c c" (conn-remap-key (key-parse "C-c C-c")))
 
   (dolist (state '(conn-command-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
+                "<escape>" 'exit-recursive-edit)
+    (keymap-set (conn-get-mode-map state 'conn-dot-state)
                 "<escape>" 'exit-recursive-edit))
 
   (defun my-space-after-point (N)
@@ -1699,15 +1710,19 @@ see command `isearch-forward' for more information."
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
                        :files ("extensions/conn-posframe.el"))
-  (with-eval-after-load 'conn
-    (require 'posframe)
+  (letrec ((hook (lambda ()
+                   (require 'posframe)
+                   (remove-hook 'conn-wincontrol-mode-hook hook))))
+    (add-hook 'conn-wincontrol-mode-hook hook))
+  (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
 
 (elpaca (conn-nerd-icons :host github
                          :repo "mtll/conn"
                          :files ("extensions/conn-nerd-icons.el"))
   (with-eval-after-load 'nerd-icons
-    (require 'conn-nerd-icons)))
+    (with-eval-after-load 'conn
+      (conn-enable-nerd-icon-lighters))))
 
 (elpaca (conn-consult :host github
                       :repo "mtll/conn"
@@ -1722,10 +1737,10 @@ see command `isearch-forward' for more information."
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-embark.el"))
-  ;; (keymap-set conn-command-state-map "," 'embark-act)
-  (keymap-set conn-command-state-map "TAB" 'conn-embark-dwim-either)
-  ;; (keymap-set conn-command-state-map "<tab>" 'conn-embark-dwim-either)
-  (keymap-set conn-org-edit-state-map "TAB" 'conn-embark-dwim-either)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "," 'embark-act)
+  (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "<tab>" 'conn-embark-dwim-either)
+  (keymap-set (conn-get-state-map 'conn-org-edit-state) "TAB" 'conn-embark-dwim-either)
   (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
   (defun conn-embark-dwim-either (&optional arg)
@@ -1861,7 +1876,7 @@ see command `isearch-forward' for more information."
 
     (keymap-global-set "<mouse-2>" 'xref-go-back)
 
-    (keymap-set conn-emacs-state-map "C-TAB" 'embark-act)
+    (keymap-set (conn-get-state-map 'conn-emacs-state) "C-TAB" 'embark-act)
 
     (define-keymap
       :keymap embark-general-map
@@ -2431,7 +2446,7 @@ see command `isearch-forward' for more information."
         corfu-bar-width 0.4
         corfu-quit-at-boundary 'separator
         corfu-quit-no-match nil
-        corfu-preview-current nil
+        corfu-preview-current 'insert
         corfu-on-exact-match nil
         corfu-auto nil
         corfu-preselect 'valid
@@ -2466,6 +2481,8 @@ see command `isearch-forward' for more information."
     "M-TAB" 'corfu-insert-separator
     "TAB" 'corfu-insert
     "C-g" 'corfu-quit)
+
+  (keymap-unset corfu-map "RET" t)
 
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
@@ -3517,14 +3534,14 @@ see command `isearch-forward' for more information."
               "forward-sexp"
               sp-forward-sexp
               :filter ,(lambda (&rest _)
-                         (if treesit-primary-parser
+                         (if (bound-and-true-p treesit-primary-parser)
                              'forward-sexp
                            'sp-forward-sexp)))
     "C-M-b" `(menu-item
               "forward-sexp"
               sp-backward-sexp
               :filter ,(lambda (&rest _)
-                         (if treesit-primary-parser
+                         (if (bound-and-true-p treesit-primary-parser)
                              'backward-sexp
                            'sp-backward-sexp)))
     "C-M-u" 'sp-backward-up-sexp
