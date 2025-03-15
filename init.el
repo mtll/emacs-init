@@ -1730,7 +1730,8 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn
     (keymap-set conn-region-map "o" 'conn-consult-line-region)
     (keymap-set conn-region-map "O" 'conn-consult-line-multi-region)
-    (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)))
+    (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
+    (keymap-set conn-region-map "v" 'conn-consult-git-grep-region)))
 
 (elpaca (conn-embark :host github
                      :repo "mtll/conn"
@@ -2291,7 +2292,7 @@ see command `isearch-forward' for more information."
       "h" nil
       "h o" 'consult-line
       "h f" 'consult-find
-      "h G" 'consult-git-grep
+      "h v" 'consult-git-grep
       "h O" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
@@ -2302,7 +2303,7 @@ see command `isearch-forward' for more information."
       :keymap embark-general-map
       "h l" 'consult-line
       "h f" 'consult-find
-      "h G" 'consult-git-grep
+      "h v" 'consult-git-grep
       "h O" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
@@ -2713,7 +2714,7 @@ see command `isearch-forward' for more information."
     "t" 'consult-outline
     "o" 'consult-line
     "O" 'consult-line-multi
-    "G" 'consult-git-grep
+    "v" 'consult-git-grep
     "g" 'consult-ripgrep
     "f" 'consult-find
     "L" 'consult-locate
