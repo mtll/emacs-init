@@ -22,6 +22,12 @@
                 (add-hook 'focus-out-hook 'garbage-collect)))))
 (setq-default mode-line-format nil)
 
+;; (load (expand-file-name "elpaca/repos/benchmark-init-el/benchmark-init.el" user-emacs-directory) t  t)
+;; (load (expand-file-name "elpaca/repos/benchmark-init-el/benchmark-init-modes.el" user-emacs-directory) t  t)
+;; (require 'benchmark-init)
+;; (benchmark-init/activate)
+;; (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate)
+
 (setq-default ;; truncate-lines t
  ;; truncate-partial-width-windows nil
  window-resize-pixelwise nil)

@@ -49,7 +49,8 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq register-use-preview nil
+(setq visual-order-cursor-movement t
+      register-use-preview nil
       comment-empty-lines 'eol
       vc-display-status 'no-backend
       comint-prompt-read-only t
@@ -826,9 +827,10 @@ see command `isearch-forward' for more information."
 
 (keymap-global-set "C-c L" 'outline-minor-mode)
 (with-eval-after-load 'outline
-  (setf (alist-get 'outline-minor-mode minor-mode-alist)
-        (list (concat (nerd-icons-codicon "nf-cod-blank")
-                      (nerd-icons-mdicon "nf-md-file_tree_outline"))))
+  (with-eval-after-load 'nerd-icons
+    (setf (alist-get 'outline-minor-mode minor-mode-alist)
+          (list (concat (nerd-icons-codicon "nf-cod-blank")
+                        (nerd-icons-mdicon "nf-md-file_tree_outline")))))
   ;; (with-eval-after-load 'diminish
   ;;   (diminish 'outline-minor-mode " *"))
   )
@@ -1009,8 +1011,8 @@ see command `isearch-forward' for more information."
 
 ;;;; Compat
 
-(elpaca (compat :repo "emacs-compat/compat"
-                :host github))
+;; (elpaca (compat :repo "emacs-compat/compat"
+;;                 :host github))
 
 
 ;;;; Diminish
@@ -1035,10 +1037,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
 
   (push '(help-mode . helpful-mode) major-mode-remap-alist)
-
-  (with-eval-after-load 'helpful
-    ;; (fset 'helpful--source #'ignore)
-    )
 
   (with-eval-after-load 'embark
     (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
@@ -1941,7 +1939,8 @@ see command `isearch-forward' for more information."
 (elpaca llama)
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
-  (setq magit-format-file-function #'magit-format-file-nerd-icons)
+  (with-eval-after-load 'nerd-icons
+    (setq magit-format-file-function #'magit-format-file-nerd-icons))
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
@@ -3326,9 +3325,10 @@ see command `isearch-forward' for more information."
     ;; (with-eval-after-load 'diminish
     ;;   (diminish 'jinx-mode " $"))
 
-    (setf (alist-get 'jinx-mode minor-mode-alist)
-          (list (concat (nerd-icons-codicon "nf-cod-blank")
-                        (nerd-icons-mdicon "nf-md-spellcheck"))))
+    (with-eval-after-load 'nerd-icons
+      (setf (alist-get 'jinx-mode minor-mode-alist)
+            (list (concat (nerd-icons-codicon "nf-cod-blank")
+                          (nerd-icons-mdicon "nf-md-spellcheck")))))
 
     (define-keymap
       :keymap (conn-get-mode-map 'conn-command-state 'jinx-mode)
@@ -3577,9 +3577,10 @@ see command `isearch-forward' for more information."
 
 (elpaca aggressive-indent
   (with-eval-after-load 'aggressive-indent
-    (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
-          (list (concat (nerd-icons-codicon "nf-cod-blank")
-                        (nerd-icons-mdicon "nf-md-keyboard_tab")))))
+    (with-eval-after-load 'nerd-icons
+      (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
+            (list (concat (nerd-icons-codicon "nf-cod-blank")
+                          (nerd-icons-mdicon "nf-md-keyboard_tab"))))))
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
 
 
@@ -3634,9 +3635,10 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'yasnippet
     ;; Can't do this through diminish since it wants to append a
     ;; space.
-    (setf (alist-get 'yas-minor-mode minor-mode-alist)
-          (list (concat (nerd-icons-codicon "nf-cod-blank")
-                        (nerd-icons-codicon "nf-cod-symbol_snippet"))))
+    (with-eval-after-load 'nerd-icons
+      (setf (alist-get 'yas-minor-mode minor-mode-alist)
+            (list (concat (nerd-icons-codicon "nf-cod-blank")
+                          (nerd-icons-codicon "nf-cod-symbol_snippet")))))
 
     (setq yas-wrap-around-region t
           yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
