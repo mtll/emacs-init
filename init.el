@@ -49,7 +49,9 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq visual-order-cursor-movement t
+(setq next-line-add-newlines t
+      scroll-conservatively 0
+      visual-order-cursor-movement t
       register-use-preview nil
       comment-empty-lines 'eol
       vc-display-status 'no-backend
@@ -85,7 +87,7 @@
       read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       translate-upper-case-key-bindings nil
-      show-paren-context-when-offscreen nil
+      show-paren-context-when-offscreen 'child-frame
       sentence-end-double-space t
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
@@ -142,9 +144,9 @@
 (save-place-mode 1)
 
 (keymap-global-unset "C-x C-c")
-(keymap-global-unset "C-z")
 (keymap-global-unset "C-x C-z")
 
+(keymap-global-set "C-z" #'pop-to-mark-command)
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
 (keymap-global-set "C-M-<return>"#'default-indent-new-line)
 (keymap-global-set "S-<backspace>" #'cycle-spacing)
@@ -155,7 +157,7 @@
 (keymap-global-set "C-c c" #'compile)
 (keymap-global-set "C-S-w" #'delete-region)
 (keymap-global-set "<f2>" #'other-window)
-(keymap-global-set "C-z" #'transient-resume)
+(keymap-global-set "M-z" #'transient-resume)
 (keymap-global-set "C-h A" #'describe-char)
 (keymap-global-set "C-x j" #'dired-jump)
 (keymap-global-set "C-/" #'undo-only)
@@ -232,13 +234,13 @@
 
 (defun my-select-other-window-for-scrolling ()
   (interactive)
-  (when-let ((win (other-window-for-scrolling)))
+  (when-let* ((win (other-window-for-scrolling)))
     (select-window win)))
 (keymap-global-set "C-M-S-o" #'my-select-other-window-for-scrolling)
 
 (defun kill-frame-and-buffer ()
   (interactive)
-  (when-let ((buf (window-buffer (frame-root-window))))
+  (when-let* ((buf (window-buffer (frame-root-window))))
     (kill-buffer buf))
   (delete-frame))
 (keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
@@ -406,7 +408,8 @@
       (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
-      (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle))
+      (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle)
+      (keymap-set org-mode-map "C-c t" 'org-todo))
 
     ;; Increase preview width
     (plist-put org-latex-preview-appearance-options
@@ -564,6 +567,8 @@
 (add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
 
 (with-eval-after-load 'outline
+  (keymap-set (conn-get-mode-map 'conn-command-state 'outline-minor-mode)
+              "<conn-thing-map> h" 'outline-previous-visible-heading)
   (define-keymap
     :keymap outline-mode-prefix-map
     "@" 'outline-mark-subtree
@@ -623,7 +628,7 @@
 
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
-(keymap-set isearch-mode-map "C-z"   'transient-resume)
+(keymap-set isearch-mode-map "M-z"   'transient-resume)
 
 (defun my-isearch-yank-region ()
   (interactive)
@@ -715,7 +720,8 @@ see command `isearch-forward' for more information."
 
 ;;;; tab-bar-mode
 
-(setopt tab-bar-show nil
+(setopt tab-bar-define-keys nil
+        tab-bar-show nil
         tab-bar-tab-name-function 'tab-bar-tab-name-all)
 
 (setq tab-bar-new-tab-choice t)
@@ -838,7 +844,8 @@ see command `isearch-forward' for more information."
 
 ;;;; ibuffer
 
-(with-eval-after-load 'ibuffer)
+(with-eval-after-load 'ibuffer
+  (setq ibuffer-human-readable-size t))
 
 
 ;;;; dired
@@ -942,9 +949,10 @@ see command `isearch-forward' for more information."
 
 (elpaca transient
   (setq transient-enable-popup-navigation nil
-        transient-display-buffer-action '(display-buffer-below-selected
-                                          (dedicated . t)
-                                          (inhibit-same-window . t))
+        ;; transient-display-buffer-action
+        ;; '(display-buffer-below-selected
+        ;;   (dedicated . t)
+        ;;   (inhibit-same-window . t))
         transient-mode-line-format 'line)
 
   (with-eval-after-load 'ibuffer
@@ -1184,8 +1192,8 @@ see command `isearch-forward' for more information."
 ;;;; pdf-tools
 
 (elpaca pdf-tools
-  (with-eval-after-load 'org
-    (require 'pdf-tools))
+  ;; (with-eval-after-load 'org
+  ;;   (require 'pdf-tools))
 
   (with-eval-after-load 'pdf-tools
     (setq pdf-annot-latex-header "")
@@ -1220,6 +1228,18 @@ see command `isearch-forward' for more information."
   (add-hook 'latex-mode-hook #'cdlatex-mode)
   (add-hook 'org-mode-hook #'org-cdlatex-mode)
 
+  (defun my-cdlatex-tab-handler ()
+    (letrec ((tick (buffer-chars-modified-tick))
+             (beg (point))
+             (hook (lambda ()
+                     (when (and (eq tick (buffer-chars-modified-tick))
+                                (/= (point) beg))
+                       (conn--push-ephemeral-mark beg))
+                     (remove-hook 'post-command-hook hook))))
+      (add-hook 'post-command-hook hook)
+      nil))
+  (add-hook 'cdlatex-tab-hook 'my-cdlatex-tab-handler 91)
+
   (with-eval-after-load 'cdlatex
     (setq
      cdlatex-math-symbol-alist '((?. ("\\cdot" "\\ldot"))
@@ -1251,9 +1271,10 @@ see command `isearch-forward' for more information."
     )
 
   (with-eval-after-load 'conn
-    (define-keymap
-      :keymap (conn-get-mode-map 'conn-command-state 'org-cdlatex-mode)
-      "'" 'org-cdlatex-math-modify)))
+    (with-eval-after-load 'org
+      (define-keymap
+        :keymap (conn-get-mode-map 'conn-command-state 'org-cdlatex-mode)
+        "'" 'org-cdlatex-math-modify))))
 
 
 ;;;; math-delimiters
@@ -1373,20 +1394,19 @@ see command `isearch-forward' for more information."
 (elpaca (isearch+ :host github
                   :repo "emacsmirror/isearch-plus"
                   :main "isearch+.el")
-  (setq isearchp-dimming-color "#cddfcc"
-        isearchp-lazy-dim-filter-failures-flag nil
-        isearchp-restrict-to-region-flag nil
-        isearchp-deactivate-region-flag nil
-        isearchp-movement-unit-alist '((?w . forward-word)
-                                       (?s . forward-sexp)
-                                       (?i . forward-list)
-                                       (?s . forward-sentence)
-                                       (?c . forward-char)
-                                       (?l . forward-line)))
-
   (run-with-timer 2 nil (lambda () (require 'isearch+)))
   (with-eval-after-load 'isearch+
     ;; (require 'isearch+)
+    (setq isearchp-dimming-color "#cddfcc"
+          isearchp-lazy-dim-filter-failures-flag nil
+          isearchp-restrict-to-region-flag nil
+          isearchp-deactivate-region-flag nil
+          isearchp-movement-unit-alist '((?w . forward-word)
+                                         (?s . forward-sexp)
+                                         (?i . forward-list)
+                                         (?s . forward-sentence)
+                                         (?c . forward-char)
+                                         (?l . forward-line)))
     (require 'transient)
 
     (setopt isearchp-initiate-edit-commands nil)
@@ -1644,16 +1664,13 @@ see command `isearch-forward' for more information."
 
   (conn-enable-global-bindings)
 
-  (add-to-list 'conn-buffer-default-state-alist
-               (cons "^\\*Echo.*" 'conn-emacs-state))
-  (add-to-list 'conn-buffer-default-state-alist
-               (cons "COMMIT_EDITMSG.*" 'conn-emacs-state))
-  (add-to-list 'conn-buffer-default-state-alist
-               (cons "\\*Edit Macro\\*" 'conn-command-state))
-  (add-to-list 'conn-buffer-default-state-alist
-               (cons (lambda (buffer &rest _args)
-                       (bound-and-true-p org-capture-mode))
-                     'conn-command-state))
+  (defun my-org-capture-buffer-p (buffer &rest _alist)
+    (bound-and-true-p org-capture-mode))
+
+  (setf (alist-get "\\*Edit Macro\\*" conn-buffer-state-setup-alist #'equal)
+        #'conn-setup-command-state
+        (alist-get 'my-org-capture-buffer-p conn-buffer-state-setup-alist)
+        #'conn-setup-command-state)
 
   (keymap-set conn-wincontrol-map "`" 'quit-window)
 
@@ -1675,7 +1692,7 @@ see command `isearch-forward' for more information."
     "M-U" 'conn-wincontrol-maximize-vertically
     "M-z" 'conn-exchange-mark-command
     "C-SPC" 'conn-set-mark-command
-    "M-SPC" 'conn-toggle-mark-command)
+    "C-x n" 'set-goal-column)
 
   (keymap-set (conn-get-state-map 'conn-emacs-state) "<f8>" 'conn-command-state)
   (keymap-set (conn-get-state-map 'conn-org-edit-state) "<f8>" 'conn-command-state)
@@ -1687,7 +1704,6 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
   (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
-  (keymap-set (conn-get-state-map 'conn-command-state) "," 'conn-goto-char-2)
   (keymap-global-set "C-c c" (conn-remap-key (key-parse "C-c C-c")))
 
   (dolist (state '(conn-command-state conn-emacs-state))
@@ -1901,12 +1917,12 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'smartparens
     (require 'conn-smartparens)))
 
-(when (>= emacs-major-version 30)
-  (elpaca (conn-treesit :host github
-                        :repo "mtll/conn"
-                        :files ("extensions/conn-treesit.el"))
-    (with-eval-after-load 'treesit
-      (require 'conn-treesit))))
+;; (when (>= emacs-major-version 30)
+;;   (elpaca (conn-treesit :host github
+;;                         :repo "mtll/conn"
+;;                         :files ("extensions/conn-treesit.el"))
+;;     (with-eval-after-load 'treesit
+;;       (require 'conn-treesit))))
 
 
 ;;;; orderless set operations
@@ -2009,8 +2025,8 @@ see command `isearch-forward' for more information."
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
   (defun embark-start-of-defun-target-finder ()
-    (when-let ((bounds (bounds-of-thing-at-point 'defun))
-               ((= (point) (car bounds))))
+    (when-let* ((bounds (bounds-of-thing-at-point 'defun))
+                ((= (point) (car bounds))))
       (cons 'defun (cons (buffer-substring (car bounds) (cdr bounds))
                          bounds))))
 
@@ -2117,7 +2133,7 @@ see command `isearch-forward' for more information."
     (add-hook 'embark-target-finders #'embark-looking-at-page-target-finder -80)
 
     (defun embark-page-target-finder ()
-      (when-let ((bounds (bounds-of-thing-at-point 'page)))
+      (when-let* ((bounds (bounds-of-thing-at-point 'page)))
         (cons 'page (cons
                      (buffer-substring (car bounds) (cdr bounds))
                      bounds))))
@@ -2314,9 +2330,9 @@ see command `isearch-forward' for more information."
 
 (with-eval-after-load 'embark
   (defun my-embark-gh-issue-finder ()
-    (when-let ((button (and (not (minibufferp))
-                            (my-inside-regexp-in-line
-                             "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
+    (when-let* ((button (and (not (minibufferp))
+                             (my-inside-regexp-in-line
+                              "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
       `(url
         ,(format "www.github.com/%s/issues/%s"
                  (match-string-no-properties 1)
@@ -2325,7 +2341,7 @@ see command `isearch-forward' for more information."
   (add-hook 'embark-target-finders 'my-embark-gh-issue-finder)
 
   ;; (defun my-embark-gnu-bug-finder ()
-  ;;   (when-let ((button (and (not (minibufferp))
+  ;;   (when-let* ((button (and (not (minibufferp))
   ;;                           (my-inside-regexp-in-line
   ;;                            "bug#\\([0-9]*\\)"))))
   ;;     `(url
@@ -2335,7 +2351,7 @@ see command `isearch-forward' for more information."
   ;; (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
 
   ;; (defun my-embark-cve-target-finder ()
-  ;;   (when-let ((button (and (not (minibufferp))
+  ;;   (when-let* ((button (and (not (minibufferp))
   ;;                           (my-inside-regexp-in-line
   ;;                            "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
   ;;     `(url
@@ -2347,9 +2363,9 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'magit
     (defun my-embark-commit-target-finder ()
       (require 'vc)
-      (when-let ((_ (eq 'Git (vc-deduce-backend)))
-                 (commit (or (magit-thing-at-point 'git-revision t)
-                             (magit-branch-or-commit-at-point))))
+      (when-let* ((_ (eq 'Git (vc-deduce-backend)))
+                  (commit (or (magit-thing-at-point 'git-revision t)
+                              (magit-branch-or-commit-at-point))))
         `(git-commit ,commit)))
     (add-hook 'embark-target-finders 'my-embark-commit-target-finder))
 
@@ -2360,9 +2376,9 @@ see command `isearch-forward' for more information."
 
   (defun my-embark-button-target ()
     (when (my-inside-regexp-in-line "<\\[\\([^:]+\\):\\(.*\\)\\]>")
-      (when-let ((tar (run-hook-with-args-until-success
-                       'my-button-target-functions
-                       (match-string 1) (match-string 2))))
+      (when-let* ((tar (run-hook-with-args-until-success
+                        'my-button-target-functions
+                        (match-string 1) (match-string 2))))
         (append tar (cons (match-beginning 1) (match-end 2))))))
   (add-hook 'embark-target-finders 'my-embark-button-target)
 
@@ -2736,6 +2752,16 @@ see command `isearch-forward' for more information."
     (consult-customize consult-buffer :preview-key "C-o")
     (consult-customize consult-project-buffer :preview-key "C-o"))
 
+  (defun conn-occur-keep-lines ()
+    (interactive)
+    (let ((inhibit-read-only t))
+      (call-interactively 'consult-keep-lines)))
+
+  (defun conn-occur-flush-lines ()
+    (interactive)
+    (let ((inhibit-read-only t))
+      (call-interactively 'consult-keep-lines)))
+
   (defun consult--orderless-regexp-compiler (input type &rest _config)
     (setq input (cdr (orderless-compile input)))
     (cons
@@ -2894,17 +2920,6 @@ see command `isearch-forward' for more information."
         :keymap embark-consult-location-map
         "M-RET" 'consult-org-link-location))))
 
-;;;;; consult-dir
-
-(elpaca consult-dir
-  (keymap-global-set "C-x d" 'consult-dir)
-
-  (with-eval-after-load 'vertico
-    (define-keymap
-      :keymap vertico-map
-      "C-x y" 'consult-dir
-      "C-x C-j" 'consult-dir-jump-file)))
-
 ;;;;; consult-lsp
 
 (elpaca consult-lsp
@@ -3038,21 +3053,21 @@ see command `isearch-forward' for more information."
 
   (defun marginalia-annotate-alias (cand)
     "Annotate CAND with the function it aliases."
-    (when-let ((sym (intern-soft cand))
-               (alias (car (last (function-alias-p sym t))))
-               (name (and (symbolp alias) (symbol-name alias))))
+    (when-let* ((sym (intern-soft cand))
+                (alias (car (last (function-alias-p sym t))))
+                (name (and (symbolp alias) (symbol-name alias))))
       (format #(" (%s)" 1 5 (face marginalia-function)) name)))
 
   (defun my-marginalia-annotate-binding (cand)
     "Annotate command CAND with keybinding."
-    (when-let ((sym (intern-soft cand))
-               (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
+    (when-let* ((sym (intern-soft cand))
+                (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
       (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
 
   (defun marginalia-annotate-command-with-alias (cand)
     "Annotate command CAND with its documentation string.
     Similar to `marginalia-annotate-symbol', but does not show symbol class."
-    (when-let ((sym (intern-soft cand)))
+    (when-let* ((sym (intern-soft cand)))
       (concat
        (my-marginalia-annotate-binding cand)
        (marginalia-annotate-alias cand)
@@ -3160,11 +3175,11 @@ see command `isearch-forward' for more information."
 
 ;;;; page-break-lines
 
-(elpaca page-break-lines
-  (setq page-break-lines-max-width 72)
-  (global-page-break-lines-mode)
-  (with-eval-after-load 'diminish
-    (diminish 'page-break-lines-mode)))
+;; (elpaca page-break-lines
+;;   (setq page-break-lines-max-width 72)
+;;   (global-page-break-lines-mode)
+;;   (with-eval-after-load 'diminish
+;;     (diminish 'page-break-lines-mode)))
 
 
 ;;;; tuareg
@@ -3421,7 +3436,8 @@ see command `isearch-forward' for more information."
       (diminish 'smartparens-mode)))
 
   (setq sp-highlight-pair-overlay nil
-        sp-highlight-wrap-overlay t)
+        sp-highlight-wrap-overlay t
+        sp-echo-match-when-invisible nil)
 
   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
   (require 'smartparens-config)
@@ -3687,6 +3703,15 @@ see command `isearch-forward' for more information."
     :keymap search-map
     "y" 'rg-menu
     "u" 'rg))
+
+
+;;;; treemacs
+
+(elpaca treemacs
+  (keymap-global-set "C-c h" 'treemacs-select-window)
+  (keymap-global-set "C-c H" 'treemacs)
+  (with-eval-after-load 'treemacs
+    (keymap-set treemacs-mode-map "`" 'treemacs-select-window)))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
