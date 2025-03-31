@@ -49,7 +49,8 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq next-line-add-newlines t
+(setq git-commit-major-mode 'log-edit-mode
+      next-line-add-newlines t
       scroll-conservatively 0
       visual-order-cursor-movement t
       register-use-preview nil
@@ -71,7 +72,7 @@
       recenter-positions '(top middle bottom)
       even-window-sizes nil
       scroll-preserve-screen-position t
-      delete-active-region t
+      delete-active-region nil
       fill-column 70
       use-short-answers t
       y-or-n-p-use-read-key t
@@ -99,7 +100,7 @@
       uniquify-after-kill-buffer-p t
       uniquify-ignore-buffers-re "^\\*"
       global-mark-ring-max 32
-      mark-ring-max 32
+      mark-ring-max 12
       undo-limit 8000000
       undo-strong-limit 16000000
       undo-outer-limit 32000000
@@ -398,6 +399,9 @@
   (keymap-global-set "C-c o" 'org-store-link)
   (keymap-global-set "C-c l" 'org-insert-link-global)
   (keymap-global-set "C-c a" 'org-agenda)
+
+  (with-eval-after-load 'conn
+    (add-hook 'org-mode-hook 'conntext-org-mode))
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   ;; (add-hook 'org-mode-hook 'abbrev-mode)
@@ -1059,7 +1063,6 @@ see command `isearch-forward' for more information."
 
     (defun sly-setup-embark ()
       (require 'embark)
-      (require 'conn-embark)
       (make-local-variable 'embark-default-action-overrides)
       (make-local-variable 'conn-embark-alt-default-action-overrides)
       (setf (alist-get 'expression embark-default-action-overrides) 'sly-interactive-eval
@@ -1218,8 +1221,7 @@ see command `isearch-forward' for more information."
                             ("./configure"
                              "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
                             ("make")))
-  (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex)
-  (add-hook 'latex-mode-hook 'turn-on-cdlatex))
+  (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex))
 
 
 ;;;; cdlatex
@@ -1232,7 +1234,7 @@ see command `isearch-forward' for more information."
     (letrec ((tick (buffer-chars-modified-tick))
              (beg (point))
              (hook (lambda ()
-                     (when (and (eq tick (buffer-chars-modified-tick))
+                     (when (and (eql tick (buffer-chars-modified-tick))
                                 (/= (point) beg))
                        (conn--push-ephemeral-mark beg))
                      (remove-hook 'post-command-hook hook))))
@@ -1262,13 +1264,7 @@ see command `isearch-forward' for more information."
         "" cdlatex-environment ("flalign*") t nil))))
 
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent)
-
-    ;; (defun my-special-edit-ad (&rest _)
-    ;;   (when (eq major-mode 'org-mode)
-    ;;     (org-edit-latex-environment)))
-    ;; (advice-add 'cdlatex-environment :after 'my-special-edit-ad)
-    )
+    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent))
 
   (with-eval-after-load 'conn
     (with-eval-after-load 'org
@@ -1302,40 +1298,40 @@ see command `isearch-forward' for more information."
 
 ;;;; modus-themes
 
-(when (< emacs-major-version 30)
-  (elpaca modus-themes
-    (require 'modus-themes)
+(static-if (< emacs-major-version 30)
+    (elpaca modus-themes
+      (require 'modus-themes)
 
-    (setopt modus-themes-common-palette-overrides
-            (seq-concatenate
-             'list
-             `((bg-main "#f7eee1")
-               (cursor "#7d0002")
-               (bg-region "#f1d5d0")
-               (fg-active-argument "#930c93")
-               (bg-active-argument "#f4caf4")
-               (fg-region unspecified)
-               (fg-completion-match-0 "#353b44")
-               (bg-completion-match-0 "#c5dfff")
-               (fg-completion-match-1 "#384231")
-               (bg-completion-match-1 "#cdf3b5")
-               (fg-completion-match-2 "#3b3544")
-               (bg-completion-match-2 "#d1baf1")
-               (fg-completion-match-3 "#313c37")
-               (bg-completion-match-3 "#bef1da")
-               (bg-search-lazy bg-magenta-subtle)
-               (bg-search-current bg-yellow-intense))
-             modus-themes-preset-overrides-warmer))
+      (setopt modus-themes-common-palette-overrides
+              (seq-concatenate
+               'list
+               `((bg-main "#f7eee1")
+                 (cursor "#7d0002")
+                 (bg-region "#f1d5d0")
+                 (fg-active-argument "#930c93")
+                 (bg-active-argument "#f4caf4")
+                 (fg-region unspecified)
+                 (fg-completion-match-0 "#353b44")
+                 (bg-completion-match-0 "#c5dfff")
+                 (fg-completion-match-1 "#384231")
+                 (bg-completion-match-1 "#cdf3b5")
+                 (fg-completion-match-2 "#3b3544")
+                 (bg-completion-match-2 "#d1baf1")
+                 (fg-completion-match-3 "#313c37")
+                 (bg-completion-match-3 "#bef1da")
+                 (bg-search-lazy bg-magenta-subtle)
+                 (bg-search-current bg-yellow-intense))
+               modus-themes-preset-overrides-warmer))
 
-    (load-theme 'modus-operandi-tinted t)
+      (load-theme 'modus-operandi-tinted t)
 
-    ;; (custom-set-faces
-    ;;  `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
-    ;;  `(transient-argument ((t :inherit font-lock-string-face :weight bold
-    ;;                           :foreground "#930c93" :background "#f4caf4")))
-    ;;  `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
-    ;;  `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))
-    ))
+      ;; (custom-set-faces
+      ;;  `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
+      ;;  `(transient-argument ((t :inherit font-lock-string-face :weight bold
+      ;;                           :foreground "#930c93" :background "#f4caf4")))
+      ;;  `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
+      ;;  `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))
+      ))
 
 (setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
                               "modus-themes-subtle-red"
@@ -1391,247 +1387,247 @@ see command `isearch-forward' for more information."
 
 ;;;; isearch+
 
-(elpaca (isearch+ :host github
-                  :repo "emacsmirror/isearch-plus"
-                  :main "isearch+.el")
-  (run-with-timer 2 nil (lambda () (require 'isearch+)))
-  (with-eval-after-load 'isearch+
-    ;; (require 'isearch+)
-    (setq isearchp-dimming-color "#cddfcc"
-          isearchp-lazy-dim-filter-failures-flag nil
-          isearchp-restrict-to-region-flag nil
-          isearchp-deactivate-region-flag nil
-          isearchp-movement-unit-alist '((?w . forward-word)
-                                         (?s . forward-sexp)
-                                         (?i . forward-list)
-                                         (?s . forward-sentence)
-                                         (?c . forward-char)
-                                         (?l . forward-line)))
-    (require 'transient)
-
-    (setopt isearchp-initiate-edit-commands nil)
-
-    (define-keymap
-      :keymap isearch-mode-map
-      "C-y m" 'isearchp-yank-sexp-symbol-or-char
-      "C-y o" 'isearchp-yank-word-or-char-forward
-      "C-y u" 'isearchp-yank-word-or-char-backward
-      "C-y i" 'isearchp-yank-line-backward
-      "C-y k" 'isearchp-yank-line-forward
-      "C-y l" 'isearchp-yank-char
-      "C-y r" 'my-isearch-yank-region)
-
-    (defun my-supress-in-macro () executing-kbd-macro)
-    (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
-
-    (transient-define-prefix my-isearch+-do-filter (filter-action)
-      "Isearch+ add filter-action prefix"
-      [ :description "Filter"
-        [("c" " [;]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[;]"         isearchp-in-comment-p               "[;]")))
-          :transient transient--do-return)
-         ("C" "~[;]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[;]"         isearchp-not-in-comment-p           "~[;]")))
-          :transient transient--do-return)
-
-         ("'" " [\"]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[\"]"        isearchp-in-string-p                "[\"]")))
-          :transient transient--do-return)
-         ("\"" "~[\"]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[\"]"        isearchp-not-in-string-p            "~[\"]")))
-          :transient transient--do-return)]
-
-        [(";" " [\"|;]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[\"|;]"      isearchp-in-string-or-comment-p     "[\"|;]")))
-          :transient transient--do-return)
-         (":" "~[\"|;]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[\"|;]"      isearchp-not-in-string-or-comment-p "~[\"|;]")))
-          :transient transient--do-return)
-
-         ("d" " [defun]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[defun]"     isearchp-in-defun-p                 "[DEFUN]")))
-          :transient transient--do-return)
-         ("D" "~[defun]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[defun]"     isearchp-not-in-defun-p             "~[DEFUN]")))
-          :transient transient--do-return)]
-
-        [("(" " [()]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[()]"        isearchp-in-list-p                  "[()]")))
-          :transient transient--do-return)
-         (")" "~[()]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[()]"        isearchp-not-in-list-p              "~[()]")))
-          :transient transient--do-return)
-
-         ("[" " [page]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[page]"      isearchp-in-page-p                  "[PAGE]")))
-          :transient transient--do-return)
-         ("]" "~[page]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[page]"      isearchp-not-in-page-p              "~[PAGE]")))
-          :transient transient--do-return)]
-
-        [("f" " [file|url]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[file|url])" isearchp-in-file-or-url-p           "[FILE|URL])")))
-          :transient transient--do-return)
-         ("F" "~[file|url]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
-          :transient transient--do-return)
-
-         ("n" " [narrow]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '( "[narrow]"     conn-isearch-in-narrow-p         "[NARROW]")))
-          :transient transient--do-return)
-         ("N" "~[narrow]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (funcall
-             filter-action
-             '("~[narrow]"     conn-isearch-in-narrow-p     "~[NARROW]")))
-          :transient transient--do-return)]
-
-        [("t" " [thing]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (let* ((regions
-                    (catch 'regions
-                      (with-isearch-suspended
-                       (throw 'regions
-                              (cdr (conn-read-thing-region "Thing Mover"))))))
-                   (regions (or (conn--merge-regions (cdr regions) t)
-                                regions))
-                   (in-regions-p (lambda (beg end)
-                                   (cl-loop for (nbeg . nend) in regions
-                                            thereis (<= nbeg beg end nend)))))
-              (funcall
-               filter-action
-               `("[thing]"     ,in-regions-p     "[THING]"))))
-          :transient transient--do-return)
-         ("T" " ~[thing]"
-          (lambda (filter-action)
-            (interactive (list (oref transient-current-prefix scope)))
-            (let* ((regions
-                    (catch 'regions
-                      (with-isearch-suspended
-                       (throw 'regions
-                              (cdr (conn-read-thing-region "Thing Mover"))))))
-                   (regions (or (conn--merge-regions (cdr regions) t)
-                                regions))
-                   (not-in-regions-p (lambda (beg end)
-                                       (cl-loop for (nbeg . nend) in regions
-                                                never (or (<= nbeg beg nend)
-                                                          (<= nbeg end nend))))))
-              (funcall
-               filter-action
-               `("~[thing]"     ,not-in-regions-p     "~[THING]"))))
-          :transient transient--do-return)]]
-      (interactive (list nil))
-      (transient-setup 'my-isearch+-do-filter nil nil :scope filter-action))
-
-    (transient-define-prefix my-isearch+-filter-prefix ()
-      "Isearch+ filter prefix"
-      :transient-non-suffix 'transient--do-leave
-      [["Filter"
-        ("k" "Keep" isearchp-keep-filter-predicate :transient t)
-        ("s" "Set" isearchp-keep-filter-predicate :transient t)
-        ("0" "Reset" isearchp-reset-filter-predicate :transient t)]
-       ["Last Filter"
-        ("p" "Pop"
-         (lambda ()
-           (interactive)
-           (isearchp-remove-filter-predicate
-            (format "%s"
-                    (and (advice--p isearch-filter-predicate)
-                         (isearchp-last-isearch-advice)))
-            t))
-         :transient t)
-        ("l" "Or"
-         (lambda ()
-           (interactive)
-           (my-isearch+-do-filter 'isearchp-or-last-filter))
-         :transient transient--do-recurse)
-        ("n" "Negate" isearchp-negate-last-filter :transient t)]
-       ["Add Filter"
-        ("a" "And"
-         (lambda ()
-           (interactive)
-           (my-isearch+-do-filter 'isearchp-add-filter-predicate))
-         :transient transient--do-recurse)
-        ("o" "Or"
-         (lambda ()
-           (interactive)
-           (my-isearch+-do-filter 'isearchp-or-filter-predicate))
-         :transient transient--do-recurse)
-        ("c" "Complement" isearchp-complement-filter :transient t)]])
-
-    (keymap-unset isearch-mode-map "C-t")
-    (keymap-set isearch-mode-map "C-;" 'my-isearch+-filter-prefix)
-    (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
-    (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
-    (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
-    (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
-    (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
-    (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
-    (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
-    (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
-    (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
+;; (elpaca (isearch+ :host github
+;;                   :repo "emacsmirror/isearch-plus"
+;;                   :main "isearch+.el")
+;;   (run-with-timer 2 nil (lambda () (require 'isearch+)))
+;;   (with-eval-after-load 'isearch+
+;;     ;; (require 'isearch+)
+;;     (setq isearchp-dimming-color "#cddfcc"
+;;           isearchp-lazy-dim-filter-failures-flag nil
+;;           isearchp-restrict-to-region-flag nil
+;;           isearchp-deactivate-region-flag nil
+;;           isearchp-movement-unit-alist '((?w . forward-word)
+;;                                          (?s . forward-sexp)
+;;                                          (?i . forward-list)
+;;                                          (?s . forward-sentence)
+;;                                          (?c . forward-char)
+;;                                          (?l . forward-line)))
+;;     (require 'transient)
+;;
+;;     (setopt isearchp-initiate-edit-commands nil)
+;;
+;;     (define-keymap
+;;       :keymap isearch-mode-map
+;;       "C-y m" 'isearchp-yank-sexp-symbol-or-char
+;;       "C-y o" 'isearchp-yank-word-or-char-forward
+;;       "C-y u" 'isearchp-yank-word-or-char-backward
+;;       "C-y i" 'isearchp-yank-line-backward
+;;       "C-y k" 'isearchp-yank-line-forward
+;;       "C-y l" 'isearchp-yank-char
+;;       "C-y r" 'my-isearch-yank-region)
+;;
+;;     (defun my-supress-in-macro () executing-kbd-macro)
+;;     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
+;;
+;;     (transient-define-prefix my-isearch+-do-filter (filter-action)
+;;       "Isearch+ add filter-action prefix"
+;;       [ :description "Filter"
+;;         [("c" " [;]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[;]"         isearchp-in-comment-p               "[;]")))
+;;           :transient transient--do-return)
+;;          ("C" "~[;]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[;]"         isearchp-not-in-comment-p           "~[;]")))
+;;           :transient transient--do-return)
+;;
+;;          ("'" " [\"]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[\"]"        isearchp-in-string-p                "[\"]")))
+;;           :transient transient--do-return)
+;;          ("\"" "~[\"]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[\"]"        isearchp-not-in-string-p            "~[\"]")))
+;;           :transient transient--do-return)]
+;;
+;;         [(";" " [\"|;]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[\"|;]"      isearchp-in-string-or-comment-p     "[\"|;]")))
+;;           :transient transient--do-return)
+;;          (":" "~[\"|;]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[\"|;]"      isearchp-not-in-string-or-comment-p "~[\"|;]")))
+;;           :transient transient--do-return)
+;;
+;;          ("d" " [defun]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[defun]"     isearchp-in-defun-p                 "[DEFUN]")))
+;;           :transient transient--do-return)
+;;          ("D" "~[defun]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[defun]"     isearchp-not-in-defun-p             "~[DEFUN]")))
+;;           :transient transient--do-return)]
+;;
+;;         [("(" " [()]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[()]"        isearchp-in-list-p                  "[()]")))
+;;           :transient transient--do-return)
+;;          (")" "~[()]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[()]"        isearchp-not-in-list-p              "~[()]")))
+;;           :transient transient--do-return)
+;;
+;;          ("[" " [page]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[page]"      isearchp-in-page-p                  "[PAGE]")))
+;;           :transient transient--do-return)
+;;          ("]" "~[page]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[page]"      isearchp-not-in-page-p              "~[PAGE]")))
+;;           :transient transient--do-return)]
+;;
+;;         [("f" " [file|url]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[file|url])" isearchp-in-file-or-url-p           "[FILE|URL])")))
+;;           :transient transient--do-return)
+;;          ("F" "~[file|url]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
+;;           :transient transient--do-return)
+;;
+;;          ("n" " [narrow]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '( "[narrow]"     conn-isearch-in-narrow-p         "[NARROW]")))
+;;           :transient transient--do-return)
+;;          ("N" "~[narrow]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (funcall
+;;              filter-action
+;;              '("~[narrow]"     conn-isearch-in-narrow-p     "~[NARROW]")))
+;;           :transient transient--do-return)]
+;;
+;;         [("t" " [thing]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (let* ((regions
+;;                     (catch 'regions
+;;                       (with-isearch-suspended
+;;                        (throw 'regions
+;;                               (cdr (conn-read-thing-region "Thing Mover"))))))
+;;                    (regions (or (conn--merge-regions (cdr regions) t)
+;;                                 regions))
+;;                    (in-regions-p (lambda (beg end)
+;;                                    (cl-loop for (nbeg . nend) in regions
+;;                                             thereis (<= nbeg beg end nend)))))
+;;               (funcall
+;;                filter-action
+;;                `("[thing]"     ,in-regions-p     "[THING]"))))
+;;           :transient transient--do-return)
+;;          ("T" " ~[thing]"
+;;           (lambda (filter-action)
+;;             (interactive (list (oref transient-current-prefix scope)))
+;;             (let* ((regions
+;;                     (catch 'regions
+;;                       (with-isearch-suspended
+;;                        (throw 'regions
+;;                               (cdr (conn-read-thing-region "Thing Mover"))))))
+;;                    (regions (or (conn--merge-regions (cdr regions) t)
+;;                                 regions))
+;;                    (not-in-regions-p (lambda (beg end)
+;;                                        (cl-loop for (nbeg . nend) in regions
+;;                                                 never (or (<= nbeg beg nend)
+;;                                                           (<= nbeg end nend))))))
+;;               (funcall
+;;                filter-action
+;;                `("~[thing]"     ,not-in-regions-p     "~[THING]"))))
+;;           :transient transient--do-return)]]
+;;       (interactive (list nil))
+;;       (transient-setup 'my-isearch+-do-filter nil nil :scope filter-action))
+;;
+;;     (transient-define-prefix my-isearch+-filter-prefix ()
+;;       "Isearch+ filter prefix"
+;;       :transient-non-suffix 'transient--do-leave
+;;       [["Filter"
+;;         ("k" "Keep" isearchp-keep-filter-predicate :transient t)
+;;         ("s" "Set" isearchp-keep-filter-predicate :transient t)
+;;         ("0" "Reset" isearchp-reset-filter-predicate :transient t)]
+;;        ["Last Filter"
+;;         ("p" "Pop"
+;;          (lambda ()
+;;            (interactive)
+;;            (isearchp-remove-filter-predicate
+;;             (format "%s"
+;;                     (and (advice--p isearch-filter-predicate)
+;;                          (isearchp-last-isearch-advice)))
+;;             t))
+;;          :transient t)
+;;         ("l" "Or"
+;;          (lambda ()
+;;            (interactive)
+;;            (my-isearch+-do-filter 'isearchp-or-last-filter))
+;;          :transient transient--do-recurse)
+;;         ("n" "Negate" isearchp-negate-last-filter :transient t)]
+;;        ["Add Filter"
+;;         ("a" "And"
+;;          (lambda ()
+;;            (interactive)
+;;            (my-isearch+-do-filter 'isearchp-add-filter-predicate))
+;;          :transient transient--do-recurse)
+;;         ("o" "Or"
+;;          (lambda ()
+;;            (interactive)
+;;            (my-isearch+-do-filter 'isearchp-or-filter-predicate))
+;;          :transient transient--do-recurse)
+;;         ("c" "Complement" isearchp-complement-filter :transient t)]])
+;;
+;;     (keymap-unset isearch-mode-map "C-t")
+;;     (keymap-set isearch-mode-map "C-;" 'my-isearch+-filter-prefix)
+;;     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
+;;     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
+;;     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
+;;     (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
+;;     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
+;;     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
+;;     (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
+;;     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
+;;     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
 
 
 ;;;; elixir-ts
@@ -1661,6 +1657,8 @@ see command `isearch-forward' for more information."
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
+
+  (add-hook 'outline-minor-mode-hook 'conntext-outline-mode)
 
   (conn-enable-global-bindings)
 
@@ -1749,14 +1747,9 @@ see command `isearch-forward' for more information."
     (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
     (keymap-set conn-region-map "v" 'conn-consult-git-grep-region)))
 
-(elpaca (conn-embark :host github
-                     :repo "mtll/conn"
-                     :files ("extensions/conn-embark.el"))
-  ;; (keymap-set (conn-get-state-map 'conn-command-state) "," 'embark-act)
+(with-eval-after-load 'conn
   (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
-  ;; (keymap-set (conn-get-state-map 'conn-command-state) "<tab>" 'conn-embark-dwim-either)
   (keymap-set (conn-get-state-map 'conn-org-edit-state) "TAB" 'conn-embark-dwim-either)
-  (keymap-global-set "C-M-S-<iso-lefttab>" 'conn-embark-conn-bindings)
 
   (defun conn-embark-dwim-either (&optional arg)
     (interactive "P")
@@ -1816,8 +1809,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "TAB" 'my-embark-smart-tab)
 
   (with-eval-after-load 'embark
-    (require 'conn-embark)
-
     (defcustom conn-embark-alt-default-action-overrides
       '((identifier . xref-find-references))
       "`embark-default-action-overrides' for alternate actions."
@@ -1979,27 +1970,28 @@ see command `isearch-forward' for more information."
 
   (cl-pushnew #'cape-file completion-at-point-functions)
 
-  (defun dictionary-doc-lookup (cand)
-    (let* ((buffer)
-           (dictionary-display-definition-function
-            (lambda (word dictionary definition)
-              (let ((help-buffer-under-preparation t))
-                (help-setup-xref (list #'dictionary-search word dictionary)
-                                 (called-interactively-p 'interactive))
-                (with-current-buffer (help-buffer)
-                  (insert definition)
-                  (goto-char (point-min))
-                  (setq buffer (current-buffer)))))))
-      (dictionary-search cand)
-      buffer))
-
-  (add-hook 'text-mode-hook
-            (lambda ()
-              (keymap-set text-mode-map "C-M-i" 'completion-at-point)
-              (add-to-list 'completion-at-point-functions
-                           (cape-capf-properties
-                            #'cape-dict
-                            :company-doc-buffer #'dictionary-doc-lookup)))))
+  ;; (defun dictionary-doc-lookup (cand)
+  ;;   (let* ((buffer)
+  ;;          (dictionary-display-definition-function
+  ;;           (lambda (word dictionary definition)
+  ;;             (let ((help-buffer-under-preparation t))
+  ;;               (help-setup-xref (list #'dictionary-search word dictionary)
+  ;;                                (called-interactively-p 'interactive))
+  ;;               (with-current-buffer (help-buffer)
+  ;;                 (insert definition)
+  ;;                 (goto-char (point-min))
+  ;;                 (setq buffer (current-buffer)))))))
+  ;;     (dictionary-search cand)
+  ;;     buffer))
+  ;;
+  ;; (add-hook 'text-mode-hook
+  ;;           (lambda ()
+  ;;             (keymap-set text-mode-map "C-M-i" 'completion-at-point)
+  ;;             (add-to-list 'completion-at-point-functions
+  ;;                          (cape-capf-properties
+  ;;                           #'cape-dict
+  ;;                           :company-doc-buffer #'dictionary-doc-lookup))))
+  )
 
 
 ;;;; embark
@@ -2340,25 +2332,25 @@ see command `isearch-forward' for more information."
         ,(match-beginning 0) . ,(match-end 0))))
   (add-hook 'embark-target-finders 'my-embark-gh-issue-finder)
 
-  ;; (defun my-embark-gnu-bug-finder ()
-  ;;   (when-let* ((button (and (not (minibufferp))
-  ;;                           (my-inside-regexp-in-line
-  ;;                            "bug#\\([0-9]*\\)"))))
-  ;;     `(url
-  ;;       ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
-  ;;                (match-string-no-properties 1))
-  ;;       ,(match-beginning 0) . ,(match-end 0))))
-  ;; (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
+  (defun my-embark-gnu-bug-finder ()
+    (when-let* ((button (and (not (minibufferp))
+                             (my-inside-regexp-in-line
+                              "bug#\\([0-9]*\\)"))))
+      `(url
+        ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
+                 (match-string-no-properties 1))
+        ,(match-beginning 0) . ,(match-end 0))))
+  (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
 
-  ;; (defun my-embark-cve-target-finder ()
-  ;;   (when-let* ((button (and (not (minibufferp))
-  ;;                           (my-inside-regexp-in-line
-  ;;                            "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
-  ;;     `(url
-  ;;       ,(format "https://www.cve.org/CVERecord?id=%s"
-  ;;                (match-string-no-properties 1))
-  ;;       ,(match-beginning 0) . ,(match-end 0))))
-  ;; (add-hook 'embark-target-finders 'my-embark-cve-target-finder)
+  (defun my-embark-cve-target-finder ()
+    (when-let* ((button (and (not (minibufferp))
+                             (my-inside-regexp-in-line
+                              "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
+      `(url
+        ,(format "https://www.cve.org/CVERecord?id=%s"
+                 (match-string-no-properties 1))
+        ,(match-beginning 0) . ,(match-end 0))))
+  (add-hook 'embark-target-finders 'my-embark-cve-target-finder)
 
   (with-eval-after-load 'magit
     (defun my-embark-commit-target-finder ()
@@ -2568,9 +2560,16 @@ see command `isearch-forward' for more information."
 
 (elpaca bicycle
   (with-eval-after-load 'outline
+    (with-eval-after-load 'conn
+      (keymap-set conntext-outline-map "c" 'bicycle-cycle)
+      (defvar-keymap conntext-outline-bicycle-repeat-map
+        :repeat t
+        "c" 'bicycle-cycle))
+
     (define-keymap
       :keymap outline-minor-mode-map
       "<backtab>" 'bicycle-cycle-global))
+
   (with-eval-after-load 'org
     (define-keymap
       :keymap org-mode-map
@@ -2702,7 +2701,7 @@ see command `isearch-forward' for more information."
                                  consult--source-project-buffer-hidden
                                  consult--source-project-recent-file-hidden))
 
-  (keymap-global-set "<remap> <pop-global-mark>" #'consult-global-mark)
+  (keymap-global-set "M-g y" #'consult-global-mark)
   (keymap-global-set "<remap> <Info-search>" #'consult-info)
   (keymap-global-set "<remap> <bookmark-jump>" #'consult-bookmark)
   (keymap-global-set "<remap> <yank-pop>" #'consult-yank-pop)
@@ -2735,7 +2734,8 @@ see command `isearch-forward' for more information."
     "f" 'consult-find
     "L" 'consult-locate
     "k" 'consult-keep-lines
-    "h f" 'consult-focus-lines)
+    "h f" 'consult-focus-lines
+    "i" 'my-consult-grep-file)
 
   (keymap-set goto-map "g" 'consult-goto-line)
   (keymap-global-set "<remap> <project-switch-to-buffer>" 'consult-project-buffer)
@@ -2744,6 +2744,12 @@ see command `isearch-forward' for more information."
     :keymap isearch-mode-map
     "M-s j" 'consult-line
     "M-s J" 'consult-line-multi)
+
+  (defun my-consult-grep-file ()
+    (interactive)
+    (if buffer-file-name
+        (consult-ripgrep (list buffer-file-name))
+      (consult-line)))
 
   (with-eval-after-load 'consult
     (consult-customize consult-completion-in-region :preview-key nil)
@@ -3184,7 +3190,7 @@ see command `isearch-forward' for more information."
 
 ;;;; tuareg
 
-(elpaca tuareg)
+;; (elpaca tuareg)
 
 
 ;;;; rfc-mode
@@ -3199,7 +3205,7 @@ see command `isearch-forward' for more information."
 
 ;;;; polymode
 
-(elpaca polymode)
+;; (elpaca polymode)
 
 
 ;;;; denote
@@ -3322,7 +3328,7 @@ see command `isearch-forward' for more information."
 
 ;;;; teco
 
-(elpaca teco)
+;; (elpaca teco)
 
 
 ;;;; dumb-jump
@@ -3383,7 +3389,7 @@ see command `isearch-forward' for more information."
 
 ;;;; ef-themes
 
-(elpaca ef-themes)
+;; (elpaca ef-themes)
 
 
 ;;;; pgmacs
@@ -3394,7 +3400,7 @@ see command `isearch-forward' for more information."
 
 ;;;; eat
 
-(elpaca eat)
+;; (elpaca eat)
 
 
 ;;;; beancount
