@@ -848,11 +848,19 @@ see command `isearch-forward' for more information."
 
 ;;;; ibuffer
 
+(with-eval-after-load 'conn
+  (conn-ibuffer-mode 1))
+
 (with-eval-after-load 'ibuffer
   (setq ibuffer-human-readable-size t))
 
 
 ;;;; dired
+
+(keymap-global-set "C-x h" 'dired-jump)
+
+(with-eval-after-load 'conn
+  (conn-dired-mode 1))
 
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
@@ -883,9 +891,9 @@ see command `isearch-forward' for more information."
     "% t" 'dired-flag-garbage-files
     "F" 'dired-create-empty-file
     "M-s M-s" 'dired-do-isearch
+    "M-s s" 'dired-do-isearch
     "M-s M-r" 'dired-do-isearch-regexp
-    ;; "z" available
-    )
+    "M-s r" 'dired-do-isearch-regexp)
 
   (with-eval-after-load 'conn
     (keymap-set dired-mode-map "r" (conn-remap-key (key-parse "%")))
@@ -957,60 +965,7 @@ see command `isearch-forward' for more information."
         ;; '(display-buffer-below-selected
         ;;   (dedicated . t)
         ;;   (inhibit-same-window . t))
-        transient-mode-line-format 'line)
-
-  (with-eval-after-load 'ibuffer
-    (require 'transient)
-
-    (transient-define-prefix my-ibuffer-filter-prefix ()
-      "Ibuffer filter prefix"
-      [:description
-       (lambda ()
-         (concat
-          " "
-          (mapconcat
-           (lambda (q)
-             (propertize (substring (ibuffer-format-qualifier q) 1)
-                         'face 'transient-value))
-           ibuffer-filtering-qualifiers
-           " ")))
-       ["Filter"
-        ("s" "Save" ibuffer-save-filters :transient t)
-        ("x" "Delete Saved" ibuffer-delete-saved-filters :transient t)
-        ("/" "Disable" ibuffer-filter-disable :transient t)
-        ("r" "Switch To" ibuffer-switch-to-saved-filters :transient t)
-        ("p" "Pop" ibuffer-pop-filter :transient t)]
-       ["Ops"
-        ("!" "Negate" ibuffer-negate-filter :transient t)
-        ("+" "And" ibuffer-and-filter :transient t)
-        ("*" "Or" ibuffer-or-filter :transient t)
-        ("D" "Decompose" ibuffer-decompose-filter :transient t)
-        ("t" "Exchange" ibuffer-exchange-filters :transient t)]
-       ["Groups"
-        ("S" "Save" ibuffer-delete-saved-filter-groups :transient t)
-        ("X" "Delete Saved" ibuffer-delete-saved-filter-groups :transient t)
-        ("g" "Group" ibuffer-filters-to-filter-group :transient t)
-        ("P" "Pop" ibuffer-pop-filter-group :transient t)
-        ("R" "Switch To" ibuffer-switch-to-saved-filter-groups :transient t)]]
-      ["Filter By"
-       [("i" "Modified" ibuffer-filter-by-modified :transient t)
-        ("m" "Mode" ibuffer-filter-by-mode :transient t)
-        ("M" "Derived Mode" ibuffer-filter-by-derived-mode :transient t)
-        ("." "Extension" ibuffer-filter-by-file-extension :transient t)
-        ("*" "Starred Name" ibuffer-filter-by-starred-name :transient t)]
-       [("c" "Content" ibuffer-filter-by-content :transient t)
-        ("f" "Filename" ibuffer-filter-by-filename :transient t)
-        ("F" "Directory" ibuffer-filter-by-directory :transient t)
-        ("n" "Name" ibuffer-filter-by-name :transient t)
-        ("v" "Visiting" ibuffer-filter-by-visiting-file :transient t)]
-       [("<" "Size" ibuffer-filter-by-size-lt :transient t)
-        (">" "Size" ibuffer-filter-by-size-gt :transient t)
-        ("e" "Predicate" ibuffer-filter-by-predicate :transient t)
-        ("b" "Basename" ibuffer-filter-by-basename :transient t)
-        ("E" "Process" ibuffer-filter-by-process :transient t)]
-       [("q" "quit" ignore)]])
-
-    (keymap-set ibuffer-mode-map "/" 'my-ibuffer-filter-prefix)))
+        transient-mode-line-format 'line))
 
 ;;;; treesit-auto
 
@@ -1039,6 +994,9 @@ see command `isearch-forward' for more information."
 
 
 ;;;; helpful
+
+(with-eval-after-load 'conn
+  (conn-help-state-mode 1))
 
 (elpaca helpful
   (keymap-global-set "C-h v" 'helpful-variable)
@@ -1382,7 +1340,9 @@ see command `isearch-forward' for more information."
 
 (elpaca spinner)
 
-(when window-system (elpaca posframe))
+(when window-system
+  (elpaca posframe
+    (run-with-timer 3 nil (lambda () (require 'posframe)))))
 
 
 ;;;; isearch+
@@ -1657,6 +1617,14 @@ see command `isearch-forward' for more information."
   (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
+
+  (keymap-global-set "C-x l" 'next-buffer)
+  (keymap-global-set "C-x j" 'previous-buffer)
+
+  (defvar-keymap conn-buffer-repeat-map
+    :repeat t
+    "l" 'next-buffer
+    "j" 'previous-buffer)
 
   (add-hook 'outline-minor-mode-hook 'conntext-outline-mode)
 
@@ -1949,6 +1917,10 @@ see command `isearch-forward' for more information."
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
   (with-eval-after-load 'nerd-icons
     (setq magit-format-file-function #'magit-format-file-nerd-icons))
+
+  (with-eval-after-load 'conn
+    (conn-magit-state-mode 1))
+
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
   (keymap-global-set "C-c m d" 'magit-dispatch))
@@ -3718,6 +3690,20 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c H" 'treemacs)
   (with-eval-after-load 'treemacs
     (keymap-set treemacs-mode-map "`" 'treemacs-select-window)))
+
+;;;; dirvish
+
+(elpaca dirvish
+  (custom-set-faces
+   '(dirvish-hl-line ((t :inherit region :extend t)))
+   '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
+
+  (setq dirvish-hide-cursor t)
+
+  (with-eval-after-load 'dired
+    (dirvish-override-dired-mode 1))
+
+  (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
