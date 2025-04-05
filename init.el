@@ -412,7 +412,7 @@
       (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
-      (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle)
+      (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle)
       (keymap-set org-mode-map "C-c t" 'org-todo))
 
     ;; Increase preview width
@@ -848,9 +848,6 @@ see command `isearch-forward' for more information."
 
 ;;;; ibuffer
 
-(with-eval-after-load 'conn
-  (conn-ibuffer-mode 1))
-
 (with-eval-after-load 'ibuffer
   (setq ibuffer-human-readable-size t))
 
@@ -858,9 +855,6 @@ see command `isearch-forward' for more information."
 ;;;; dired
 
 (keymap-global-set "C-x h" 'dired-jump)
-
-(with-eval-after-load 'conn
-  (conn-dired-mode 1))
 
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
@@ -873,31 +867,28 @@ see command `isearch-forward' for more information."
         ;; dired-auto-revert-buffer #'dired-buffer-stale-p
         )
 
-  (define-keymap
-    :keymap dired-mode-map
-    "/" 'dired-undo
-    "C-<tab>" 'dired-maybe-insert-subdir
-    "<backtab>" 'dired-kill-subdir
-    "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff
-    "b" 'dired-up-directory
-    "* e" 'dired-mark-executables
-    "* l" 'dired-mark-symlinks
-    "* d" 'dired-mark-directories
-    "* r" 'dired-mark-files-regexp
-    "% c" 'dired-do-copy-regexp
-    "% h" 'dired-do-hardlink-regexp
-    "% s" 'dired-do-symlink-regexp
-    "% y" 'dired-do-relsymlink-regexp
-    "% t" 'dired-flag-garbage-files
-    "F" 'dired-create-empty-file
-    "M-s M-s" 'dired-do-isearch
-    "M-s s" 'dired-do-isearch
-    "M-s M-r" 'dired-do-isearch-regexp
-    "M-s r" 'dired-do-isearch-regexp)
-
-  (with-eval-after-load 'conn
-    (keymap-set dired-mode-map "r" (conn-remap-key (key-parse "%")))
-    (keymap-set dired-mode-map "h" (conn-remap-key (key-parse "*")))))
+  ;; (define-keymap
+  ;;   :keymap dired-mode-map
+  ;;   "/" 'dired-undo
+  ;;   "C-<tab>" 'dired-maybe-insert-subdir
+  ;;   "<backtab>" 'dired-kill-subdir
+  ;;   "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff
+  ;;   "b" 'dired-up-directory
+  ;;   "* e" 'dired-mark-executables
+  ;;   "* l" 'dired-mark-symlinks
+  ;;   "* d" 'dired-mark-directories
+  ;;   "* r" 'dired-mark-files-regexp
+  ;;   "% c" 'dired-do-copy-regexp
+  ;;   "% h" 'dired-do-hardlink-regexp
+  ;;   "% s" 'dired-do-symlink-regexp
+  ;;   "% y" 'dired-do-relsymlink-regexp
+  ;;   "% t" 'dired-flag-garbage-files
+  ;;   "F" 'dired-create-empty-file
+  ;;   "M-s M-s" 'dired-do-isearch
+  ;;   "M-s s" 'dired-do-isearch
+  ;;   "M-s M-r" 'dired-do-isearch-regexp
+  ;;   "M-s r" 'dired-do-isearch-regexp)
+  )
 
 
 ;;;; eldoc
@@ -995,8 +986,8 @@ see command `isearch-forward' for more information."
 
 ;;;; helpful
 
-(with-eval-after-load 'conn
-  (conn-help-state-mode 1))
+;; (with-eval-after-load 'conn
+;;   (conn-help-state-mode 1))
 
 (elpaca helpful
   (keymap-global-set "C-h v" 'helpful-variable)
@@ -1638,8 +1629,6 @@ see command `isearch-forward' for more information."
         (alist-get 'my-org-capture-buffer-p conn-buffer-state-setup-alist)
         #'conn-setup-command-state)
 
-  (keymap-set conn-wincontrol-map "`" 'quit-window)
-
   (define-keymap
     :keymap conn-mode-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
@@ -1662,8 +1651,8 @@ see command `isearch-forward' for more information."
 
   (keymap-set (conn-get-state-map 'conn-emacs-state) "<f8>" 'conn-command-state)
   (keymap-set (conn-get-state-map 'conn-org-edit-state) "<f8>" 'conn-command-state)
-  ;; (keymap-set (conn-get-mode-map 'conn-command-state 'org-mode) "," 'conn-org-edit-state)
-  ;; (keymap-set (conn-get-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
+  ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "," 'conn-org-edit-state)
+  ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
   (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project)
   (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command)
@@ -1874,7 +1863,8 @@ see command `isearch-forward' for more information."
                           :repo "mtll/conn"
                           :files ("extensions/conn-smartparens.el"))
   (with-eval-after-load 'smartparens
-    (require 'conn-smartparens)))
+    (require 'conn-smartparens)
+    (conntext-smartparens-mode 1)))
 
 ;; (when (>= emacs-major-version 30)
 ;;   (elpaca (conn-treesit :host github
@@ -1917,9 +1907,6 @@ see command `isearch-forward' for more information."
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
   (with-eval-after-load 'nerd-icons
     (setq magit-format-file-function #'magit-format-file-nerd-icons))
-
-  (with-eval-after-load 'conn
-    (conn-magit-state-mode 1))
 
   (keymap-global-set "C-c m f" 'magit-file-dispatch)
   (keymap-global-set "C-c m s" 'magit-status)
@@ -3687,9 +3674,7 @@ see command `isearch-forward' for more information."
 
 (elpaca treemacs
   (keymap-global-set "C-c h" 'treemacs-select-window)
-  (keymap-global-set "C-c H" 'treemacs)
-  (with-eval-after-load 'treemacs
-    (keymap-set treemacs-mode-map "`" 'treemacs-select-window)))
+  (keymap-global-set "C-c H" 'treemacs))
 
 ;;;; dirvish
 
