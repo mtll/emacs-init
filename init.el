@@ -2,7 +2,7 @@
 
 ;;; Elpaca
 
-(defvar elpaca-core-date '(20250223))
+(defvar elpaca-core-date '(20250401))
 (defvar elpaca-installer-version 0.10)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -818,16 +818,16 @@ see command `isearch-forward' for more information."
 
   (recentf-mode 1)
 
-  (defvar my-recentf-autosave
-    (run-with-idle-timer
-     4 t (lambda ()
-           (when recentf-mode
-             ;; inhibit-message t didn't seem to stop
-             ;; isearch messages from getting clobered
-             ;; so we do this instead.
-             (let ((message-log-max nil))
-               (with-temp-message (or (current-message) "")
-                 (recentf-save-list)))))))
+  ;; (defvar my-recentf-autosave
+  ;;   (run-with-idle-timer
+  ;;    4 t (lambda ()
+  ;;          (when recentf-mode
+  ;;            ;; inhibit-message t didn't seem to stop
+  ;;            ;; isearch messages from getting clobered
+  ;;            ;; so we do this instead.
+  ;;            (let ((message-log-max nil))
+  ;;              (with-temp-message (or (current-message) "")
+  ;;                (recentf-save-list)))))))
 
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
@@ -1596,6 +1596,9 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'ibuffer
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
+
+  (keymap-global-set "M-n" 'conn-edit-map)
+  (keymap-global-set "M-h" 'conn-region-map)
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -2493,26 +2496,27 @@ see command `isearch-forward' for more information."
 
 ;;;; nerd icons
 
-(elpaca nerd-icons
-  (require 'nerd-icons))
+(when (window-system)
+  (elpaca nerd-icons
+    (require 'nerd-icons))
 
-(elpaca nerd-icons-dired
-  (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
-  (with-eval-after-load 'diminish
-    (diminish 'nerd-icons-dired-mode)))
+  (elpaca nerd-icons-dired
+    (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
+    (with-eval-after-load 'diminish
+      (diminish 'nerd-icons-dired-mode)))
 
-(elpaca nerd-icons-corfu
-  (with-eval-after-load 'corfu
-    (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)))
+  (elpaca nerd-icons-corfu
+    (with-eval-after-load 'corfu
+      (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)))
 
-(elpaca nerd-icons-ibuffer
-  (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
-  (with-eval-after-load 'diminish
-    (diminish 'nerd-icons-ibuffer-mode)))
+  (elpaca nerd-icons-ibuffer
+    (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
+    (with-eval-after-load 'diminish
+      (diminish 'nerd-icons-ibuffer-mode)))
 
-(elpaca nerd-icons-completion
-  (with-eval-after-load 'marginalia
-    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))
+  (elpaca nerd-icons-completion
+    (with-eval-after-load 'marginalia
+      (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))))
 
 
 ;;;; bicycle
@@ -3171,9 +3175,6 @@ see command `isearch-forward' for more information."
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
   (with-eval-after-load 'denote
-    (require 'denote-silo-extras)
-    (with-eval-after-load 'org
-      (require 'denote-org-extras))
     (denote-rename-buffer-mode 1)
 
     (setq denote-file-type 'text
@@ -3197,7 +3198,7 @@ see command `isearch-forward' for more information."
     (let ((denote-file-type 'org))
       (call-interactively #'denote)))
 
-  (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
+  ;; (keymap-global-set "C-c n e" #'denote-org-extras-extract-org-subtree)
   (keymap-global-set "C-c n t" #'denote)
   (keymap-global-set "C-c n s" #'denote-signature)
   (keymap-global-set "C-c n k" #'denote-rename-file-keywords)
