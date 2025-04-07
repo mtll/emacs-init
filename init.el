@@ -408,8 +408,8 @@
 
   (with-eval-after-load 'org
     (with-eval-after-load 'conn
-      (keymap-set org-mode-map "C-c b" (conn-remap-key (key-parse "C-c C-v")))
-      (keymap-set org-mode-map "C-c x" (conn-remap-key (key-parse "C-c C-x")))
+      (keymap-set org-mode-map "C-c b" (conn-remap-key "C-c C-v"))
+      (keymap-set org-mode-map "C-c x" (conn-remap-key "C-c C-x"))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
       (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle)
@@ -1598,8 +1598,8 @@ see command `isearch-forward' for more information."
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
   (with-eval-after-load 'conn
-    (keymap-global-set "M-n" conn-edit-map)
-    (keymap-global-set "M-h" conn-region-map))
+    (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
+    (keymap-global-set "M-h" (conn-remap-key "<conn-region-map>")))
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -1661,7 +1661,7 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
   (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
-  (keymap-global-set "C-c c" (conn-remap-key (key-parse "C-c C-c")))
+  (keymap-global-set "C-c c" (conn-remap-key "C-c C-c"))
 
   (dolist (state '(conn-command-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
