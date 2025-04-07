@@ -1322,9 +1322,9 @@ see command `isearch-forward' for more information."
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
-      :keymap conn-edit-map
-      "D"   'crux-duplicate-and-comment-current-line-or-region
-      "@"   'crux-insert-date)))
+      :keymap global-map
+      "<conn-edit-map> D"   'crux-duplicate-and-comment-current-line-or-region
+      "<conn-edit-map> @"   'crux-insert-date)))
 
 
 ;;;; posframe
@@ -1597,8 +1597,9 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'ibuffer
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
-  (keymap-global-set "M-n" 'conn-edit-map)
-  (keymap-global-set "M-h" 'conn-region-map)
+  (with-eval-after-load 'conn
+    (keymap-global-set "M-n" conn-edit-map)
+    (keymap-global-set "M-h" conn-region-map))
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -1622,8 +1623,6 @@ see command `isearch-forward' for more information."
 
   (add-hook 'outline-minor-mode-hook 'conntext-outline-mode)
 
-  (conn-enable-global-bindings)
-
   (defun my-org-capture-buffer-p (buffer &rest _alist)
     (bound-and-true-p org-capture-mode))
 
@@ -1633,7 +1632,7 @@ see command `isearch-forward' for more information."
         #'conn-setup-command-state)
 
   (define-keymap
-    :keymap conn-mode-map
+    :keymap global-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "M-\\"  'conn-kapply-prefix
@@ -1702,10 +1701,10 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'consult
     (require 'conn-consult))
   (with-eval-after-load 'conn
-    (keymap-set conn-region-map "o" 'conn-consult-line-region)
-    (keymap-set conn-region-map "O" 'conn-consult-line-multi-region)
-    (keymap-set conn-region-map "g" 'conn-consult-ripgrep-region)
-    (keymap-set conn-region-map "v" 'conn-consult-git-grep-region)))
+    (keymap-global-set "<conn-region-map> o" 'conn-consult-line-region)
+    (keymap-global-set "<conn-region-map> O" 'conn-consult-line-multi-region)
+    (keymap-global-set "<conn-region-map> g" 'conn-consult-ripgrep-region)
+    (keymap-global-set "<conn-region-map> v" 'conn-consult-git-grep-region)))
 
 (with-eval-after-load 'conn
   (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
@@ -1894,7 +1893,7 @@ see command `isearch-forward' for more information."
 
 (elpaca ialign
   (with-eval-after-load 'conn
-    (keymap-set conn-region-map "a i" 'ialign))
+    (keymap-global-set "<conn-region-map> a i" 'ialign))
 
   (with-eval-after-load 'embark
     (defun embark-ialign (_reg)
@@ -3509,7 +3508,8 @@ see command `isearch-forward' for more information."
       :keymap (conn-get-mode-map 'conn-command-state 'smartparens-mode)
       "M-s" 'sp-splice-sexp
       "M-r" 'sp-splice-sexp-killing-around
-      "r i" 'conn-sp-wrap-region))
+      ;; "r i" 'conn-sp-wrap-region
+      ))
 
   (define-keymap
     :keymap smartparens-mode-map
