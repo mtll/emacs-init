@@ -60,6 +60,7 @@
       package-enable-at-startup nil
       initial-buffer-choice nil
       ring-bell-function #'ignore
+      initial-major-mode 'fundamental-mode
       inhibit-startup-screen t
       inhibit-x-resources t
       load-prefer-newer t

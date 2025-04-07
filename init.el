@@ -730,8 +730,11 @@ see command `isearch-forward' for more information."
 
 (setq tab-bar-new-tab-choice t)
 
-(tab-bar-mode 1)
-(tab-bar-history-mode 1)
+(letrec ((loader (lambda ()
+                   (tab-bar-mode 1)
+                   (tab-bar-history-mode 1)
+                   (remove-hook 'pre-command-hook loader))))
+  (add-hook 'pre-command-hook loader))
 
 (defun my-tab-bar-new-message (&rest _)
   (message "Added new tab at %s" tab-bar-new-tab-to))
@@ -796,7 +799,10 @@ see command `isearch-forward' for more information."
 
 (setopt repeat-keep-prefix nil)
 
-(repeat-mode 1)
+(letrec ((loader (lambda ()
+                   (repeat-mode 1)
+                   (remove-hook 'pre-command-hook loader))))
+  (add-hook 'pre-command-hook loader))
 
 (keymap-global-set "C-x c" 'repeat)
 
@@ -804,7 +810,10 @@ see command `isearch-forward' for more information."
 ;;;; autorevert
 
 (setopt auto-revert-interval .01)
-(global-auto-revert-mode 1)
+(letrec ((loader (lambda ()
+                   (global-auto-revert-mode 1)
+                   (remove-hook 'pre-command-hook loader))))
+  (add-hook 'pre-command-hook loader))
 (with-eval-after-load 'diminish
   (diminish 'auto-revert-mode))
 
@@ -1232,17 +1241,21 @@ see command `isearch-forward' for more information."
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
-  (dtrt-indent-global-mode 1)
-  (with-eval-after-load 'diminish
-    (diminish 'dtrt-indent-mode)))
+  (letrec ((loader (lambda ()
+                     (dtrt-indent-global-mode 1)
+                     (remove-hook 'prog-mode-hook loader))))
+    (add-hook 'prog-mode-hook loader))
+  (with-eval-after-load 'dtrt-indent
+    (with-eval-after-load 'diminish
+      (diminish 'dtrt-indent-mode))))
 
 
 ;;;; exec-path-from-shell
 
-(elpaca exec-path-from-shell
-  (when (memq window-system '(mac ns x))
-    (require 'exec-path-from-shell)
-    (exec-path-from-shell-initialize)))
+;; (elpaca exec-path-from-shell
+;;   (when (memq window-system '(mac ns x))
+;;     (require 'exec-path-from-shell)
+;;     (exec-path-from-shell-initialize)))
 
 
 ;;;; modus-themes
@@ -1292,7 +1305,10 @@ see command `isearch-forward' for more information."
 ;;;; no-littering
 
 (elpaca no-littering
-  (require 'no-littering)
+  (letrec ((loader (lambda ()
+                     (require 'no-littering)
+                     (remove-hook 'pre-command-hook loader))))
+    (add-hook 'pre-command-hook loader))
 
   (setq backup-by-copying t
         auto-save-file-name-transforms
@@ -1754,14 +1770,14 @@ see command `isearch-forward' for more information."
              (user-error (completion-at-point)))))
       (_
        (condition-case _
-           (conn--with-advice
-               (( 'completion-at-point :override
-                  (lambda ()
-                    (let ((embark-target-finders
-                           (seq-intersection my-embark-smart-tab-target-finders
-                                             embark-target-finders
-                                             #'eq)))
-                      (conn-embark-dwim-either arg)))))
+           (cl-letf (((symbol-function 'completion-at-point)))
+             (advice-add 'completion-at-point :override
+                         (lambda ()
+                           (let ((embark-target-finders
+                                  (seq-intersection my-embark-smart-tab-target-finders
+                                                    embark-target-finders
+                                                    #'eq)))
+                             (conn-embark-dwim-either arg))))
              (indent-for-tab-command))
          (user-error (completion-at-point))))))
 
@@ -2497,7 +2513,10 @@ see command `isearch-forward' for more information."
 
 (when (window-system)
   (elpaca nerd-icons
-    (require 'nerd-icons))
+    (letrec ((loader (lambda ()
+                       (require 'nerd-icons)
+                       (remove-hook 'pre-command-hook loader))))
+      (add-hook 'pre-command-hook loader)))
 
   (elpaca nerd-icons-dired
     (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
@@ -2515,7 +2534,7 @@ see command `isearch-forward' for more information."
 
   (elpaca nerd-icons-completion
     (with-eval-after-load 'marginalia
-      (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))))
+      (nerd-icons-completion-marginalia-setup))))
 
 
 ;;;; bicycle
@@ -2572,75 +2591,79 @@ see command `isearch-forward' for more information."
 ;;;; orderless
 
 (elpaca orderless
-  (require 'orderless)
-  (setq orderless-affix-dispatch-alist '((?\= . orderless-literal)
-                                         (?! . orderless-without-literal)
-                                         (?, . orderless-initialism))
-        completion-styles '(orderless basic)
-        orderless-kwd-prefix ?`
-        orderless-kwd-separator "`="
-        orderless-matching-styles '(orderless-literal
-                                    orderless-regexp)
-        orderless-style-dispatchers '(orderless-kwd-dispatch
-                                      orderless-affix-dispatch
-                                      flex-first-if-completing)
-        completion-category-overrides '((file (styles orderless+flex
-                                                      partial-completion
-                                                      basic))
-                                        (lsp-capf (styles orderless+flex))
-                                        (consult-location (styles orderless-loc))
-                                        (consult-grep (styles orderless-loc)))
-        orderless-component-separator #'orderless-escapable-split-on-space
-        orderless-smart-case t
-        read-file-name-completion-ignore-case nil
-        read-buffer-completion-ignore-case nil)
+  (letrec ((loader (lambda ()
+                     (require 'orderless)
+                     (remove-hook 'minibuffer-setup-hook loader))))
+    (add-hook 'minibuffer-setup-hook loader))
+  (with-eval-after-load 'orderless
+    (setq orderless-affix-dispatch-alist '((?\= . orderless-literal)
+                                           (?! . orderless-without-literal)
+                                           (?, . orderless-initialism))
+          completion-styles '(orderless basic)
+          orderless-kwd-prefix ?`
+          orderless-kwd-separator "`="
+          orderless-matching-styles '(orderless-literal
+                                      orderless-regexp)
+          orderless-style-dispatchers '(orderless-kwd-dispatch
+                                        orderless-affix-dispatch
+                                        flex-first-if-completing)
+          completion-category-overrides '((file (styles orderless+flex
+                                                        partial-completion
+                                                        basic))
+                                          (lsp-capf (styles orderless+flex))
+                                          (consult-location (styles orderless-loc))
+                                          (consult-grep (styles orderless-loc)))
+          orderless-component-separator #'orderless-escapable-split-on-space
+          orderless-smart-case t
+          read-file-name-completion-ignore-case nil
+          read-buffer-completion-ignore-case nil)
 
-  (defun my-quote-region-for-orderless (string)
-    (concat
-     (string (car (rassq 'orderless-literal orderless-affix-dispatch-alist)))
-     (string-replace " " "\\ " string)))
-  (setq conn-completion-region-quote-function 'my-quote-region-for-orderless)
+    (defun my-quote-region-for-orderless (string)
+      (concat
+       (string (car (rassq 'orderless-literal orderless-affix-dispatch-alist)))
+       (string-replace " " "\\ " string)))
+    (setq conn-completion-region-quote-function 'my-quote-region-for-orderless)
 
-  (defun flex-first-if-completing (pattern index _total)
-    (when (and (= index 0)
-               (or completion-in-region-mode
-                   (bound-and-true-p company-candidates)))
-      `(orderless-flex . ,pattern)))
+    (defun flex-first-if-completing (pattern index _total)
+      (when (and (= index 0)
+                 (or completion-in-region-mode
+                     (bound-and-true-p company-candidates)))
+        `(orderless-flex . ,pattern)))
 
-  (defun orderless-toggle-smart-case ()
-    (interactive)
-    (cond (orderless-smart-case
-           (setq-local orderless-smart-case (not orderless-smart-case)))
-          ((null completion-ignore-case)
-           (setq-local completion-ignore-case t))
-          (t
-           (setq-local orderless-smart-case t
-                       completion-ignore-case nil)))
-    (message "ignore-case: %s" (if orderless-smart-case
-                                   "smart"
-                                 completion-ignore-case)))
-  (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
+    (defun orderless-toggle-smart-case ()
+      (interactive)
+      (cond (orderless-smart-case
+             (setq-local orderless-smart-case (not orderless-smart-case)))
+            ((null completion-ignore-case)
+             (setq-local completion-ignore-case t))
+            (t
+             (setq-local orderless-smart-case t
+                         completion-ignore-case nil)))
+      (message "ignore-case: %s" (if orderless-smart-case
+                                     "smart"
+                                   completion-ignore-case)))
+    (keymap-set minibuffer-local-map "M-C" 'orderless-toggle-smart-case)
 
-  (defun flex-first (pattern index _total)
-    (when (= index 0) `(orderless-flex . ,pattern)))
+    (defun flex-first (pattern index _total)
+      (when (= index 0) `(orderless-flex . ,pattern)))
 
-  (orderless-define-completion-style orderless+flex
-    (orderless-matching-styles '(orderless-literal
-                                 orderless-initialism
-                                 orderless-regexp))
-    (orderless-style-dispatchers '(orderless-kwd-dispatch
-                                   orderless-affix-dispatch
-                                   flex-first)))
+    (orderless-define-completion-style orderless+flex
+      (orderless-matching-styles '(orderless-literal
+                                   orderless-initialism
+                                   orderless-regexp))
+      (orderless-style-dispatchers '(orderless-kwd-dispatch
+                                     orderless-affix-dispatch
+                                     flex-first)))
 
-  (orderless-define-completion-style orderless-loc
-    (orderless-matching-styles '(orderless-literal orderless-regexp))
-    (orderless-affix-dispatch '((?\= . orderless-literal)))
-    (orderless-style-dispatchers '(orderless-affix-dispatch)))
+    (orderless-define-completion-style orderless-loc
+      (orderless-matching-styles '(orderless-literal orderless-regexp))
+      (orderless-affix-dispatch '((?\= . orderless-literal)))
+      (orderless-style-dispatchers '(orderless-affix-dispatch)))
 
-  (orderless-define-completion-style orderless-literal
-    (orderless-matching-styles '(orderless-literal))
-    (orderless-affix-dispatch '((?\~ . orderless-regexp)))
-    (orderless-style-dispatchers '(orderless-affix-dispatch))))
+    (orderless-define-completion-style orderless-literal
+      (orderless-matching-styles '(orderless-literal))
+      (orderless-affix-dispatch '((?\~ . orderless-regexp)))
+      (orderless-style-dispatchers '(orderless-affix-dispatch)))))
 
 
 ;;;; consult
@@ -3012,76 +3035,80 @@ see command `isearch-forward' for more information."
 ;;;; marginalia
 
 (elpaca marginalia
-  (marginalia-mode 1)
+  (letrec ((loader (lambda ()
+                     (marginalia-mode 1)
+                     (remove-hook 'minibuffer-setup-hook loader))))
+    (add-hook 'minibuffer-setup-hook loader))
 
   (setq marginalia-align 'column)
 
   (keymap-global-set "M-A" 'marginalia-cycle)
   (keymap-set minibuffer-local-map "M-A" 'marginalia-cycle)
 
-  (defun marginalia-annotate-alias (cand)
-    "Annotate CAND with the function it aliases."
-    (when-let* ((sym (intern-soft cand))
-                (alias (car (last (function-alias-p sym t))))
-                (name (and (symbolp alias) (symbol-name alias))))
-      (format #(" (%s)" 1 5 (face marginalia-function)) name)))
+  (with-eval-after-load 'marginalia
+    (defun marginalia-annotate-alias (cand)
+      "Annotate CAND with the function it aliases."
+      (when-let* ((sym (intern-soft cand))
+                  (alias (car (last (function-alias-p sym t))))
+                  (name (and (symbolp alias) (symbol-name alias))))
+        (format #(" (%s)" 1 5 (face marginalia-function)) name)))
 
-  (defun my-marginalia-annotate-binding (cand)
-    "Annotate command CAND with keybinding."
-    (when-let* ((sym (intern-soft cand))
-                (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
-      (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
+    (defun my-marginalia-annotate-binding (cand)
+      "Annotate command CAND with keybinding."
+      (when-let* ((sym (intern-soft cand))
+                  (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
+        (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
 
-  (defun marginalia-annotate-command-with-alias (cand)
-    "Annotate command CAND with its documentation string.
+    (defun marginalia-annotate-command-with-alias (cand)
+      "Annotate command CAND with its documentation string.
     Similar to `marginalia-annotate-symbol', but does not show symbol class."
-    (when-let* ((sym (intern-soft cand)))
-      (concat
-       (my-marginalia-annotate-binding cand)
-       (marginalia-annotate-alias cand)
-       (marginalia--documentation (marginalia--function-doc sym)))))
-  (cl-pushnew #'marginalia-annotate-command-with-alias
-              (alist-get 'command marginalia-annotator-registry))
+      (when-let* ((sym (intern-soft cand)))
+        (concat
+         (my-marginalia-annotate-binding cand)
+         (marginalia-annotate-alias cand)
+         (marginalia--documentation (marginalia--function-doc sym)))))
+    (cl-pushnew #'marginalia-annotate-command-with-alias
+                (alist-get 'command marginalia-annotator-registry))
 
-  (defvar marginalia-align-column 40)
+    (defvar marginalia-align-column 40)
 
-  ;; Try to align to a specific column and if candidate is too long align
-  ;; on multiple of marginalia--cand-width-step. This prevents very long
-  ;; candidates from pushing all annotations almost entirely out of view.
-  (defun marginalia--align-column (cands)
-    "Align annotations of CANDS according to `marginalia-align'."
-    (cl-loop
-     for (cand . ann) in cands do
-     (let ((align (text-property-any 0 (length ann) 'marginalia--align t ann)))
-       (when align
-         (setq marginalia--cand-width-max
-               (max marginalia--cand-width-max
-                    (* (ceiling (+ (string-width cand)
-                                   (compat-call string-width ann 0 align))
-                                marginalia--cand-width-step)
-                       marginalia--cand-width-step))))))
-    (cl-loop
-     for (cand . ann) in cands collect
-     (let ((align (text-property-any 0 (length ann) 'marginalia--align t ann)))
-       (when align
-         (put-text-property
-          align (1+ align) 'display
-          `(space :align-to
-                  ,(pcase-exhaustive marginalia-align
-                     ('center `(+ center ,marginalia-align-offset))
-                     ('left `(+ left ,(+ marginalia-align-offset marginalia--cand-width-max)))
-                     ('right `(+ right ,(+ marginalia-align-offset 1
-                                           (- (compat-call string-width ann 0 align)
-                                              (string-width ann)))))
-                     ('column `(+ left ,(+ marginalia-align-offset
-                                           (max marginalia-align-column
-                                                (* (ceiling (+ (string-width cand)
-                                                               (compat-call string-width ann 0 align))
-                                                            marginalia--cand-width-step)
-                                                   marginalia--cand-width-step)))))))
-          ann))
-       (list cand "" ann))))
-  (advice-add 'marginalia--align :override 'marginalia--align-column))
+    ;; Try to align to a specific column and if candidate is too long align
+    ;; on multiple of marginalia--cand-width-step. This prevents very long
+    ;; candidates from pushing all annotations almost entirely out of view.
+    (defun marginalia--align-column (cands)
+      "Align annotations of CANDS according to `marginalia-align'."
+      (cl-loop
+       for (cand . ann) in cands do
+       (let ((align (text-property-any 0 (length ann) 'marginalia--align t ann)))
+         (when align
+           (setq marginalia--cand-width-max
+                 (max marginalia--cand-width-max
+                      (* (ceiling (+ (string-width cand)
+                                     (compat-call string-width ann 0 align))
+                                  marginalia--cand-width-step)
+                         marginalia--cand-width-step))))))
+      (cl-loop
+       for (cand . ann) in cands collect
+       (let ((align (text-property-any 0 (length ann) 'marginalia--align t ann)))
+         (when align
+           (put-text-property
+            align (1+ align) 'display
+            `(space :align-to
+                    ,(pcase-exhaustive marginalia-align
+                       ('center `(+ center ,marginalia-align-offset))
+                       ('left `(+ left ,(+ marginalia-align-offset marginalia--cand-width-max)))
+                       ('right `(+ right ,(+ marginalia-align-offset 1
+                                             (- (compat-call string-width ann 0 align)
+                                                (string-width ann)))))
+                       ('column `(+ left ,(+ marginalia-align-offset
+                                             (max marginalia-align-column
+                                                  (* (ceiling (+ (string-width cand)
+                                                                 (compat-call string-width ann 0 align))
+                                                              marginalia--cand-width-step)
+                                                     marginalia--cand-width-step)))))))
+            ann))
+         (list cand "" ann))))
+    (advice-add 'marginalia--align :override 'marginalia--align-column)))
 
 
 ;;;; tempel
@@ -3400,150 +3427,155 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
-  (setq sp-highlight-pair-overlay nil
-        sp-highlight-wrap-overlay t
-        sp-echo-match-when-invisible nil)
+  (letrec ((loader (lambda ()
+                     (require 'smartparens-config)
+                     (smartparens-global-mode 1)
+                     (show-smartparens-global-mode 1)
+                     (remove-hook 'prog-mode-hook loader))))
+    (add-hook 'prog-mode-hook loader))
 
-  (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
-  (require 'smartparens-config)
-  (smartparens-global-mode 1)
-  (show-smartparens-global-mode 1)
+  (with-eval-after-load 'smartparens
+    (setq sp-highlight-pair-overlay nil
+          sp-highlight-wrap-overlay t
+          sp-echo-match-when-invisible nil)
 
-  ;; (defun conn-progressive-read (prompt collection)
-  ;;   (let ((so-far "")
-  ;;         (narrowed collection)
-  ;;         (prompt (propertize (concat prompt ": ")
-  ;;                             'face 'minibuffer-prompt))
-  ;;         (display "")
-  ;;         (next nil)
-  ;;         (next-char nil))
-  ;;     (while (not (length= narrowed 1))
-  ;;       (while (not next)
-  ;;         (setq display (cl-loop with display = ""
-  ;;                                for i from 0
-  ;;                                for item in narrowed
-  ;;                                while (length< display 100)
-  ;;                                do (setq display
-  ;;                                         (concat display item
-  ;;                                                 (propertize " | " 'face 'shadow)))
-  ;;                                finally return
-  ;;                                (concat (propertize "{" 'face 'minibuffer-prompt)
-  ;;                                        (substring display 0 -3)
-  ;;                                        (when (length> narrowed i)
-  ;;                                          (propertize "..." 'face 'minibuffer-prompt))
-  ;;                                        (propertize "}" 'face 'minibuffer-prompt))))
-  ;;         (setq next-char (read-char (concat prompt so-far "  " display) t))
-  ;;         (setq next (cl-loop for item in narrowed
-  ;;                             when (eql (aref item (length so-far))
-  ;;                                       next-char)
-  ;;                             collect item)))
-  ;;       (setq narrowed next
-  ;;             next nil)
-  ;;       (setq so-far (concat so-far (string next-char))))
-  ;;     (car narrowed)))
+    (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
 
-  (with-eval-after-load 'conn
-    (defun conn-progressive-read (prompt collection)
-      (let ((so-far "")
-            (narrowed (mapcar #'copy-sequence
-                              (vertico-sort-length-alpha
-                               (delete-dups (copy-sequence collection)))))
-            (prompt (propertize (concat prompt ": ")
-                                'face 'minibuffer-prompt))
-            (display "")
-            (next nil)
-            (next-char nil))
+    ;; (defun conn-progressive-read (prompt collection)
+    ;;   (let ((so-far "")
+    ;;         (narrowed collection)
+    ;;         (prompt (propertize (concat prompt ": ")
+    ;;                             'face 'minibuffer-prompt))
+    ;;         (display "")
+    ;;         (next nil)
+    ;;         (next-char nil))
+    ;;     (while (not (length= narrowed 1))
+    ;;       (while (not next)
+    ;;         (setq display (cl-loop with display = ""
+    ;;                                for i from 0
+    ;;                                for item in narrowed
+    ;;                                while (length< display 100)
+    ;;                                do (setq display
+    ;;                                         (concat display item
+    ;;                                                 (propertize " | " 'face 'shadow)))
+    ;;                                finally return
+    ;;                                (concat (propertize "{" 'face 'minibuffer-prompt)
+    ;;                                        (substring display 0 -3)
+    ;;                                        (when (length> narrowed i)
+    ;;                                          (propertize "..." 'face 'minibuffer-prompt))
+    ;;                                        (propertize "}" 'face 'minibuffer-prompt))))
+    ;;         (setq next-char (read-char (concat prompt so-far "  " display) t))
+    ;;         (setq next (cl-loop for item in narrowed
+    ;;                             when (eql (aref item (length so-far))
+    ;;                                       next-char)
+    ;;                             collect item)))
+    ;;       (setq narrowed next
+    ;;             next nil)
+    ;;       (setq so-far (concat so-far (string next-char))))
+    ;;     (car narrowed)))
+
+    (with-eval-after-load 'conn
+      (defun conn-progressive-read (prompt collection)
+        (let ((so-far "")
+              (narrowed (mapcar #'copy-sequence
+                                (vertico-sort-length-alpha
+                                 (delete-dups (copy-sequence collection)))))
+              (prompt (propertize (concat prompt ": ")
+                                  'face 'minibuffer-prompt))
+              (display "")
+              (next nil)
+              (next-char nil))
+          (unwind-protect
+              (while (not (length= narrowed 1))
+                (while (not next)
+                  (setq display (cl-loop with display = ""
+                                         for i from 0 below 10
+                                         for item in narrowed
+                                         do (setq display (concat display item "\n"))
+                                         finally return display))
+                  (posframe-show " *conn pair posframe*"
+                                 :string display
+                                 :left-fringe 0
+                                 :right-fringe 0
+                                 :background-color (face-attribute 'menu :background)
+                                 :border-width conn-posframe-border-width
+                                 :border-color conn-posframe-border-color
+                                 :min-width 8)
+                  (setq next-char (read-char (concat prompt so-far) t))
+                  (setq next (cl-loop for item in narrowed
+                                      when (eql (aref item (length so-far))
+                                                next-char)
+                                      do (add-text-properties
+                                          0 (1+ (length so-far))
+                                          '(face completions-highlight)
+                                          item)
+                                      and collect item)))
+                (setq narrowed next
+                      next nil)
+                (setq so-far (concat so-far (string next-char))))
+            (posframe-hide " *conn pair posframe*"))
+          (car narrowed)))
+
+      (defun conn-sp-wrap-region ()
+        (interactive)
+        (activate-mark)
         (unwind-protect
-            (while (not (length= narrowed 1))
-              (while (not next)
-                (setq display (cl-loop with display = ""
-                                       for i from 0 below 10
-                                       for item in narrowed
-                                       do (setq display (concat display item "\n"))
-                                       finally return display))
-                (posframe-show " *conn pair posframe*"
-                               :string display
-                               :left-fringe 0
-                               :right-fringe 0
-                               :background-color (face-attribute 'menu :background)
-                               :border-width conn-posframe-border-width
-                               :border-color conn-posframe-border-color
-                               :min-width 8)
-                (setq next-char (read-char (concat prompt so-far) t))
-                (setq next (cl-loop for item in narrowed
-                                    when (eql (aref item (length so-far))
-                                              next-char)
-                                    do (add-text-properties
-                                        0 (1+ (length so-far))
-                                        '(face completions-highlight)
-                                        item)
-                                    and collect item)))
-              (setq narrowed next
-                    next nil)
-              (setq so-far (concat so-far (string next-char))))
-          (posframe-hide " *conn pair posframe*"))
-        (car narrowed)))
+            (save-excursion
+              (sp-wrap-with-pair
+               (conn-progressive-read
+                "Pair"
+                (mapcar
+                 (pcase-lambda ((map :trigger :open))
+                   (or trigger open))
+                 (append
+                  (alist-get t sp-pairs)
+                  (alist-get major-mode sp-pairs
+                             nil nil
+                             (lambda (a b)
+                               (or (eq t a)
+                                   (provided-mode-derived-p b a)))))))))
+          (deactivate-mark)))
 
-    (defun conn-sp-wrap-region ()
-      (interactive)
-      (activate-mark)
-      (unwind-protect
-          (save-excursion
-            (sp-wrap-with-pair
-             (conn-progressive-read
-              "Pair"
-              (mapcar
-               (pcase-lambda ((map :trigger :open))
-                 (or trigger open))
-               (append
-                (alist-get t sp-pairs)
-                (alist-get major-mode sp-pairs
-                           nil nil
-                           (lambda (a b)
-                             (or (eq t a)
-                                 (provided-mode-derived-p b a)))))))))
-        (deactivate-mark)))
+      (define-keymap
+        :keymap (conn-get-mode-map 'conn-command-state 'smartparens-mode)
+        "M-s" 'sp-splice-sexp
+        "M-r" 'sp-splice-sexp-killing-around
+        ;; "r i" 'conn-sp-wrap-region
+        ))
 
     (define-keymap
-      :keymap (conn-get-mode-map 'conn-command-state 'smartparens-mode)
-      "M-s" 'sp-splice-sexp
-      "M-r" 'sp-splice-sexp-killing-around
-      ;; "r i" 'conn-sp-wrap-region
-      ))
-
-  (define-keymap
-    :keymap smartparens-mode-map
-    "C-M-f" `(menu-item
-              "forward-sexp"
-              sp-forward-sexp
-              :filter ,(lambda (&rest _)
-                         (if (bound-and-true-p treesit-primary-parser)
-                             'forward-sexp
-                           'sp-forward-sexp)))
-    "C-M-b" `(menu-item
-              "forward-sexp"
-              sp-backward-sexp
-              :filter ,(lambda (&rest _)
-                         (if (bound-and-true-p treesit-primary-parser)
-                             'backward-sexp
-                           'sp-backward-sexp)))
-    "C-M-u" 'sp-backward-up-sexp
-    "C-M-d" 'sp-down-sexp
-    "C-M-p" 'sp-backward-down-sexp
-    "C-M-n" 'sp-up-sexp
-    "M-C" 'sp-copy-sexp
-    "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-    "M-)" 'sp-splice-sexp-killing-forward
-    "M-K" 'sp-raise-sexp
-    "M-I" 'sp-splice-sexp
-    "M-J" 'sp-backward-slurp-sexp
-    "M-L" 'sp-forward-slurp-sexp
-    "M-O" 'sp-forward-barf-sexp
-    "M-U" 'sp-backward-barf-sexp
-    "M-B" 'sp-convolute-sexp
-    "M-H" 'sp-join-sexp
-    "M-N" 'sp-beginning-of-sexp
-    "M-M" 'sp-end-of-sexp))
+      :keymap smartparens-mode-map
+      "C-M-f" `(menu-item
+                "forward-sexp"
+                sp-forward-sexp
+                :filter ,(lambda (&rest _)
+                           (if (bound-and-true-p treesit-primary-parser)
+                               'forward-sexp
+                             'sp-forward-sexp)))
+      "C-M-b" `(menu-item
+                "forward-sexp"
+                sp-backward-sexp
+                :filter ,(lambda (&rest _)
+                           (if (bound-and-true-p treesit-primary-parser)
+                               'backward-sexp
+                             'sp-backward-sexp)))
+      "C-M-u" 'sp-backward-up-sexp
+      "C-M-d" 'sp-down-sexp
+      "C-M-p" 'sp-backward-down-sexp
+      "C-M-n" 'sp-up-sexp
+      "M-C" 'sp-copy-sexp
+      "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+      "M-)" 'sp-splice-sexp-killing-forward
+      "M-K" 'sp-raise-sexp
+      "M-I" 'sp-splice-sexp
+      "M-J" 'sp-backward-slurp-sexp
+      "M-L" 'sp-forward-slurp-sexp
+      "M-O" 'sp-forward-barf-sexp
+      "M-U" 'sp-backward-barf-sexp
+      "M-B" 'sp-convolute-sexp
+      "M-H" 'sp-join-sexp
+      "M-N" 'sp-beginning-of-sexp
+      "M-M" 'sp-end-of-sexp)))
 
 
 ;;;; djvu
