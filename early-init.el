@@ -1,7 +1,8 @@
 ;; -*- lexical-binding: t; -*-
 (defvar default-file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
-(setq gc-cons-threshold 500000000)
+(setq gc-cons-threshold 500000000
+      gc-cons-percentage 0.6)
 (add-hook 'elpaca-after-init-hook
           (let ((format mode-line-format))
             (lambda ()
@@ -13,7 +14,8 @@
                                 (time-subtract (current-time) before-init-time))))
               (setq-default mode-line-format format)
               (setq file-name-handler-alist default-file-name-handler-alist)
-              (setq gc-cons-threshold (* 32 1024 1024))
+              (setq gc-cons-threshold (* 32 1024 1024)
+                    gc-cons-percentage 0.6)
               (if (boundp 'after-focus-change-function)
                   (add-function :after after-focus-change-function
                                 (lambda ()
@@ -28,9 +30,9 @@
 ;; (benchmark-init/activate)
 ;; (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate)
 
-(setq-default ;; truncate-lines t
- ;; truncate-partial-width-windows nil
- window-resize-pixelwise nil)
+(setq-default truncate-lines nil
+              ;; truncate-partial-width-windows nil
+              window-resize-pixelwise nil)
 
 ;; redisplay
 (setq redisplay-skip-fontification-on-input t
@@ -60,7 +62,7 @@
       package-enable-at-startup nil
       initial-buffer-choice nil
       ring-bell-function #'ignore
-      initial-major-mode 'fundamental-mode
+      ;; initial-major-mode 'fundamental-mode
       inhibit-startup-screen t
       inhibit-x-resources t
       load-prefer-newer t

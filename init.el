@@ -504,7 +504,7 @@
                                          try-expand-dabbrev-all-buffers
                                          try-expand-dabbrev-from-kill))
 
-(keymap-global-set "M-h" 'hippie-expand)
+(keymap-global-set "C-M-h" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
@@ -906,6 +906,11 @@ see command `isearch-forward' for more information."
   (diminish 'eldoc-mode))
 
 (setq eldoc-echo-area-prefer-doc-buffer t)
+
+(elpaca eldoc-box
+  (with-eval-after-load 'conn
+    (keymap-set (conn-get-state-map 'conn-command-state)
+                "g h" 'eldoc-box-help-at-point)))
 
 
 ;;;; erc
@@ -1610,12 +1615,16 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
 
+  (with-eval-after-load 'org
+    (keymap-set org-mode-map "<conn-thing-map> M" 'conn-mark-org-math)
+    (keymap-set org-mode-map "<conn-thing-map> m" 'conn-mark-org-inner-math))
+
   (with-eval-after-load 'ibuffer
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
   (with-eval-after-load 'conn
     (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
-    (keymap-global-set "M-h" (conn-remap-key "<conn-region-map>")))
+    (keymap-global-set "M-r" (conn-remap-key "<conn-region-map>")))
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -1631,12 +1640,14 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
+  (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
+  (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-<left>" 'conntext-state)
 
   (defvar-keymap conn-buffer-repeat-map
     :repeat t
     "l" 'next-buffer
     "j" 'previous-buffer)
-
   (add-hook 'outline-minor-mode-hook 'conntext-outline-mode)
 
   (defun my-org-capture-buffer-p (buffer &rest _alist)
@@ -1667,7 +1678,7 @@ see command `isearch-forward' for more information."
     "C-SPC" 'conn-set-mark-command
     "C-x n" 'set-goal-column)
 
-  (keymap-set (conn-get-state-map 'conn-emacs-state) "<f8>" 'conn-command-state)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "<escape>" 'conn-command-state)
   (keymap-set (conn-get-state-map 'conn-org-edit-state) "<f8>" 'conn-command-state)
   ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "," 'conn-org-edit-state)
   ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
@@ -1882,7 +1893,7 @@ see command `isearch-forward' for more information."
                           :files ("extensions/conn-smartparens.el"))
   (with-eval-after-load 'smartparens
     (require 'conn-smartparens)
-    (conntext-smartparens-mode 1)))
+    (add-hook 'lisp-data-mode-hook 'conntext-smartparens-mode)))
 
 ;; (when (>= emacs-major-version 30)
 ;;   (elpaca (conn-treesit :host github
@@ -3427,6 +3438,8 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
+  (conntext-smartparens-mode 1)
+
   (letrec ((loader (lambda ()
                      (require 'smartparens-config)
                      (smartparens-global-mode 1)
@@ -3540,8 +3553,8 @@ see command `isearch-forward' for more information."
         :keymap (conn-get-mode-map 'conn-command-state 'smartparens-mode)
         "M-s" 'sp-splice-sexp
         "M-r" 'sp-splice-sexp-killing-around
-        ;; "r i" 'conn-sp-wrap-region
-        ))
+        "<left>" 'sp-backward-symbol
+        "<right>" 'sp-forward-symbol))
 
     (define-keymap
       :keymap smartparens-mode-map
