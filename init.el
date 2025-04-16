@@ -1820,7 +1820,7 @@ see command `isearch-forward' for more information."
     (defun conn-embark-alt-dwim (&optional arg)
       "alternate `embark-dwim'."
       (interactive "P")
-      (if-let ((targets (embark--targets)))
+      (if-let* ((targets (embark--targets)))
           (let* ((target
                   (or (nth
                        (if (or (null arg) (minibufferp))
@@ -2789,7 +2789,7 @@ see command `isearch-forward' for more information."
       (save-excursion
         (goto-char (point-min))
         (while (save-excursion
-                 (if-let (fun (bound-and-true-p outline-search-function))
+                 (if-let* (fun (bound-and-true-p outline-search-function))
                      (funcall fun)
                    (re-search-forward page-regexp nil t)))
           (cl-incf line (consult--count-lines (match-beginning 0)))
