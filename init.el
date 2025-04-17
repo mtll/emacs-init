@@ -3611,6 +3611,45 @@ see command `isearch-forward' for more information."
                           (nerd-icons-mdicon "nf-md-keyboard_tab"))))))
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
 
+;;;; org-modern
+
+(elpaca org-modern
+  (setq
+   ;; Edit settings
+   org-auto-align-tags nil
+   org-tags-column 0
+   org-catch-invisible-edits 'show-and-error
+   org-special-ctrl-a/e t
+   org-insert-heading-respect-content t
+
+   ;; Org styling, hide markup etc.
+   org-hide-emphasis-markers t
+   org-pretty-entities t
+   org-agenda-tags-column 0
+   org-ellipsis "…")
+
+  (setq org-modern-block-indent t  ; to enable org-modern-indent when org-indent is active
+        org-modern-hide-stars nil
+        org-modern-todo-faces
+        '(("STARTED" :foreground "yellow")
+          ("CANCELED" org-special-keyword :inverse-video t :weight bold))
+        org-modern-list
+        '((?* . "•")
+          (?+ . "‣"))
+        org-modern-fold-stars
+        '(("▶" . "▼")
+          ("▷" . "▽")
+          ("▸" . "▾")
+          ("▹" . "▿"))
+        org-modern-checkbox
+        '((?X . "✔")
+          (?- . "┅")
+          (?\s . " "))
+        org-modern-label-border 1)
+
+  (with-eval-after-load 'org
+    (org-indent-mode 1)
+    (global-org-modern-mode 1)))
 
 ;;;; org-ql
 
