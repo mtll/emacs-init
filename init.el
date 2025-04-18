@@ -1644,6 +1644,8 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "C-<left>" 'conntext-state)
 
+  (keymap-set conn-dot-mode-map "<escape>" 'exit-recursive-edit)
+
   (defvar-keymap conn-buffer-repeat-map
     :repeat t
     "l" 'next-buffer
