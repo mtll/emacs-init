@@ -1257,10 +1257,10 @@ see command `isearch-forward' for more information."
 
 ;;;; exec-path-from-shell
 
-;; (elpaca exec-path-from-shell
-;;   (when (memq window-system '(mac ns x))
-;;     (require 'exec-path-from-shell)
-;;     (exec-path-from-shell-initialize)))
+(elpaca exec-path-from-shell
+  (when (memq window-system '(mac ns x))
+    (require 'exec-path-from-shell)
+    (exec-path-from-shell-initialize)))
 
 
 ;;;; modus-themes
@@ -1612,6 +1612,10 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (custom-set-faces
+   '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
+   '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
+
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
 
@@ -3650,7 +3654,6 @@ see command `isearch-forward' for more information."
         org-modern-label-border 1)
 
   (with-eval-after-load 'org
-    (org-indent-mode 1)
     (global-org-modern-mode 1)))
 
 ;;;; org-ql
