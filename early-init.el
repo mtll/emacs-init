@@ -60,9 +60,9 @@
       native-comp-async-report-warnings-errors 'silent
       frame-inhibit-implied-resize t
       package-enable-at-startup nil
-      initial-buffer-choice nil
+      initial-buffer-choice t
       ring-bell-function #'ignore
-      ;; initial-major-mode 'fundamental-mode
+      initial-major-mode 'fundamental-mode
       inhibit-startup-screen t
       inhibit-x-resources t
       load-prefer-newer t

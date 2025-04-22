@@ -56,6 +56,11 @@
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
 (run-with-idle-timer 1 nil 'my-do-incremental-load)
 
+(push (lambda ()
+        (with-current-buffer (get-scratch-buffer-create)
+          (lisp-interaction-mode)))
+      my-to-incremental-load)
+
 ;;;; emacs
 
 ;; help-window-select t
@@ -838,17 +843,6 @@ see command `isearch-forward' for more information."
         recentf-auto-cleanup (if (daemonp) 300 'mode))
 
   (recentf-mode 1)
-
-  ;; (defvar my-recentf-autosave
-  ;;   (run-with-idle-timer
-  ;;    4 t (lambda ()
-  ;;          (when recentf-mode
-  ;;            ;; inhibit-message t didn't seem to stop
-  ;;            ;; isearch messages from getting clobered
-  ;;            ;; so we do this instead.
-  ;;            (let ((message-log-max nil))
-  ;;              (with-temp-message (or (current-message) "")
-  ;;                (recentf-save-list)))))))
 
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
@@ -2472,12 +2466,12 @@ see command `isearch-forward' for more information."
 ;;;; corfu
 
 (elpaca corfu
-  (push (lambda ()
-          (global-corfu-mode 1)
-          (corfu-popupinfo-mode 1)
-          (corfu-echo-mode 1)
-          (corfu-history-mode 1))
-        my-to-incremental-load)
+  (letrec ((loader (lambda ()
+                     (global-corfu-mode 1)
+                     (corfu-popupinfo-mode 1)
+                     (corfu-echo-mode 1)
+                     (corfu-history-mode 1))))
+    (add-hook 'prog-mode-hook loader))
 
   (setq corfu-scroll-margin 2
         corfu-bar-width 0.4
@@ -2547,7 +2541,8 @@ see command `isearch-forward' for more information."
 
 (when (window-system)
   (elpaca nerd-icons
-    (push (lambda () (require 'nerd-icons)) my-to-incremental-load))
+    (push (lambda () (require 'nerd-icons))
+          my-to-incremental-load))
 
   (elpaca nerd-icons-dired
     (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
@@ -3459,22 +3454,15 @@ see command `isearch-forward' for more information."
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
   (with-eval-after-load 'smartparens
-    (conntext-smartparens-mode 1)
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
-  ;; (letrec ((loader (lambda ()
-  ;;                    (require 'smartparens-config)
-  ;;                    (smartparens-global-mode 1)
-  ;;                    (show-smartparens-global-mode 1)
-  ;;                    (remove-hook 'prog-mode-hook loader))))
-  ;;   (add-hook 'prog-mode-hook loader))
-
-  (push (lambda ()
-          (require 'smartparens-config)
-          (smartparens-global-mode 1)
-          (show-smartparens-global-mode 1))
-        my-to-incremental-load)
+  (letrec ((loader (lambda ()
+                     (require 'smartparens-config)
+                     (smartparens-global-mode 1)
+                     (show-smartparens-global-mode 1)
+                     (remove-hook 'prog-mode-hook loader))))
+    (add-hook 'prog-mode-hook loader))
 
   (with-eval-after-load 'smartparens
     (setq sp-highlight-pair-overlay nil
