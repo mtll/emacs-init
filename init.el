@@ -45,6 +45,17 @@
 
 ;;; Built-in
 
+(defvar my-to-incremental-load nil)
+
+(defun my-do-incremental-load ()
+  (while-no-input
+    (while my-to-incremental-load
+      (funcall (car my-to-incremental-load))
+      (pop my-to-incremental-load)))
+  (when my-to-incremental-load
+    (run-with-idle-timer 1 nil 'my-do-incremental-load)))
+(run-with-idle-timer 1 nil 'my-do-incremental-load)
+
 ;;;; emacs
 
 ;; help-window-select t
@@ -381,6 +392,7 @@
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
+  (push (lambda () (require 'org)) my-to-incremental-load)
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
         org-outline-path-complete-in-steps nil
@@ -857,6 +869,7 @@ see command `isearch-forward' for more information."
 
 ;;;; ibuffer
 
+(push (lambda () (require 'ibuffer)) my-to-incremental-load)
 (with-eval-after-load 'ibuffer
   (setq ibuffer-human-readable-size t))
 
@@ -864,6 +877,8 @@ see command `isearch-forward' for more information."
 ;;;; dired
 
 (keymap-global-set "C-x h" 'dired-jump)
+
+(push (lambda () (require 'dired)) my-to-incremental-load)
 
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
@@ -1246,10 +1261,8 @@ see command `isearch-forward' for more information."
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
-  (letrec ((loader (lambda ()
-                     (dtrt-indent-global-mode 1)
-                     (remove-hook 'prog-mode-hook loader))))
-    (add-hook 'prog-mode-hook loader))
+  (push (lambda () (dtrt-indent-global-mode 1))
+        my-to-incremental-load)
   (with-eval-after-load 'dtrt-indent
     (with-eval-after-load 'diminish
       (diminish 'dtrt-indent-mode))))
@@ -1354,7 +1367,8 @@ see command `isearch-forward' for more information."
 
 (when window-system
   (elpaca posframe
-    (run-with-timer 3 nil (lambda () (require 'posframe)))))
+    (push (lambda () (require 'posframe))
+          my-to-incremental-load)))
 
 
 ;;;; isearch+
@@ -1940,6 +1954,7 @@ see command `isearch-forward' for more information."
 (elpaca llama)
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
+  (push (lambda () (require 'magit)) my-to-incremental-load)
   (with-eval-after-load 'nerd-icons
     (setq magit-format-file-function #'magit-format-file-nerd-icons))
 
@@ -1963,6 +1978,24 @@ see command `isearch-forward' for more information."
   ;; M-h C-M-j M-u M-n M-p
 
   (cl-pushnew #'cape-file completion-at-point-functions)
+
+  (with-eval-after-load 'lsp-mode
+    (defun wrap-lsp-capf ()
+      (setq-local completion-at-point-functions
+                  (cl-nsubst
+                   (cape-capf-noninterruptible
+                    (cape-capf-buster #'lsp-completion-at-point))
+                   #'lsp-completion-at-point completion-at-point-functions)))
+    (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
+
+  (with-eval-after-load 'eglot
+    (defun wrap-eglot-capf ()
+      (setq-local completion-at-point-functions
+                  (cl-nsubst
+                   (cape-capf-noninterruptible
+                    (cape-capf-buster #'eglot-completion-at-point))
+                   #'eglot-completion-at-point completion-at-point-functions)))
+    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf))
 
   ;; (defun dictionary-doc-lookup (cand)
   ;;   (let* ((buffer)
@@ -2439,10 +2472,12 @@ see command `isearch-forward' for more information."
 ;;;; corfu
 
 (elpaca corfu
-  (global-corfu-mode 1)
-  (corfu-popupinfo-mode 1)
-  (corfu-echo-mode 1)
-  (corfu-history-mode 1)
+  (push (lambda ()
+          (global-corfu-mode 1)
+          (corfu-popupinfo-mode 1)
+          (corfu-echo-mode 1)
+          (corfu-history-mode 1))
+        my-to-incremental-load)
 
   (setq corfu-scroll-margin 2
         corfu-bar-width 0.4
@@ -2476,21 +2511,21 @@ see command `isearch-forward' for more information."
         ;;             "TAB" #'corfu-complete)
         )
 
-  (define-keymap
-    :keymap corfu-map
-    "C-h" 'corfu-info-documentation
-    "M-h" 'corfu-info-location
-    "M-TAB" 'corfu-insert-separator
-    "TAB" 'corfu-insert
-    "C-g" 'corfu-quit)
-
-  (keymap-unset corfu-map "RET" t)
-
   (defun my-corfu-auto-on ()
     (setq-local corfu-auto t))
   ;; (add-hook 'prog-mode-hook 'my-corfu-auto-on)
 
   (with-eval-after-load 'corfu
+    (define-keymap
+      :keymap corfu-map
+      "C-h" 'corfu-info-documentation
+      "M-h" 'corfu-info-location
+      "M-TAB" 'corfu-insert-separator
+      "TAB" 'corfu-insert
+      "C-g" 'corfu-quit)
+
+    (keymap-unset corfu-map "RET" t)
+
     (defun corfu-sep-and-start ()
       (interactive)
       (completion-at-point)
@@ -2505,35 +2540,14 @@ see command `isearch-forward' for more information."
 
       (defun my-corfu-on ()
         (global-corfu-mode 1))
-      (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on)))
-
-  (with-eval-after-load 'lsp-mode
-    (defun wrap-lsp-capf ()
-      (setq-local completion-at-point-functions
-                  (cl-nsubst
-                   (cape-capf-noninterruptible
-                    (cape-capf-buster #'lsp-completion-at-point))
-                   #'lsp-completion-at-point completion-at-point-functions)))
-    (add-hook 'lsp-managed-mode-hook #'wrap-lsp-capf))
-
-  (with-eval-after-load 'eglot
-    (defun wrap-eglot-capf ()
-      (setq-local completion-at-point-functions
-                  (cl-nsubst
-                   (cape-capf-noninterruptible
-                    (cape-capf-buster #'eglot-completion-at-point))
-                   #'eglot-completion-at-point completion-at-point-functions)))
-    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
+      (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on))))
 
 
 ;;;; nerd icons
 
 (when (window-system)
   (elpaca nerd-icons
-    (letrec ((loader (lambda ()
-                       (require 'nerd-icons)
-                       (remove-hook 'pre-command-hook loader))))
-      (add-hook 'pre-command-hook loader)))
+    (push (lambda () (require 'nerd-icons)) my-to-incremental-load))
 
   (elpaca nerd-icons-dired
     (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
@@ -3217,6 +3231,8 @@ see command `isearch-forward' for more information."
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
+  (push (lambda () (require 'denote)) my-to-incremental-load)
+
   (with-eval-after-load 'denote
     (denote-rename-buffer-mode 1)
 
@@ -3344,7 +3360,8 @@ see command `isearch-forward' for more information."
 ;;;; jinx
 
 (elpaca jinx
-  (run-with-idle-timer 2 nil (lambda () (global-jinx-mode 1)))
+  (push (lambda () (global-jinx-mode 1))
+        my-to-incremental-load)
 
   (with-eval-after-load 'jinx
     ;; (with-eval-after-load 'diminish
@@ -3416,7 +3433,8 @@ see command `isearch-forward' for more information."
 (elpaca projectile
   (setq projectile-mode-line-prefix ""
         projectile-dynamic-mode-line nil)
-  (run-with-timer 2 nil (lambda () (projectile-mode 1)))
+  (push (lambda () (projectile-mode 1))
+        my-to-incremental-load)
 
   (defun my-ibuffer-maybe-project (&optional all)
     (interactive "P")
@@ -3441,17 +3459,22 @@ see command `isearch-forward' for more information."
 (elpaca (smartparens :host github
                      :repo "Fuco1/smartparens")
   (with-eval-after-load 'smartparens
+    (conntext-smartparens-mode 1)
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
-  (conntext-smartparens-mode 1)
+  ;; (letrec ((loader (lambda ()
+  ;;                    (require 'smartparens-config)
+  ;;                    (smartparens-global-mode 1)
+  ;;                    (show-smartparens-global-mode 1)
+  ;;                    (remove-hook 'prog-mode-hook loader))))
+  ;;   (add-hook 'prog-mode-hook loader))
 
-  (letrec ((loader (lambda ()
-                     (require 'smartparens-config)
-                     (smartparens-global-mode 1)
-                     (show-smartparens-global-mode 1)
-                     (remove-hook 'prog-mode-hook loader))))
-    (add-hook 'prog-mode-hook loader))
+  (push (lambda ()
+          (require 'smartparens-config)
+          (smartparens-global-mode 1)
+          (show-smartparens-global-mode 1))
+        my-to-incremental-load)
 
   (with-eval-after-load 'smartparens
     (setq sp-highlight-pair-overlay nil
@@ -3702,7 +3725,8 @@ see command `isearch-forward' for more information."
 ;;;; yasnippet
 
 (elpaca yasnippet
-  (run-with-timer 1 nil (lambda () (yas-global-mode 1)))
+  (push (lambda () (yas-global-mode 1))
+        my-to-incremental-load)
 
   (with-eval-after-load 'yasnippet
     ;; Can't do this through diminish since it wants to append a
