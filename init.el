@@ -50,7 +50,8 @@
 (defun my-do-incremental-load ()
   (while-no-input
     (while my-to-incremental-load
-      (funcall (car my-to-incremental-load))
+      (with-demoted-errors "Error in incremental loader: %s"
+        (funcall (car my-to-incremental-load)))
       (pop my-to-incremental-load)))
   (when my-to-incremental-load
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
@@ -65,7 +66,8 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq git-commit-major-mode 'log-edit-mode
+(setq edmacro-reverse-macro-lines t
+      git-commit-major-mode 'log-edit-mode
       next-line-add-newlines t
       scroll-conservatively 0
       visual-order-cursor-movement t
@@ -2101,7 +2103,8 @@ see command `isearch-forward' for more information."
 
     (keymap-set embark-heading-map "RET" #'bicycle-cycle)
     (with-eval-after-load 'org
-      (keymap-set embark-org-heading-map "RET" #'bicycle-cycle))
+      (with-eval-after-load 'embark
+        (keymap-set embark-org-heading-map "RET" #'bicycle-cycle)))
 
     (defun my-embark-abbrev-target-finder ()
       (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
