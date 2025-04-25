@@ -1,9 +1,7 @@
 ;;; -*- lexical-binding: t; eval: (outline-minor-mode 1); -*-
 
 ;;; Elpaca
-
-(defvar elpaca-core-date '(20250401))
-(defvar elpaca-installer-version 0.10)
+(defvar elpaca-installer-version 0.11)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
@@ -38,7 +36,7 @@
   (unless (require 'elpaca-autoloads nil t)
     (require 'elpaca)
     (elpaca-generate-autoloads "elpaca" repo)
-    (load "./elpaca-autoloads")))
+    (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
 (add-hook 'after-init-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
@@ -51,16 +49,11 @@
   (while-no-input
     (while my-to-incremental-load
       (with-demoted-errors "Error in incremental loader: %s"
-        (funcall (car my-to-incremental-load)))
-      (pop my-to-incremental-load)))
+        (let ((inhibit-message t))
+          (funcall (pop my-to-incremental-load))))))
   (when my-to-incremental-load
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
 (run-with-idle-timer 1 nil 'my-do-incremental-load)
-
-(push (lambda ()
-        (with-current-buffer (get-scratch-buffer-create)
-          (lisp-interaction-mode)))
-      my-to-incremental-load)
 
 ;;;; emacs
 
@@ -333,6 +326,17 @@
 
 (with-eval-after-load 'c-ts-mode
   (setq c-ts-mode-indent-offset 4))
+
+;;;; lisp
+
+(with-eval-after-load 'elisp-mode
+  (define-keymap
+    :keymap emacs-lisp-mode-map
+    "C-c x" 'eval-defun)
+
+  (define-keymap
+    :keymap lisp-interaction-mode-map
+    "C-c x" 'eval-defun))
 
 ;;;; paren context
 
@@ -1647,8 +1651,6 @@ see command `isearch-forward' for more information."
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
     (add-mode-abbrev (or arg 0)))
-
-  (add-hook 'view-mode-hook #'conn-emacs-state)
 
   (conn-mode 1)
 
@@ -3794,6 +3796,11 @@ see command `isearch-forward' for more information."
     (dirvish-override-dired-mode 1))
 
   (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
+
+(push (lambda ()
+        (with-current-buffer (get-scratch-buffer-create)
+          (lisp-interaction-mode)))
+      my-to-incremental-load)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
