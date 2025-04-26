@@ -73,37 +73,4 @@
 (load (expand-file-name "font.el" user-emacs-directory) t t)
 (load (expand-file-name "custom.el" user-emacs-directory) t t)
 
-(when (>= emacs-major-version 30)
-  (with-eval-after-load 'modus-themes
-    (setq modus-themes-common-palette-overrides
-          (seq-concatenate
-           'list
-           `((bg-main "#fff5e8")
-             (fg-active-argument "#630863")
-             (bg-active-argument "#fcd1fc")
-             (cursor "#7d0002")
-             (bg-region "#f7dbd6")
-             (fg-region unspecified)
-             (fg-completion-match-0 "#353b44")
-             (bg-completion-match-0 "#d0e4ff")
-             (fg-completion-match-1 "#384231")
-             (bg-completion-match-1 "#cdf3b5")
-             (fg-completion-match-2 "#3b3544")
-             (bg-completion-match-2 "#d1baf1")
-             (fg-completion-match-3 "#313c37")
-             (bg-completion-match-3 "#bef1da")
-             (bg-search-lazy bg-magenta-subtle)
-             (bg-search-current bg-yellow-intense))
-           modus-themes-preset-overrides-warmer)))
-
-  (load-theme 'modus-operandi-tinted t)
-
-  (custom-set-faces
-   ;; `(fringe ((t :inherit default)))
-   ;; `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
-   ;; `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
-   `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900")))
-   )
-  )
-
 (provide 'early-init)

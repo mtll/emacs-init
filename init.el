@@ -50,7 +50,8 @@
     (while my-to-incremental-load
       (with-demoted-errors "Error in incremental loader: %s"
         (let ((inhibit-message t))
-          (funcall (pop my-to-incremental-load))))))
+          (funcall (car my-to-incremental-load))))
+      (pop my-to-incremental-load)))
   (when my-to-incremental-load
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
 (run-with-idle-timer 1 nil 'my-do-incremental-load)
@@ -1102,48 +1103,47 @@ see command `isearch-forward' for more information."
 
 ;;;; lsp-mode
 
-(elpaca lsp-mode
-  (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
-  (add-hook 'lsp-mode-hook 'lsp-modeline-code-actions-mode)
-
-  (setq lsp-keymap-prefix "C-c s"
-        lsp-eldoc-render-all nil
-        lsp-enable-on-type-formatting nil
-        lsp-ui-doc-alignment 'window
-        lsp-ui-doc-header t
-        lsp-ui-doc-border "black"
-        lsp-ui-doc-background '((t (:background "#dfd9cf")))
-        lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
-
-  (setq lsp-clients-clangd-args '("-j=4"
-                                  "--log=error"
-                                  "--background-index"
-                                  "--clang-tidy"
-                                  "--cross-file-rename"
-                                  "--header-insertion=never")
-        lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
-
-  (defun my-lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))) ;; Configure orderless
-  (add-hook 'lsp-completion-mode-hook #'my-lsp-mode-setup-completion)
-
-  (with-eval-after-load 'lsp-mode
-    (define-keymap
-      :keymap lsp-mode-map
-      "C-c I" 'lsp-inlay-hints-mode)))
+;; (elpaca lsp-mode
+;;   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
+;;   (add-hook 'lsp-mode-hook 'lsp-modeline-code-actions-mode)
+;; 
+;;   (setq lsp-keymap-prefix "C-c s"
+;;         lsp-eldoc-render-all nil
+;;         lsp-enable-on-type-formatting nil
+;;         lsp-ui-doc-alignment 'window
+;;         lsp-ui-doc-header t
+;;         lsp-ui-doc-border "black"
+;;         lsp-ui-doc-background '((t (:background "#dfd9cf")))
+;;         lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
+;; 
+;;   (setq lsp-clients-clangd-args '("-j=4"
+;;                                   "--log=error"
+;;                                   "--background-index"
+;;                                   "--clang-tidy"
+;;                                   "--cross-file-rename"
+;;                                   "--header-insertion=never")
+;;         lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
+;; 
+;;   (defun my-lsp-mode-setup-completion ()
+;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+;;           '(orderless))) ;; Configure orderless
+;;   (add-hook 'lsp-completion-mode-hook #'my-lsp-mode-setup-completion)
+;; 
+;;   (with-eval-after-load 'lsp-mode
+;;     (define-keymap
+;;       :keymap lsp-mode-map
+;;       "C-c I" 'lsp-inlay-hints-mode)))
 
 ;;;;; lsp-ui
 
-(elpaca lsp-ui
-  (with-eval-after-load 'lsp
-    (add-hook 'lsp-mode-hook 'lsp-ui-mode)
-    (keymap-set lsp-mode-map "M-g m" 'lsp-ui-imenu)))
+;; (elpaca lsp-ui
+;;   (with-eval-after-load 'lsp
+;;     (add-hook 'lsp-mode-hook 'lsp-ui-mode)
+;;     (keymap-set lsp-mode-map "M-g m" 'lsp-ui-imenu)))
 
-
-;;;; dap-mode
+;;;; dape
 
-(elpaca dap-mode)
+(elpaca dape)
 
 
 ;;;; j-mode
@@ -1279,45 +1279,43 @@ see command `isearch-forward' for more information."
 ;;;; modus-themes
 
 (static-if (< emacs-major-version 30)
-    (elpaca modus-themes
-      (require 'modus-themes)
+    (elpaca modus-themes))
 
-      (setopt modus-themes-common-palette-overrides
-              (seq-concatenate
-               'list
-               `((bg-main "#f7eee1")
-                 (cursor "#7d0002")
-                 (bg-region "#f1d5d0")
-                 (fg-active-argument "#930c93")
-                 (bg-active-argument "#f4caf4")
-                 (fg-region unspecified)
-                 (fg-completion-match-0 "#353b44")
-                 (bg-completion-match-0 "#c5dfff")
-                 (fg-completion-match-1 "#384231")
-                 (bg-completion-match-1 "#cdf3b5")
-                 (fg-completion-match-2 "#3b3544")
-                 (bg-completion-match-2 "#d1baf1")
-                 (fg-completion-match-3 "#313c37")
-                 (bg-completion-match-3 "#bef1da")
-                 (bg-search-lazy bg-magenta-subtle)
-                 (bg-search-current bg-yellow-intense))
-               modus-themes-preset-overrides-warmer))
+(with-eval-after-load 'modus-themes
+  (setq modus-themes-common-palette-overrides
+        (seq-concatenate
+         'list
+         `((bg-main "#fff5e8")
+           (fg-active-argument "#630863")
+           (bg-active-argument "#fcd1fc")
+           (cursor "#7d0002")
+           (bg-region "#f7dbd6")
+           (fg-region unspecified)
+           (fg-completion-match-0 "#353b44")
+           (bg-completion-match-0 "#d0e4ff")
+           (fg-completion-match-1 "#384231")
+           (bg-completion-match-1 "#cdf3b5")
+           (fg-completion-match-2 "#3b3544")
+           (bg-completion-match-2 "#d1baf1")
+           (fg-completion-match-3 "#313c37")
+           (bg-completion-match-3 "#bef1da")
+           (bg-search-lazy bg-magenta-subtle)
+           (bg-search-current bg-yellow-intense))
+         modus-themes-preset-overrides-warmer)
+        hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                                "modus-themes-subtle-red"
+                                "modus-themes-subtle-green"
+                                "modus-themes-subtle-blue"
+                                "modus-themes-subtle-yellow")))
 
-      (load-theme 'modus-operandi-tinted t)
-
-      ;; (custom-set-faces
-      ;;  `(transient-key-exit ((t :inherit modus-themes-key-binding :foreground "#a60000")))
-      ;;  `(transient-argument ((t :inherit font-lock-string-face :weight bold
-      ;;                           :foreground "#930c93" :background "#f4caf4")))
-      ;;  `(transient-key-return ((t :inherit modus-themes-key-binding :foreground "#6f5500")))
-      ;;  `(transient-key-stay ((t :inherit modus-themes-key-binding :foreground "#008900"))))
-      ))
-
-(setq hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                              "modus-themes-subtle-red"
-                              "modus-themes-subtle-green"
-                              "modus-themes-subtle-blue"
-                              "modus-themes-subtle-yellow"))
+(letrec ((hook (lambda ()
+                 (when (load-theme 'modus-operandi-tinted t)
+                   (custom-set-faces
+                    `(transient-key-stay ((t :inherit modus-themes-key-binding
+                                             :foreground "#008900")))))
+                 (remove-hook 'pre-command-hook hook))))
+  (add-hook 'pre-command-hook hook)
+  (push hook my-to-incremental-load))
 
 
 ;;;; no-littering
@@ -1626,9 +1624,9 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
-  (custom-set-faces
-   '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
-   '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
+  ;; (custom-set-faces
+  ;;  '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
+  ;;  '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
 
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
@@ -1653,6 +1651,7 @@ see command `isearch-forward' for more information."
     (add-mode-abbrev (or arg 0)))
 
   (conn-mode 1)
+  (conn-dispatch-auto-bind-mouse-mode 1)
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
@@ -1707,6 +1706,7 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
   (keymap-global-set "C-c c" (conn-remap-key "C-c C-c"))
+  (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
 
   (dolist (state '(conn-command-state conn-emacs-state))
     (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
@@ -1730,6 +1730,7 @@ see command `isearch-forward' for more information."
                    (require 'posframe)
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
+  (setq conn-window-labeling-function 'conn-posframe-window-label)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
 
@@ -3031,7 +3032,7 @@ see command `isearch-forward' for more information."
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
 
-  (keymap-global-set "<f1>" 'vertico-repeat)
+  (keymap-global-set "M-p" 'vertico-repeat)
 
   (keymap-unset vertico-map "C-j")
 
@@ -3786,9 +3787,9 @@ see command `isearch-forward' for more information."
 ;;;; dirvish
 
 (elpaca dirvish
-  (custom-set-faces
-   '(dirvish-hl-line ((t :inherit region :extend t)))
-   '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
+  ;; (custom-set-faces
+  ;;  '(dirvish-hl-line ((t :inherit region :extend t)))
+  ;;  '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
 
   (setq dirvish-hide-cursor t)
 
