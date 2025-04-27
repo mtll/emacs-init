@@ -43,6 +43,8 @@
 
 ;;; Built-in
 
+(setq magit-define-global-key-bindings nil)
+
 (defvar my-to-incremental-load nil)
 
 (defun my-do-incremental-load ()
@@ -1106,7 +1108,7 @@ see command `isearch-forward' for more information."
 ;; (elpaca lsp-mode
 ;;   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
 ;;   (add-hook 'lsp-mode-hook 'lsp-modeline-code-actions-mode)
-;; 
+;;
 ;;   (setq lsp-keymap-prefix "C-c s"
 ;;         lsp-eldoc-render-all nil
 ;;         lsp-enable-on-type-formatting nil
@@ -1115,7 +1117,7 @@ see command `isearch-forward' for more information."
 ;;         lsp-ui-doc-border "black"
 ;;         lsp-ui-doc-background '((t (:background "#dfd9cf")))
 ;;         lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
-;; 
+;;
 ;;   (setq lsp-clients-clangd-args '("-j=4"
 ;;                                   "--log=error"
 ;;                                   "--background-index"
@@ -1123,12 +1125,12 @@ see command `isearch-forward' for more information."
 ;;                                   "--cross-file-rename"
 ;;                                   "--header-insertion=never")
 ;;         lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
-;; 
+;;
 ;;   (defun my-lsp-mode-setup-completion ()
 ;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
 ;;           '(orderless))) ;; Configure orderless
 ;;   (add-hook 'lsp-completion-mode-hook #'my-lsp-mode-setup-completion)
-;; 
+;;
 ;;   (with-eval-after-load 'lsp-mode
 ;;     (define-keymap
 ;;       :keymap lsp-mode-map
@@ -1279,34 +1281,38 @@ see command `isearch-forward' for more information."
 ;;;; modus-themes
 
 (static-if (< emacs-major-version 30)
-    (elpaca modus-themes))
+    (elpaca modus-themes
+      (load-theme 'modus-operandi-tinted t)
 
-(with-eval-after-load 'modus-themes
-  (setq modus-themes-common-palette-overrides
-        (seq-concatenate
-         'list
-         `((bg-main "#fff5e8")
-           (fg-active-argument "#630863")
-           (bg-active-argument "#fcd1fc")
-           (cursor "#7d0002")
-           (bg-region "#f7dbd6")
-           (fg-region unspecified)
-           (fg-completion-match-0 "#353b44")
-           (bg-completion-match-0 "#d0e4ff")
-           (fg-completion-match-1 "#384231")
-           (bg-completion-match-1 "#cdf3b5")
-           (fg-completion-match-2 "#3b3544")
-           (bg-completion-match-2 "#d1baf1")
-           (fg-completion-match-3 "#313c37")
-           (bg-completion-match-3 "#bef1da")
-           (bg-search-lazy bg-magenta-subtle)
-           (bg-search-current bg-yellow-intense))
-         modus-themes-preset-overrides-warmer)
-        hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                                "modus-themes-subtle-red"
-                                "modus-themes-subtle-green"
-                                "modus-themes-subtle-blue"
-                                "modus-themes-subtle-yellow")))
+      (custom-set-faces
+       `(transient-key-stay ((t :inherit modus-themes-key-binding
+                                :foreground "#008900"))))
+
+      (setq modus-themes-common-palette-overrides
+            (seq-concatenate
+             'list
+             `((bg-main "#fff5e8")
+               (fg-active-argument "#630863")
+               (bg-active-argument "#fcd1fc")
+               (cursor "#7d0002")
+               (bg-region "#f7dbd6")
+               (fg-region unspecified)
+               (fg-completion-match-0 "#353b44")
+               (bg-completion-match-0 "#d0e4ff")
+               (fg-completion-match-1 "#384231")
+               (bg-completion-match-1 "#cdf3b5")
+               (fg-completion-match-2 "#3b3544")
+               (bg-completion-match-2 "#d1baf1")
+               (fg-completion-match-3 "#313c37")
+               (bg-completion-match-3 "#bef1da")
+               (bg-search-lazy bg-magenta-subtle)
+               (bg-search-current bg-yellow-intense))
+             modus-themes-preset-overrides-warmer)
+            hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                                    "modus-themes-subtle-red"
+                                    "modus-themes-subtle-green"
+                                    "modus-themes-subtle-blue"
+                                    "modus-themes-subtle-yellow"))))
 
 (letrec ((hook (lambda ()
                  (when (load-theme 'modus-operandi-tinted t)
