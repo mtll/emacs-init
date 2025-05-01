@@ -48,12 +48,10 @@
 (defvar my-to-incremental-load nil)
 
 (defun my-do-incremental-load ()
-  (while-no-input
-    (while my-to-incremental-load
-      (with-demoted-errors "Error in incremental loader: %s"
-        (let ((inhibit-message t))
-          (funcall (car my-to-incremental-load))))
-      (pop my-to-incremental-load)))
+  (while (and my-to-incremental-load
+              (not (input-pending-p)))
+    (with-demoted-errors "Error in incremental loader: %s"
+      (funcall (pop my-to-incremental-load))))
   (when my-to-incremental-load
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
 (run-with-idle-timer 1 nil 'my-do-incremental-load)
@@ -597,6 +595,8 @@
 (add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
 
 (with-eval-after-load 'outline
+  (setq outline-minor-mode-prefix (kbd "C-c u"))
+
   (keymap-set (conn-get-mode-map 'conn-command-state 'outline-minor-mode)
               "<conn-thing-map> h" 'outline-previous-visible-heading)
   (define-keymap
@@ -622,9 +622,7 @@
     "v" 'outline-move-subtree-down
     "m" 'outline-insert-heading
     ">" 'outline-promote
-    "<" 'outline-demote)
-
-  (setopt outline-minor-mode-prefix (kbd "C-c u"))
+    "<" 'outline-demote) 
 
   (pcase-dolist (`(,_ . ,def) (cdr outline-navigation-repeat-map))
     (put def 'repeat-map nil)))
@@ -821,9 +819,8 @@ see command `isearch-forward' for more information."
 ;;;; repeat
 
 (setq repeat-exit-timeout nil
-      repeat-on-final-keystroke t)
-
-(setopt repeat-keep-prefix nil)
+      repeat-on-final-keystroke t
+      repeat-keep-prefix nil)
 
 (letrec ((loader (lambda ()
                    (repeat-mode 1)
@@ -835,7 +832,7 @@ see command `isearch-forward' for more information."
 
 ;;;; autorevert
 
-(setopt auto-revert-interval .01)
+(setq auto-revert-interval .01)
 (letrec ((loader (lambda ()
                    (global-auto-revert-mode 1)
                    (remove-hook 'pre-command-hook loader))))
@@ -1007,8 +1004,17 @@ see command `isearch-forward' for more information."
 
 ;;;; Diminish
 
-(elpaca diminish
-  (diminish 'visual-line-mode))
+;; (elpaca diminish
+;;   (diminish 'visual-line-mode))
+
+;;;; minions
+
+(elpaca minions
+  (setq minions-mode-line-lighter " ≡"
+        minions-prominent-modes (list 'conn-local-mode
+                                      'conn-dot-mode
+                                      'conn-wincontrol-mode))
+  (minions-mode 1))
 
 
 ;;;; expreg
@@ -1178,12 +1184,13 @@ see command `isearch-forward' for more information."
   ;; (with-eval-after-load 'org
   ;;   (require 'pdf-tools))
 
+  (setq pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
+
   (with-eval-after-load 'pdf-tools
     (setq pdf-annot-latex-header "")
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode)
     (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window))
 
-  (setopt pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
   (pdf-loader-install))
 
 ;;;;; org-pdf-tools
@@ -1244,13 +1251,7 @@ see command `isearch-forward' for more information."
         "" cdlatex-environment ("flalign*") t nil))))
 
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent))
-
-  (with-eval-after-load 'conn
-    (with-eval-after-load 'org
-      (define-keymap
-        :keymap (conn-get-mode-map 'conn-command-state 'org-cdlatex-mode)
-        "'" 'org-cdlatex-math-modify))))
+    (keymap-set org-mode-map "M-i" 'org-cdlatex-environment-indent)))
 
 
 ;;;; math-delimiters
@@ -1280,48 +1281,38 @@ see command `isearch-forward' for more information."
 
 ;;;; modus-themes
 
-(static-if (< emacs-major-version 30)
-    (elpaca modus-themes
-      (load-theme 'modus-operandi-tinted t)
+(elpaca modus-themes
+  (require 'modus-themes)
 
-      (custom-set-faces
-       `(transient-key-stay ((t :inherit modus-themes-key-binding
-                                :foreground "#008900"))))
-
-      (setq modus-themes-common-palette-overrides
-            (seq-concatenate
-             'list
-             `((bg-main "#fff5e8")
-               (fg-active-argument "#630863")
-               (bg-active-argument "#fcd1fc")
-               (cursor "#7d0002")
-               (bg-region "#f7dbd6")
-               (fg-region unspecified)
-               (fg-completion-match-0 "#353b44")
-               (bg-completion-match-0 "#d0e4ff")
-               (fg-completion-match-1 "#384231")
-               (bg-completion-match-1 "#cdf3b5")
-               (fg-completion-match-2 "#3b3544")
-               (bg-completion-match-2 "#d1baf1")
-               (fg-completion-match-3 "#313c37")
-               (bg-completion-match-3 "#bef1da")
-               (bg-search-lazy bg-magenta-subtle)
-               (bg-search-current bg-yellow-intense))
-             modus-themes-preset-overrides-warmer)
-            hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                                    "modus-themes-subtle-red"
-                                    "modus-themes-subtle-green"
-                                    "modus-themes-subtle-blue"
-                                    "modus-themes-subtle-yellow"))))
-
-(letrec ((hook (lambda ()
-                 (when (load-theme 'modus-operandi-tinted t)
-                   (custom-set-faces
-                    `(transient-key-stay ((t :inherit modus-themes-key-binding
-                                             :foreground "#008900")))))
-                 (remove-hook 'pre-command-hook hook))))
-  (add-hook 'pre-command-hook hook)
-  (push hook my-to-incremental-load))
+  (setq modus-themes-common-palette-overrides
+        (seq-concatenate
+         'list
+         `((bg-main "#fff5e8")
+           (fg-active-argument "#630863")
+           (bg-active-argument "#fcd1fc")
+           (cursor "#7d0002")
+           (bg-region "#f7dbd6")
+           (fg-region unspecified)
+           (fg-completion-match-0 "#353b44")
+           (bg-completion-match-0 "#d0e4ff")
+           (fg-completion-match-1 "#384231")
+           (bg-completion-match-1 "#cdf3b5")
+           (fg-completion-match-2 "#3b3544")
+           (bg-completion-match-2 "#d1baf1")
+           (fg-completion-match-3 "#313c37")
+           (bg-completion-match-3 "#bef1da")
+           (bg-search-lazy bg-magenta-subtle)
+           (bg-search-current bg-yellow-intense))
+         modus-themes-preset-overrides-warmer)
+        hi-lock-face-defaults '("modus-themes-subtle-cyan"
+                                "modus-themes-subtle-red"
+                                "modus-themes-subtle-green"
+                                "modus-themes-subtle-blue"
+                                "modus-themes-subtle-yellow"))
+  (custom-set-faces
+   `(transient-key-stay ((t :inherit modus-themes-key-binding
+                            :foreground "#008900"))))
+  (load-theme 'modus-operandi-tinted t))
 
 
 ;;;; no-littering
@@ -1630,9 +1621,9 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
-  ;; (custom-set-faces
-  ;;  '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
-  ;;  '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
+  (custom-set-faces
+   '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
+   '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
 
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
@@ -1739,13 +1730,6 @@ see command `isearch-forward' for more information."
   (setq conn-window-labeling-function 'conn-posframe-window-label)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
-
-(elpaca (conn-nerd-icons :host github
-                         :repo "mtll/conn"
-                         :files ("extensions/conn-nerd-icons.el"))
-  (with-eval-after-load 'nerd-icons
-    (with-eval-after-load 'conn
-      (conn-enable-nerd-icon-lighters))))
 
 (elpaca (conn-consult :host github
                       :repo "mtll/conn"
@@ -2973,7 +2957,8 @@ see command `isearch-forward' for more information."
         vertico-preselect 'first
         vertico-buffer-hide-prompt nil
         vertico-cycle t
-        vertico-multiform-categories '((t buffer)))
+        vertico-multiform-categories '((t buffer))
+        vertico-count 0)
 
   (face-spec-set 'vertico-current
                  '((t :inherit region)))
@@ -3793,9 +3778,9 @@ see command `isearch-forward' for more information."
 ;;;; dirvish
 
 (elpaca dirvish
-  ;; (custom-set-faces
-  ;;  '(dirvish-hl-line ((t :inherit region :extend t)))
-  ;;  '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
+  (custom-set-faces
+   '(dirvish-hl-line ((t :inherit region :extend t)))
+   '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
 
   (setq dirvish-hide-cursor t)
 
@@ -3803,11 +3788,6 @@ see command `isearch-forward' for more information."
     (dirvish-override-dired-mode 1))
 
   (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
-
-(push (lambda ()
-        (with-current-buffer (get-scratch-buffer-create)
-          (lisp-interaction-mode)))
-      my-to-incremental-load)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
