@@ -1004,17 +1004,18 @@ see command `isearch-forward' for more information."
 
 ;;;; Diminish
 
-;; (elpaca diminish
-;;   (diminish 'visual-line-mode))
+(elpaca diminish
+  (diminish 'visual-line-mode))
 
 ;;;; minions
 
-(elpaca minions
-  (setq minions-mode-line-lighter " ≡"
-        minions-prominent-modes (list 'conn-local-mode
-                                      'conn-dot-mode
-                                      'conn-wincontrol-mode))
-  (minions-mode 1))
+;; (elpaca minions
+;;   (setq minions-mode-line-lighter " ≡"
+;;         minions-prominent-modes (list 'conn-local-mode
+;;                                       'conn-dot-mode
+;;                                       'conn-wincontrol-mode
+;;                                       'defining-kbd-macro))
+;;   (minions-mode 1))
 
 
 ;;;; expreg
@@ -1648,7 +1649,6 @@ see command `isearch-forward' for more information."
     (add-mode-abbrev (or arg 0)))
 
   (conn-mode 1)
-  (conn-dispatch-auto-bind-mouse-mode 1)
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
