@@ -622,7 +622,7 @@
     "v" 'outline-move-subtree-down
     "m" 'outline-insert-heading
     ">" 'outline-promote
-    "<" 'outline-demote) 
+    "<" 'outline-demote)
 
   (pcase-dolist (`(,_ . ,def) (cdr outline-navigation-repeat-map))
     (put def 'repeat-map nil)))
@@ -1623,6 +1623,10 @@ see command `isearch-forward' for more information."
               :depth nil
               :repo "mtll/conn")
   (custom-set-faces
+   '(conn-mark-face ((default (:inherit cursor :background "#b8a2f0"))
+                     (((background light)) (:inherit cursor :background "#b8a2f0"))
+                     (((background dark)) (:inherit cursor :background "#a742b0"))))
+   '(conn-dispatch-label-face ((t :background "#ff8bd1" :foreground "black" :bold t)))
    '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
    '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
 
@@ -1655,8 +1659,6 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "C-<left>" 'conntext-state)
-
-  (keymap-set conn-dot-mode-map "<escape>" 'exit-recursive-edit)
 
   (defvar-keymap conn-buffer-repeat-map
     :repeat t
@@ -2974,7 +2976,8 @@ see command `isearch-forward' for more information."
 
   (defun vertico-buffer-setup-ad ()
     (with-selected-window (active-minibuffer-window)
-      (setq-local header-line-format nil)))
+      (setq-local header-line-format nil
+                  truncate-lines t)))
   (advice-add 'vertico-buffer--setup :after #'vertico-buffer-setup-ad)
 
   (defun vertico-buffer--redisplay-ad (win)
