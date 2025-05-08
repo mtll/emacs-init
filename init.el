@@ -1707,11 +1707,13 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c c" (conn-remap-key "C-c C-c"))
   (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
 
-  (dolist (state '(conn-command-state conn-emacs-state))
-    (keymap-set (conn-get-mode-map state 'conn-kmacro-applying-p)
-                "<escape>" 'exit-recursive-edit)
-    (keymap-set (conn-get-mode-map state 'conn-dot-state)
-                "<escape>" 'exit-recursive-edit))
+  (keymap-set (conn-get-mode-map 'conn-command-state 'conn-kmacro-applying-p)
+              "<escape>" 'exit-recursive-edit)
+  (keymap-set (conn-get-mode-map 'conn-command-state 'conn-dot-state)
+              "<escape>" 'exit-recursive-edit)
+  (keymap-set (conn-get-mode-map 'conn-command-state
+                                 'conn-bounds-of-recursive-edit-mode)
+              "<escape>" 'exit-recursive-edit)
 
   (defun my-space-after-point (N)
     (interactive "p")
@@ -3441,6 +3443,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'projectile
     (keymap-global-unset "C-x p")
     (keymap-global-set "C-x p" 'projectile-command-map)
+    (keymap-global-set "C-c c" 'projectile-command-map)
 
     (define-keymap
       :keymap projectile-command-map
@@ -3605,7 +3608,12 @@ see command `isearch-forward' for more information."
       "M-B" 'sp-convolute-sexp
       "M-H" 'sp-join-sexp
       "M-N" 'sp-beginning-of-sexp
-      "M-M" 'sp-end-of-sexp)))
+      "M-M" 'sp-end-of-sexp)
+
+    (define-keymap
+      :keymap smartparens-mode-map
+      "<conn-thing-map> n" 'sp-beginning-of-sexp
+      "<conn-thing-map> m" 'sp-end-of-sexp)))
 
 
 ;;;; djvu
@@ -3791,6 +3799,11 @@ see command `isearch-forward' for more information."
     (dirvish-override-dired-mode 1))
 
   (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
+
+;;;; repeat-fu
+
+;; (elpaca (repeat-fu :host codeberg
+;;                    :repo "ideasman42/emacs-repeat-fu"))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
