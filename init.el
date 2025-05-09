@@ -48,10 +48,11 @@
 (defvar my-to-incremental-load nil)
 
 (defun my-do-incremental-load ()
-  (while (and my-to-incremental-load
-              (not (input-pending-p)))
-    (with-demoted-errors "Error in incremental loader: %s"
-      (funcall (pop my-to-incremental-load))))
+  (while-no-input
+    (while my-to-incremental-load
+      (with-demoted-errors "Error in incremental loader: %s"
+        (funcall (car my-to-incremental-load))
+        (pop my-to-incremental-load))))
   (when my-to-incremental-load
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
 (run-with-idle-timer 1 nil 'my-do-incremental-load)
@@ -1714,6 +1715,8 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-mode-map 'conn-command-state
                                  'conn-bounds-of-recursive-edit-mode)
               "<escape>" 'exit-recursive-edit)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-<escape>" 'exit-recursive-edit)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-<escape>" 'exit-recursive-edit)
 
   (defun my-space-after-point (N)
     (interactive "p")
@@ -2701,7 +2704,7 @@ see command `isearch-forward' for more information."
         xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref
         register-preview-delay 0.3
-        register-preview-function #'consult-register-format
+        ;; register-preview-function #'consult-register-format
         completion-in-region-function #'consult-completion-in-region
         consult-buffer-sources '(consult--source-hidden-buffer
                                  consult--source-modified-buffer
@@ -2838,7 +2841,7 @@ see command `isearch-forward' for more information."
        :state (consult--location-state candidates))))
 
   (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
-  (advice-add 'register-preview :override #'consult-register-window)
+  ;; (advice-add 'register-preview :override #'consult-register-window)
 
   (defun consult-goto-edit ()
     (interactive)
