@@ -48,11 +48,10 @@
 (defvar my-to-incremental-load nil)
 
 (defun my-do-incremental-load ()
-  (while-no-input
-    (while my-to-incremental-load
-      (with-demoted-errors "Error in incremental loader: %s"
-        (funcall (car my-to-incremental-load))
-        (pop my-to-incremental-load))))
+  (while (and my-to-incremental-load
+              (not (input-pending-p)))
+    (with-demoted-errors "Error in incremental loader: %s"
+      (funcall (pop my-to-incremental-load))))
   (when my-to-incremental-load
     (run-with-idle-timer 1 nil 'my-do-incremental-load)))
 (run-with-idle-timer 1 nil 'my-do-incremental-load)
@@ -2698,7 +2697,8 @@ see command `isearch-forward' for more information."
 ;;;; consult
 
 (elpaca consult
-  (setq consult-async-min-input 3
+  (setq consult--gc-percentage 0.5
+        consult-async-min-input 3
         consult-yank-rotate t
         consult-narrow-key "M-N"
         xref-show-xrefs-function #'consult-xref
