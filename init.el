@@ -101,6 +101,10 @@
       read-buffer-completion-ignore-case t
       translate-upper-case-key-bindings nil
       show-paren-context-when-offscreen 'child-frame
+      show-paren-delay 0.1
+      show-paren-highlight-openparen t
+      show-paren-when-point-inside-paren t
+      show-paren-when-point-in-periphery t
       sentence-end-double-space t
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
@@ -338,6 +342,10 @@
   (define-keymap
     :keymap lisp-interaction-mode-map
     "C-c x" 'eval-defun))
+
+(push (lambda ()
+        (setq initial-major-mode 'lisp-interaction-mode))
+      my-to-incremental-load)
 
 ;;;; paren context
 
@@ -1340,6 +1348,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-x F"         'crux-sudo-edit)
   (keymap-global-set "C-x W"         'crux-open-with)
   (keymap-global-set "C-<backspace>" 'crux-kill-whole-line)
+  (keymap-global-set "C-c s" 'crux-create-scratch-buffer)
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)

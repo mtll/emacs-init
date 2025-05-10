@@ -12,7 +12,9 @@
                        (format "%.2f seconds"
                                (float-time
                                 (time-subtract (current-time) before-init-time))))
-              (setq-default mode-line-format format)
+              (setq-default mode-line-format format
+                            inhibit-message nil
+                            inhibit-redisplay nil)
               (setq file-name-handler-alist default-file-name-handler-alist)
               (setq gc-cons-threshold (* 32 1024 1024)
                     gc-cons-percentage 0.6)
@@ -22,7 +24,9 @@
                                   (unless (frame-focus-state)
                                     (garbage-collect))))
                 (add-hook 'focus-out-hook 'garbage-collect)))))
-(setq-default mode-line-format nil)
+(setq-default mode-line-format nil
+              inhibit-message t
+              inhibit-redisplay t)
 
 ;; (load (expand-file-name "elpaca/repos/benchmark-init-el/benchmark-init.el" user-emacs-directory) t  t)
 ;; (load (expand-file-name "elpaca/repos/benchmark-init-el/benchmark-init-modes.el" user-emacs-directory) t  t)
@@ -41,13 +45,18 @@
       bidi-inhibit-bpa t)
 
 (set-default-coding-systems 'utf-8)
+(set-language-environment 'utf-8)
 
 ;; (fringe-mode '(10 . 10))
 (push '(tool-bar-lines . 0) default-frame-alist)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
+(push '(menu-bar-lines . 0) default-frame-alist)
+(push '(vertical-scroll-bars) default-frame-alist)
+(push '(horizontal-scroll-bars) default-frame-alist)
+(setq scroll-bar-mode nil)
 (blink-cursor-mode -1)
-(menu-bar-mode -1)
+
+(setq use-file-dialog nil)
+(setq use-dialog-box nil)
 
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
@@ -62,12 +71,17 @@
       package-enable-at-startup nil
       initial-buffer-choice t
       ring-bell-function #'ignore
-      ;; initial-major-mode 'fundamental-mode
       inhibit-startup-screen t
       inhibit-x-resources t
       load-prefer-newer t
-      read-process-output-max (ash 1 18))
+      read-process-output-max (ash 1 18)
+      initial-major-mode 'fundamental-mode
+      initial-scratch-message nil
+      auto-mode-case-fold nil
+      process-adaptive-read-buffering nil)
 
+(advice-add 'display-startup-echo-area-message :override #'ignore)
+(advice-add 'display-startup-screen :override #'ignore)
 (advice-add #'x-apply-session-resources :override #'ignore)
 
 (load (expand-file-name "font.el" user-emacs-directory) t t)
