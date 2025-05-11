@@ -157,7 +157,7 @@
                         "*-test.el" "*-tests.el" "LICENSE" "README*"
                         "*-pkg.el"))
              :source "MELPA" :protocol https :inherit t :depth
-             treeless :ref "ca902ae02972bdd6919a902be2593d8cb6bd991b"))
+             treeless :ref "cc86ac08bdea5bbe2503ac1df3506b5e81330e16"))
  (magit-section :source #1# :recipe
                 (:package "magit-section" :fetcher github :repo
                           "magit/magit" :files
@@ -166,7 +166,7 @@
                            "magit-section-pkg.el")
                           :source "MELPA" :protocol https :inherit t
                           :depth treeless :ref
-                          "e65dce2a04003dd3f839e5a8d5d189c7526e9fb9"))
+                          "5876192dc6e048ba2ad5576e7a4789e22beb9877"))
  (tablist :source #1# :recipe
           (:package "tablist" :fetcher github :repo
                     "emacsorphanage/tablist" :files
@@ -416,7 +416,7 @@
                                   "LICENSE" "README*" "*-pkg.el"))
                        :source "MELPA" :protocol https :inherit t
                        :depth treeless :ref
-                       "6158d3d0070694bfc5ff09235dec4661b8ba28dd"))
+                       "d46cbb8614679de021766d7d63c7785ff53e796b"))
  (aggressive-indent :source #1# :recipe
                     (:package "aggressive-indent" :repo
                               "Malabarba/aggressive-indent-mode"
@@ -490,7 +490,7 @@
                  (:defaults "jinx-mod.c" "emacs-module.h") :fetcher
                  github :source "MELPA" :protocol https :inherit t
                  :depth treeless :ref
-                 "c349bc7f39cb40713910bf1190f5ead3bf3b9acb"))
+                 "e97858231291c0602c4d555c3d064392865efec0"))
  (dumb-jump :source #1# :recipe
             (:package "dumb-jump" :repo "jacktasia/dumb-jump" :fetcher
                       github :files
@@ -526,7 +526,7 @@
                                     "*-pkg.el"))
                          :source "MELPA" :protocol https :inherit t
                          :depth treeless :ref
-                         "e0114da239d34502706465f9bfeab2e5445be9be"))
+                         "7496adcad0339978ef462b92160b6d40c3595841"))
  (rfc-mode :source #1# :recipe
            (:package "rfc-mode" :fetcher github :repo
                      "galdor/rfc-mode" :files
@@ -573,12 +573,12 @@
                                   "LICENSE" "README*" "*-pkg.el"))
                        :source "MELPA" :protocol https :inherit t
                        :depth treeless :ref
-                       "2ff4d690f78fb86573c11a32631e53627947ebee"))
+                       "3ca24dd9f3391ad291e129dc03649384b2737d58"))
  (vertico :source #1# :recipe
           (:package "vertico" :repo "minad/vertico" :files
                     (:defaults "extensions/*") :fetcher github :source
                     "MELPA" :protocol https :inherit t :depth treeless
-                    :ref "304be874be3d6198f80f987c1b433c816c4e1d3f"))
+                    :ref "a7be4d559f04043bc57abfb9196d1ad0c41c8777"))
  (consult-projectile :source #1# :recipe
                      (:package "consult-projectile" :fetcher gitlab
                                :repo "OlMon/consult-projectile" :files
@@ -621,7 +621,7 @@
                                "README*" "*-pkg.el"))
                     :source "MELPA" :protocol https :inherit t :depth
                     treeless :ref
-                    "1d10b084401335c87cc3e92de683aef9a0746aac"))
+                    "da9791ccfc16893f04abf83dfe7b56d8339d534b"))
  (orderless :source #1# :recipe
             (:package "orderless" :repo "oantolin/orderless" :fetcher
                       github :files
@@ -673,7 +673,7 @@
                                "README*" "*-pkg.el"))
                     :source "MELPA" :protocol https :inherit t :depth
                     treeless :ref
-                    "965ceb09db7af1d20c2848e7dfdc9d83a2b7dada"))
+                    "7e5f0bc263022c3d6f7192076dd3834e56ef41d6"))
  (outline-minor-faces :source #1# :recipe
                       (:package "outline-minor-faces" :fetcher github
                                 :repo "tarsius/outline-minor-faces"
@@ -690,7 +690,7 @@
                                            "README*" "*-pkg.el"))
                                 :source "MELPA" :protocol https
                                 :inherit t :depth treeless :ref
-                                "09801afdfd43fbf97bd590169d7af61eed96d900"))
+                                "0121ac8f66fd583595a94ac0eee061c7fdf60549"))
  (bicycle :source #1# :recipe
           (:package "bicycle" :fetcher github :repo "tarsius/bicycle"
                     :files
@@ -703,7 +703,7 @@
                                "README*" "*-pkg.el"))
                     :source "MELPA" :protocol https :inherit t :depth
                     treeless :ref
-                    "530eb666ebafb985c3ab227a0fcc4b580373af91"))
+                    "121cd6ada1bc037aedd7a9b1a4137b643f3d206d"))
  (nerd-icons-completion :source #1# :recipe
                         (:package "nerd-icons-completion" :repo
                                   "rainstormstudio/nerd-icons-completion"
@@ -721,7 +721,7 @@
                                              "*-pkg.el"))
                                   :source "MELPA" :protocol https
                                   :inherit t :depth treeless :ref
-                                  "8e5b995eb2439850ab21ba6062d9e6942c82ab9c"))
+                                  "e15e21a263bad06424982c11e8d68ffe1372a4e7"))
  (nerd-icons-ibuffer :source #1# :recipe
                      (:package "nerd-icons-ibuffer" :repo
                                "seagle0128/nerd-icons-ibuffer"
@@ -781,7 +781,7 @@
                   (:defaults "extensions/corfu-*.el") :fetcher github
                   :source "MELPA" :protocol https :inherit t :depth
                   treeless :ref
-                  "2e05fe8244fff22c3c3d2af4334b1850250212a9"))
+                  "ce216b9795258cbb178f57f1921cceaf296bb891"))
  (embark-consult :source #1# :recipe
                  (:package "embark-consult" :repo "oantolin/embark"
                            :fetcher github :files
@@ -806,7 +806,7 @@
                             "README*" "*-pkg.el"))
                  :source "MELPA" :protocol https :inherit t :depth
                  treeless :ref
-                 "5546a2db8e3928d5a95e1174e69a5742ddf97c0f"))
+                 "d4693e505474be5e6ba2e6f613809f40b9f9d702"))
  (flycheck :source #1# :recipe
            (:package "flycheck" :repo "flycheck/flycheck" :fetcher
                      github :files
@@ -825,7 +825,7 @@
                   (:defaults "git-commit.el") :source "MELPA"
                   :protocol https :inherit t :depth treeless :host
                   github :ref
-                  "e65dce2a04003dd3f839e5a8d5d189c7526e9fb9"))
+                  "5876192dc6e048ba2ad5576e7a4789e22beb9877"))
  (llama :source #1# :recipe
         (:package "llama" :fetcher github :repo "tarsius/llama" :files
                   ("*.el" "*.el.in" "dir" "*.info" "*.texi"
@@ -837,7 +837,7 @@
                              "README*" "*-pkg.el"))
                   :source "MELPA" :protocol https :inherit t :depth
                   treeless :ref
-                  "48e5bc4919a4a29665362832d59ade8e248b0c3e"))
+                  "7de288e79329bfb3e2b4a2f9b574cf834bd371dd"))
  (ialign :source #1# :recipe
          (:package "ialign" :fetcher github :repo
                    "mkcms/interactive-align" :files
@@ -879,36 +879,36 @@
                             treeless :host github :repo "mtll/conn"
                             :files ("extensions/conn-smartparens.el")
                             :package "conn-smartparens" :ref
-                            "72eb44754b6f7a99b056440fd96620e1ec7e7e43"))
+                            "4218be1ffc0a10e328241804bdc4eb1528a6bfd1"))
  (conn-expreg :source #1# :recipe
               (:source nil :protocol https :inherit t :depth treeless
                        :host github :repo "mtll/conn" :files
                        ("extensions/conn-expreg.el") :package
                        "conn-expreg" :ref
-                       "72eb44754b6f7a99b056440fd96620e1ec7e7e43"))
+                       "4218be1ffc0a10e328241804bdc4eb1528a6bfd1"))
  (conn-expand-region :source #1# :recipe
                      (:source nil :protocol https :inherit t :depth
                               treeless :host github :repo "mtll/conn"
                               :files
                               ("extensions/conn-expand-region.el")
                               :package "conn-expand-region" :ref
-                              "72eb44754b6f7a99b056440fd96620e1ec7e7e43"))
+                              "4218be1ffc0a10e328241804bdc4eb1528a6bfd1"))
  (conn-consult :source #1# :recipe
                (:source nil :protocol https :inherit t :depth treeless
                         :host github :repo "mtll/conn" :files
                         ("extensions/conn-consult.el") :package
                         "conn-consult" :ref
-                        "72eb44754b6f7a99b056440fd96620e1ec7e7e43"))
+                        "4218be1ffc0a10e328241804bdc4eb1528a6bfd1"))
  (conn-posframe :source #1# :recipe
                 (:source nil :protocol https :inherit t :depth
                          treeless :host github :repo "mtll/conn"
                          :files ("extensions/conn-posframe.el")
                          :package "conn-posframe" :ref
-                         "72eb44754b6f7a99b056440fd96620e1ec7e7e43"))
+                         "4218be1ffc0a10e328241804bdc4eb1528a6bfd1"))
  (conn :source #1# :recipe
        (:source nil :protocol https :inherit t :depth nil :host github
                 :repo "mtll/conn" :package "conn" :ref
-                "72eb44754b6f7a99b056440fd96620e1ec7e7e43"))
+                "4218be1ffc0a10e328241804bdc4eb1528a6bfd1"))
  (elixir-ts-mode :source #1# :recipe
                  (:package "elixir-ts-mode" :repo
                            "wkirschbaum/elixir-ts-mode" :fetcher
@@ -971,7 +971,7 @@
                                     "*-pkg.el"))
                          :source "MELPA" :protocol https :inherit t
                          :depth treeless :ref
-                         "ea15b1c607d4036ce37326bd5b4b2f4291ddfd60"))
+                         "5596cc6586b3d1ce77d7c9e5385a0809fbad4eb6"))
  (modus-themes :source #1# :recipe
                (:package "modus-themes" :fetcher github :repo
                          "protesilaos/modus-themes" :files
@@ -1048,7 +1048,7 @@
                     ("./configure"
                      "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
                     ("make"))
-                   :ref "e6a7cd05baa582c3e821c043c1e71452d915a4c0"))
+                   :ref "a085165d4c264ca13c37e4356e29287e3d51d44d"))
  (pdf-tools :source #1# :recipe
             (:package "pdf-tools" :fetcher github :repo
                       "vedang/pdf-tools" :files
@@ -1082,7 +1082,7 @@
                        "https://gitlab.kitware.com/cmake/cmake.git"
                        :files ("Auxiliary/*.el") :source "MELPA"
                        :protocol https :inherit t :depth treeless :ref
-                       "dd835c8b2ba3fedf167cbcdc482f22b0e46fa4c2"))
+                       "528a04ec66154502cdc726ae2c703ba514dfdbe3"))
  (j-mode :source #1# :recipe
          (:package "j-mode" :fetcher github :repo "zellio/j-mode"
                    :files
@@ -1101,7 +1101,7 @@
                  ("https://github.com/svaante/dape" . "dape") :files
                  ("*" (:exclude ".git")) :source "GNU ELPA" :protocol
                  https :inherit t :depth treeless :ref
-                 "b3b15053ea19821205f43528b61cc2d9e0a4a21a"))
+                 "e851aa4b7bab27848416cd89ae75cee4dfb9fec2"))
  (inf-elixir :source #1# :recipe
              (:package "inf-elixir" :fetcher github :repo
                        "J3RN/inf-elixir" :files
@@ -1137,7 +1137,7 @@
                     (:exclude "lib/tools/emacs/erlang_appwiz.el"))
                    :source "MELPA" :protocol https :inherit t :depth
                    treeless :ref
-                   "a611cce1a89f0b962986e2654eacd76fb607c876"))
+                   "f9857a6cdb3cd47f19671a2b9698071ce1bcd677"))
  (rustic :source #1# :recipe
          (:package "rustic" :repo "emacs-rustic/rustic" :fetcher
                    github :files
@@ -1250,7 +1250,7 @@
                                  "README*" "*-pkg.el"))
                       :source "MELPA" :protocol https :inherit t
                       :depth treeless :ref
-                      "25b994a565ce8035330b0a3071ee430c0282349e"))
+                      "902121268d72045da53c711932ff72017a33ce6c"))
  (eldoc-box :source #1# :recipe
             (:package "eldoc-box" :repo "casouri/eldoc-box" :fetcher
                       github :files
@@ -1263,7 +1263,7 @@
                                  "README*" "*-pkg.el"))
                       :source "MELPA" :protocol https :inherit t
                       :depth treeless :ref
-                      "3cf770ac54af512a325b9044aede5255c7c46f62"))
+                      "fb1ae42c37c5f3bb80b441b2fdfada914891a714"))
  (org :source #1# :recipe
       (:package "org" :repo
                 ("https://code.tecosaur.net/tec/org-mode.git/" . "org")
@@ -1279,6 +1279,6 @@
    #1# :recipe
    (:source nil :protocol https :inherit ignore :depth 1 :repo
             "https://github.com/progfolio/elpaca.git" :ref
-            "1d299d7e3dde8a59b9f199d435ac92c16b7719e1" :files
+            "400eb4c897498d46f2851fa7e866c7a493749148" :files
             (:defaults "elpaca-test.el" (:exclude "extensions"))
             :build (:not elpaca--activate-package) :package "elpaca")))
