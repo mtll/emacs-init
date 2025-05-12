@@ -433,9 +433,6 @@
   (keymap-global-set "C-c l" 'org-insert-link-global)
   (keymap-global-set "C-c a" 'org-agenda)
 
-  (with-eval-after-load 'conn
-    (add-hook 'org-mode-hook 'conntext-org-mode))
-
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   ;; (add-hook 'org-mode-hook 'abbrev-mode)
 
@@ -723,7 +720,7 @@ See command `isearch-forward' for more information."
            (call-interactively #'multi-isearch-buffers))
           (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
                            #'isearch-globs-compile)))))
-(keymap-global-set "<remap> <isearch-forward>" 'isearch-forward-glob)
+(keymap-global-set "C-s" 'isearch-forward-glob)
 
 (defun isearch-backward-glob (&optional arg no-recursive-edit)
   "do incremental search backward.
@@ -736,7 +733,7 @@ see command `isearch-forward' for more information."
            (call-interactively #'multi-isearch-buffers))
           (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
                            #'isearch-globs-compile)))))
-(keymap-global-set "<remap> <isearch-backward>" 'isearch-backward-glob)
+(keymap-global-set "C-r" 'isearch-backward-glob)
 
 (defun isearch-repeat-direction ()
   (interactive)
@@ -1632,6 +1629,9 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (with-eval-after-load 'org
+    (require 'conn-org))
+
   (custom-set-faces
    '(conn-mark-face ((default (:inherit cursor :background "#b8a2f0"))
                      (((background light)) (:inherit cursor :background "#b8a2f0"))
