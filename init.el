@@ -466,6 +466,8 @@
 
     ;; More immediate live-previews -- the default delay is 1 second
     (setq org-latex-preview-live-debounce 0.25)
+    (setq org-latex-preview-cache 'temp)
+    (setq org-element-cache-persistent nil)
 
     (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
              (keymap-unset org-mode-map (concat "C-c " (string c)) t)
@@ -1320,6 +1322,12 @@ see command `isearch-forward' for more information."
    `(transient-key-stay ((t :inherit modus-themes-key-binding
                             :foreground "#008900"))))
   (load-theme 'modus-operandi-tinted t))
+
+;;;; doric
+
+;; (elpaca (doric-themes :host github
+;;                       :repo "protesilaos/doric-themes")
+;;   (load-theme 'doric-earth t))
 
 
 ;;;; no-littering
