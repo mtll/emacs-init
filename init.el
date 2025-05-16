@@ -54,8 +54,8 @@
       (let ((inhibit-message t))
         (funcall (pop my-to-incremental-load)))))
   (when my-to-incremental-load
-    (run-with-idle-timer 1 nil 'my-do-incremental-load)))
-(run-with-idle-timer 1 nil 'my-do-incremental-load)
+    (run-with-idle-timer 3 nil 'my-do-incremental-load)))
+(run-with-idle-timer 3 nil 'my-do-incremental-load)
 
 ;;;; emacs
 
