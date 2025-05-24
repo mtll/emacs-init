@@ -82,7 +82,6 @@
       mac-command-modifier 'super
       hi-lock-auto-select-face t
       mark-even-if-inactive t
-      recenter-positions '(top middle bottom)
       even-window-sizes nil
       scroll-preserve-screen-position t
       delete-active-region nil
@@ -413,7 +412,7 @@
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
-  (push (lambda () (require 'org)) my-to-incremental-load)
+  ;; (push (lambda () (require 'org)) my-to-incremental-load)
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
         org-outline-path-complete-in-steps nil
@@ -736,6 +735,14 @@ see command `isearch-forward' for more information."
           (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
                            #'isearch-globs-compile)))))
 (keymap-global-set "C-r" 'isearch-backward-glob)
+
+(with-eval-after-load 'conn
+  (cl-defmethod conn-dispatch-nav-commands ((_command (eql isearch-forward-glob)))
+    (conn-with-dispatch-suspended
+      (isearch-forward-glob)))
+  (cl-defmethod conn-dispatch-nav-commands ((_command (eql isearch-backward-glob)))
+    (conn-with-dispatch-suspended
+      (isearch-backward-glob))))
 
 (defun isearch-repeat-direction ()
   (interactive)
@@ -1325,9 +1332,8 @@ see command `isearch-forward' for more information."
 
 ;;;; doric
 
-;; (elpaca (doric-themes :host github
-;;                       :repo "protesilaos/doric-themes")
-;;   (load-theme 'doric-earth t))
+(elpaca (doric-themes :host github
+                      :repo "protesilaos/doric-themes"))
 
 
 ;;;; no-littering
@@ -2960,11 +2966,11 @@ see command `isearch-forward' for more information."
 
 ;;;;; consult-lsp
 
-(elpaca consult-lsp
-  (with-eval-after-load 'lsp-mode
-    (keymap-set lsp-mode-map "M-s x" #'consult-lsp-symbols)
-    (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
-    (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
+;; (elpaca consult-lsp
+;;   (with-eval-after-load 'lsp-mode
+;;     (keymap-set lsp-mode-map "M-s x" #'consult-lsp-symbols)
+;;     (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
+;;     (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
 
 ;;;;; consult-projectile
 
@@ -3427,7 +3433,7 @@ see command `isearch-forward' for more information."
 
 ;;;; ef-themes
 
-;; (elpaca ef-themes)
+(elpaca ef-themes)
 
 
 ;;;; pgmacs
@@ -3803,9 +3809,9 @@ see command `isearch-forward' for more information."
 
 ;;;; treemacs
 
-(elpaca treemacs
-  (keymap-global-set "C-c h" 'treemacs-select-window)
-  (keymap-global-set "C-c H" 'treemacs))
+;; (elpaca treemacs
+;;   (keymap-global-set "C-c h" 'treemacs-select-window)
+;;   (keymap-global-set "C-c H" 'treemacs))
 
 ;;;; dirvish
 
