@@ -277,6 +277,13 @@
 
 (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
+(defun my-copy-line-or-region ()
+  (interactive)
+  (kill-ring-save (line-beginning-position)
+                  (line-end-position)
+                  (use-region-p)))
+(keymap-global-set "M-w" 'my-copy-line-or-region)
+
 (defun ediff-split-fn ()
   (if (> (frame-width) 150)
       'split-window-horizontally
@@ -3826,6 +3833,16 @@ see command `isearch-forward' for more information."
     (dirvish-override-dired-mode 1))
 
   (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
+
+;;;; goto-chg
+
+(elpaca goto-chg
+  (defvar-keymap goto-chg-repeat-map
+    :repeat t
+    "/" 'goto-last-change
+    "?" 'goto-last-change-reverse)
+  (keymap-global-set "M-g /" 'goto-last-change)
+  (keymap-global-set "M-g ?" 'goto-last-change-reverse))
 
 ;;;; repeat-fu
 
