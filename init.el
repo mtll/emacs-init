@@ -2874,7 +2874,7 @@ see command `isearch-forward' for more information."
   (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
   ;; (advice-add 'register-preview :override #'consult-register-window)
 
-  (defun consult-goto-edit ()
+  (defun my-consult-goto-edit ()
     (interactive)
     (let* ((curr-line (line-number-at-pos (point) consult-line-numbers-widen))
            (candidates (consult--slow-operation "Collecting lines..."
@@ -2917,7 +2917,7 @@ see command `isearch-forward' for more information."
        :default (car candidates)
        ;; Add `isearch-string' as initial input if starting from Isearch
        :state (consult--location-state candidates))))
-  (keymap-set goto-map "e" 'consult-goto-edit)
+  (keymap-set goto-map "x" 'my-consult-goto-edit)
 
   (with-eval-after-load 'ibuffer
     (defun conn-consult-line-multi-ibuffer-marked ()

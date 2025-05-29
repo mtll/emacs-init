@@ -42,7 +42,8 @@
 (setq redisplay-skip-fontification-on-input t
       fast-but-imprecise-scrolling t
       inhibit-compacting-font-caches t
-      bidi-inhibit-bpa t)
+      bidi-inhibit-bpa t
+      load-path-filter-function 'load-path-filter-cache-directory-files)
 
 (set-default-coding-systems 'utf-8)
 (set-language-environment 'utf-8)
