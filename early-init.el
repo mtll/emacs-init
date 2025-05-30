@@ -24,6 +24,7 @@
                                   (unless (frame-focus-state)
                                     (garbage-collect))))
                 (add-hook 'focus-out-hook 'garbage-collect)))))
+
 (setq-default mode-line-format nil
               inhibit-message t
               inhibit-redisplay t)

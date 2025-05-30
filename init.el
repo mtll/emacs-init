@@ -2982,10 +2982,10 @@ see command `isearch-forward' for more information."
 ;;;;; consult-projectile
 
 (elpaca consult-projectile
+  (keymap-global-set "C-c j" 'consult-projectile)
   (with-eval-after-load 'projectile
     (with-eval-after-load 'consult
-      (consult-customize consult-projectile :preview-key "C-o"))
-    (keymap-global-set "C-c j" 'consult-projectile)))
+      (consult-customize consult-projectile :preview-key "C-o"))))
 
 
 ;;;; vertico
