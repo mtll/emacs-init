@@ -163,6 +163,8 @@
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-x C-z")
 
+(keymap-global-set "<remap> <eval-expression>" 'pp-eval-expression)
+
 (keymap-global-set "C-z" #'pop-to-mark-command)
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
 (keymap-global-set "C-M-<return>"#'default-indent-new-line)
@@ -3062,7 +3064,7 @@ see command `isearch-forward' for more information."
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
 
-  (keymap-global-set "M-p" 'vertico-repeat)
+  (keymap-global-set "<deletechar>" 'vertico-repeat)
 
   (keymap-unset vertico-map "C-j")
 
