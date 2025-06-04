@@ -3019,33 +3019,39 @@ see command `isearch-forward' for more information."
   (advice-add 'vertico-buffer--setup :after #'vertico-buffer-setup-ad)
 
   (defun vertico-buffer-setup-save-point (&rest app)
-    (let ((old-pts (mapcar (lambda (w) (cons w (window-point w))) (window-list))))
+    (let ((old-state nil))
+      (dolist (w (window-list))
+        (push (list w (window-point w) (window-buffer w)) old-state))
       (apply app)
       (advice-add vertico-buffer--restore :after
                   (let* ((win (overlay-get vertico--candidates-ov 'window))
-                         (pt (alist-get win old-pts)))
-                    (lambda () (set-window-point win pt))))))
+                         (pt (apply #'set-marker
+                                    (make-marker)
+                                    (alist-get win old-state))))
+                    (lambda ()
+                      (set-window-point win (marker-position pt))
+                      (set-marker pt nil))))))
   (advice-add 'vertico-buffer--setup :around #'vertico-buffer-setup-save-point)
 
-  (defun vertico-buffer--redisplay-ad (win)
-    (let ((mbwin (active-minibuffer-window)))
-      (when (and mbwin vertico-buffer-mode
-                 (eq (window-buffer mbwin) (current-buffer))
-                 (not (eq win mbwin))
-                 ;; Without this check we would be running this
-                 ;; in any vertico-posframe windows every time.
-                 (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
-        (setq-local mode-line-format nil
-                    header-line-format (or header-line-format "Sets:")))))
+  ;; (defun vertico-buffer--redisplay-ad (win)
+  ;;   (let ((mbwin (active-minibuffer-window)))
+  ;;     (when (and mbwin vertico-buffer-mode
+  ;;                (eq (window-buffer mbwin) (current-buffer))
+  ;;                (not (eq win mbwin))
+  ;;                ;; Without this check we would be running this
+  ;;                ;; in any vertico-posframe windows every time.
+  ;;                (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
+  ;;       (setq-local mode-line-format nil
+  ;;                   header-line-format (or header-line-format "Sets:")))))
   ;; (advice-remove 'vertico-buffer--redisplay 'vertico-buffer--redisplay-ad)
 
   ;; I prefer it if the vertico buffer mode-line face
   ;; is not remapped to always appear active.
-  (defun my-vertico-buffer-stop-face-remap ()
-    (setq-local face-remapping-alist
-                (seq-remove (lambda (cons)
-                              (eq (car cons) 'mode-line-inactive))
-                            face-remapping-alist)))
+  ;; (defun my-vertico-buffer-stop-face-remap ()
+  ;;   (setq-local face-remapping-alist
+  ;;               (seq-remove (lambda (cons)
+  ;;                             (eq (car cons) 'mode-line-inactive))
+  ;;                           face-remapping-alist)))
   ;; not needed since I am hiding the mode-line above
   ;; (advice-add 'vertico-buffer--setup :after #'my-vertico-buffer-stop-face-remap)
 
