@@ -3023,11 +3023,10 @@ see command `isearch-forward' for more information."
       (dolist (w (window-list))
         (push (list w (window-point w) (window-buffer w)) old-state))
       (apply app)
-      (advice-add vertico-buffer--restore :after
-                  (let* ((win (overlay-get vertico--candidates-ov 'window))
-                         (pt (apply #'set-marker
-                                    (make-marker)
-                                    (alist-get win old-state))))
+      (when-let* ((win (overlay-get vertico--candidates-ov 'window))
+		  (state (alist-get win old-state))
+                  (pt (apply #'set-marker (make-marker) state)))
+        (advice-add vertico-buffer--restore :after
                     (lambda ()
                       (set-window-point win (marker-position pt))
                       (set-marker pt nil))))))
