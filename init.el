@@ -3018,6 +3018,15 @@ see command `isearch-forward' for more information."
                   truncate-lines t)))
   (advice-add 'vertico-buffer--setup :after #'vertico-buffer-setup-ad)
 
+  (defun vertico-buffer-setup-save-point (&rest app)
+    (let ((old-pts (mapcar (lambda (w) (cons w (window-point w))) (window-list))))
+      (apply app)
+      (advice-add vertico-buffer--restore :after
+                  (let* ((win (overlay-get vertico--candidates-ov 'window))
+                         (pt (alist-get win old-pts)))
+                    (lambda () (set-window-point win pt))))))
+  (advice-add 'vertico-buffer--setup :around #'vertico-buffer-setup-save-point)
+
   (defun vertico-buffer--redisplay-ad (win)
     (let ((mbwin (active-minibuffer-window)))
       (when (and mbwin vertico-buffer-mode
