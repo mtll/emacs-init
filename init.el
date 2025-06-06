@@ -1675,7 +1675,8 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn
     (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
-    (keymap-global-set "M-r" (conn-remap-key "<conn-region-map>")))
+    (keymap-global-set "M-r" (conn-remap-key "<conn-region-map>"))
+    (keymap-set (conn-get-state-map 'conn-emacs-state) "C-'" 'conntext-state))
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -1686,6 +1687,7 @@ see command `isearch-forward' for more information."
     (add-mode-abbrev (or arg 0)))
 
   (conn-mode 1)
+  (conntext-outline-mode 1)
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
@@ -1739,6 +1741,10 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
   (keymap-global-set "C-c c" (conn-remap-key "C-c C-c"))
   (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
+  (with-eval-after-load 'outline
+    (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-prev-heading))
+  (with-eval-after-load 'org
+    (keymap-set org-mode-map "M-h" 'conn-org-edit-state-prev-heading))
 
   (keymap-set (conn-get-mode-map 'conn-command-state 'conn-kmacro-applying-p)
               "<escape>" 'exit-recursive-edit)
@@ -1953,10 +1959,10 @@ see command `isearch-forward' for more information."
 
 ;;;; orderless set operations
 
-(elpaca (orderless-set-operations :host github
-                                  :repo "mtll/orderless-set-operations")
-  (with-eval-after-load 'orderless
-    (oso-mode 1)))
+;; (elpaca (orderless-set-operations :host github
+;;                                   :repo "mtll/orderless-set-operations")
+;;   (with-eval-after-load 'orderless
+;;     (oso-mode 1)))
 
 
 ;;;; expand region
@@ -2137,6 +2143,11 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'org
       (with-eval-after-load 'embark
         (keymap-set embark-org-heading-map "RET" #'bicycle-cycle)))
+
+    ;; (keymap-set embark-heading-map "RET" #'conn-outline-state)
+    ;; (with-eval-after-load 'org
+    ;;   (with-eval-after-load 'embark
+    ;;     (keymap-set embark-org-heading-map "RET" #'conn-org-edit-state)))
 
     (defun my-embark-abbrev-target-finder ()
       (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
@@ -2602,12 +2613,6 @@ see command `isearch-forward' for more information."
 
 (elpaca bicycle
   (with-eval-after-load 'outline
-    (with-eval-after-load 'conn
-      (keymap-set conntext-outline-map "c" 'bicycle-cycle)
-      (defvar-keymap conntext-outline-bicycle-repeat-map
-        :repeat t
-        "c" 'bicycle-cycle))
-
     (define-keymap
       :keymap outline-minor-mode-map
       "<backtab>" 'bicycle-cycle-global))
