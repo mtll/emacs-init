@@ -139,7 +139,7 @@
 
 (defun my-kill-buffer ()
   (interactive)
-  (kill-buffer (current-buffer)))
+  (kill-buffer))
 (keymap-global-set "C-x k" 'my-kill-buffer)
 
 (setopt mouse-wheel-scroll-amount '(0.33
@@ -152,7 +152,7 @@
 
 (minibuffer-depth-indicate-mode 1)
 (global-goto-address-mode 1)
-;; (show-paren-mode 1)
+(show-paren-mode 1)
 (delete-selection-mode -1)
 (column-number-mode 1)
 (line-number-mode 1)
@@ -356,6 +356,13 @@
         (setq initial-major-mode 'lisp-interaction-mode))
       my-to-incremental-load)
 
+(defmacro my-comment (&rest _))
+
+(defun lexical-in-temp ()
+  (unless (buffer-file-name)
+    (setq-local lexical-binding t)))
+(add-hook 'emacs-lisp-mode-hook 'lexical-in-temp)
+
 ;;;; paren context
 
 ;; Fix bug causing indent commands to delete text when
@@ -518,7 +525,7 @@
 ;; (elpaca (org-luhmann :host github :repo "yibie/org-luhmann")
 ;;   (with-eval-after-load 'org
 ;;     (org-luhmann-setup)))
-
+;; 
 ;; (elpaca org-fragtog
 ;;   (add-hook 'org-mode-hook 'org-fragtog-mode))
 
@@ -1689,6 +1696,12 @@ see command `isearch-forward' for more information."
   (conn-mode 1)
   (conntext-outline-mode 1)
 
+  (setq conn-simple-label-characters
+        (list "d" "j" "f" "k" "s" "g" "h" "l" "w" "e"
+              "r" "t" "y" "u" "i" "c" "v" "b" "n" "m"
+              "2" "3" "4" "5" "6" "7" "8" "x" "," "a"
+              ";" "q" "p"))
+
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
   (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
@@ -1729,8 +1742,8 @@ see command `isearch-forward' for more information."
     "C-SPC" 'conn-set-mark-command
     "C-x n" 'set-goal-column)
 
-  (keymap-set (conn-get-state-map 'conn-emacs-state) "<escape>" 'conn-command-state)
-  (keymap-set (conn-get-state-map 'conn-org-edit-state) "<f8>" 'conn-command-state)
+  ;; (keymap-set (conn-get-state-map 'conn-emacs-state) "<escape>" 'conn-command-state)
+  (keymap-set (conn-get-state-map 'conn-org-state) "<f8>" 'conn-command-state)
   ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "," 'conn-org-edit-state)
   ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
@@ -1745,16 +1758,6 @@ see command `isearch-forward' for more information."
     (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-prev-heading))
   (with-eval-after-load 'org
     (keymap-set org-mode-map "M-h" 'conn-org-edit-state-prev-heading))
-
-  (keymap-set (conn-get-mode-map 'conn-command-state 'conn-kmacro-applying-p)
-              "<escape>" 'exit-recursive-edit)
-  (keymap-set (conn-get-mode-map 'conn-command-state 'conn-dot-state)
-              "<escape>" 'exit-recursive-edit)
-  (keymap-set (conn-get-mode-map 'conn-command-state
-                                 'conn-bounds-of-recursive-edit-mode)
-              "<escape>" 'exit-recursive-edit)
-  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-<escape>" 'exit-recursive-edit)
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-<escape>" 'exit-recursive-edit)
 
   (defun my-space-after-point (N)
     (interactive "p")
@@ -1789,7 +1792,7 @@ see command `isearch-forward' for more information."
 
 (with-eval-after-load 'conn
   (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
-  (keymap-set (conn-get-state-map 'conn-org-edit-state) "TAB" 'conn-embark-dwim-either)
+  (keymap-set (conn-get-state-map 'conn-org-state) "TAB" 'conn-embark-dwim-either)
 
   (defun conn-embark-dwim-either (&optional arg)
     (interactive "P")
@@ -2585,28 +2588,27 @@ see command `isearch-forward' for more information."
 
 ;;;; nerd icons
 
-(when (window-system)
-  (elpaca nerd-icons
-    (push (lambda () (require 'nerd-icons))
-          my-to-incremental-load))
+(elpaca nerd-icons
+  (push (lambda () (require 'nerd-icons))
+        my-to-incremental-load))
 
-  (elpaca nerd-icons-dired
-    (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
-    (with-eval-after-load 'diminish
-      (diminish 'nerd-icons-dired-mode)))
+(elpaca nerd-icons-dired
+  (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
+  (with-eval-after-load 'diminish
+    (diminish 'nerd-icons-dired-mode)))
 
-  (elpaca nerd-icons-corfu
-    (with-eval-after-load 'corfu
-      (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)))
+(elpaca nerd-icons-corfu
+  (with-eval-after-load 'corfu
+    (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)))
 
-  (elpaca nerd-icons-ibuffer
-    (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
-    (with-eval-after-load 'diminish
-      (diminish 'nerd-icons-ibuffer-mode)))
+(elpaca nerd-icons-ibuffer
+  (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
+  (with-eval-after-load 'diminish
+    (diminish 'nerd-icons-ibuffer-mode)))
 
-  (elpaca nerd-icons-completion
-    (with-eval-after-load 'marginalia
-      (nerd-icons-completion-marginalia-setup))))
+(elpaca nerd-icons-completion
+  (with-eval-after-load 'marginalia
+    (nerd-icons-completion-marginalia-setup)))
 
 
 ;;;; bicycle
@@ -3518,7 +3520,7 @@ see command `isearch-forward' for more information."
   (letrec ((loader (lambda ()
                      (require 'smartparens-config)
                      (smartparens-global-mode 1)
-                     (show-smartparens-global-mode 1)
+                     ;; (show-smartparens-global-mode 1)
                      (remove-hook 'prog-mode-hook loader))))
     (add-hook 'prog-mode-hook loader))
 
