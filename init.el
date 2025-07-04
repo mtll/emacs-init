@@ -496,8 +496,8 @@
 
     ;; (setf (plist-get org-format-latex-options :scale) 3)
 
-    (keymap-set org-mode-map "C-c v" 'latex-math-mode)
-    (autoload 'latex-math-mode "latex")
+    (keymap-set org-mode-map "C-c v" 'LaTeX-math-mode)
+    (autoload 'LaTeX-math-mode "latex")
 
     (defun my-org-edit-elem-ad (&rest app)
       (let ((state conn-current-state))
@@ -620,7 +620,7 @@
 (with-eval-after-load 'outline
   (setq outline-minor-mode-prefix (kbd "C-c u"))
 
-  (keymap-set (conn-get-mode-map 'conn-command-state 'outline-minor-mode)
+  (keymap-set (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
               "<conn-thing-map> h" 'outline-previous-visible-heading)
   (define-keymap
     :keymap outline-mode-prefix-map
@@ -666,9 +666,9 @@
 
 ;;;; dictionary
 
-(with-eval-after-load 'dictionary
-  (setopt dictionary-server "dict.org")
-  (keymap-global-set "C-c d" #'dictionary-lookup-definition))
+;; (with-eval-after-load 'dictionary
+;;   (setopt dictionary-server "dict.org")
+;;   (keymap-global-set "C-c d" #'dictionary-lookup-definition))
 
 
 ;;;; isearch
@@ -753,10 +753,16 @@ see command `isearch-forward' for more information."
 (keymap-global-set "C-r" 'isearch-backward-glob)
 
 (with-eval-after-load 'conn
-  (cl-defmethod conn-dispatch-nav-commands ((_command (eql isearch-forward-glob)))
+  (conn-register-thing-commands
+   'isearch nil
+   'isearch-forward-glob
+   'isearch-backward-glob)
+
+  (cl-defmethod conn-dispatch-select-command-case ((_command (eql isearch-forward-glob)))
     (conn-with-dispatch-suspended
       (isearch-forward-glob)))
-  (cl-defmethod conn-dispatch-nav-commands ((_command (eql isearch-backward-glob)))
+
+  (cl-defmethod conn-dispatch-select-command-case ((_command (eql isearch-backward-glob)))
     (conn-with-dispatch-suspended
       (isearch-backward-glob))))
 
@@ -1221,7 +1227,12 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'pdf-tools
     (setq pdf-annot-latex-header "")
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode)
-    (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window))
+    (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window)
+
+    (define-keymap
+      :keymap pdf-view-mode-map
+      ";" 'conn-wincontrol
+      "h" 'conn-wincontrol-one-command))
 
   (pdf-loader-install))
 
@@ -1659,6 +1670,8 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (setq conn-emacs-state-register ?e)
+
   (with-eval-after-load 'org
     (require 'conn-org))
 
@@ -1669,6 +1682,8 @@ see command `isearch-forward' for more information."
    '(conn-dispatch-label-face ((t :background "#ff8bd1" :foreground "black" :bold t)))
    '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
    '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
+
+  (keymap-global-set "C-<escape>" 'exit-recursive-edit)
 
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
@@ -1683,7 +1698,12 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'conn
     (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
     (keymap-global-set "M-r" (conn-remap-key "<conn-region-map>"))
-    (keymap-set (conn-get-state-map 'conn-emacs-state) "C-'" 'conntext-state))
+    (keymap-set (conn-get-state-map 'conn-emacs-state) "C-'" 'conntext-state)
+    (keymap-set (conn-get-state-map 'conn-emacs-state) "M-j" 'conn-one-command)
+    (set-keymap-parent isearch-mode-map conn-isearch-map)
+    (set-keymap-parent search-map conn-search-map)
+    (set-keymap-parent goto-map conn-goto-map)
+    (set-keymap-parent indent-rigidly-map conn-indent-rigidly-map))
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -1717,10 +1737,10 @@ see command `isearch-forward' for more information."
   (defun my-org-capture-buffer-p (buffer &rest _alist)
     (bound-and-true-p org-capture-mode))
 
-  (setf (alist-get "\\*Edit Macro\\*" conn-buffer-state-setup-alist #'equal)
-        #'conn-setup-command-state
-        (alist-get 'my-org-capture-buffer-p conn-buffer-state-setup-alist)
-        #'conn-setup-command-state)
+  ;; (setf (alist-get "\\*Edit Macro\\*" conn-buffer-state-setup-alist #'equal)
+  ;;       #'conn-setup-command-state
+  ;;       (alist-get 'my-org-capture-buffer-p conn-buffer-state-setup-alist)
+  ;;       #'conn-setup-command-state)
 
   (define-keymap
     :keymap global-map
@@ -1730,7 +1750,7 @@ see command `isearch-forward' for more information."
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol
     "C-c v" 'conn-toggle-mark-command
-    "M-j" 'conn-open-line-and-indent
+    ;; "M-j" 'conn-open-line-and-indent
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
     "C-." 'conn-dispatch-on-things
@@ -1754,10 +1774,12 @@ see command `isearch-forward' for more information."
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
   (keymap-global-set "C-c c" (conn-remap-key "C-c C-c"))
   (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
+  ;; (keymap-global-set "S-<mouse-1>" 'conn-last-dispatch-at-mouse)
+  ;; (keymap-global-set "S-<mouse-3>" 'undo-only)
   (with-eval-after-load 'outline
     (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-prev-heading))
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-h" 'conn-org-edit-state-prev-heading))
+    (keymap-set org-mode-map "M-h" 'conn-org-state-prev-heading))
 
   (defun my-space-after-point (N)
     (interactive "p")
@@ -1910,7 +1932,7 @@ see command `isearch-forward' for more information."
         (with-selected-window start-window
           (goto-char start-point)
           (embark-dwim))))
-    (keymap-global-set "S-<mouse-1>" 'my-embark-dwim-mouse)
+    ;; (keymap-global-set "S-<mouse-1>" 'my-embark-dwim-mouse)
 
     (defun my-embark-alt-dwim-mouse (event)
       (interactive "e")
@@ -2980,6 +3002,11 @@ see command `isearch-forward' for more information."
         :keymap embark-consult-location-map
         "M-RET" 'consult-org-link-location))))
 
+;;;;; consult-eglot
+
+(elpaca consult-eglot)
+(elpaca consult-eglot-embark)
+
 ;;;;; consult-lsp
 
 ;; (elpaca consult-lsp
@@ -3427,7 +3454,7 @@ see command `isearch-forward' for more information."
                           (nerd-icons-mdicon "nf-md-spellcheck")))))
 
     (define-keymap
-      :keymap (conn-get-mode-map 'conn-command-state 'jinx-mode)
+      :keymap (conn-get-minor-mode-map 'conn-command-state 'jinx-mode)
       "<remap> <ispell-word>" 'jinx-correct-nearest
       "$" 'jinx-correct-nearest
       "b $" 'jinx-correct-all)
@@ -3453,12 +3480,13 @@ see command `isearch-forward' for more information."
      'jinx-correct
      'jinx-correct-all)
 
-    (let ((fn (apply-partially 'conn--dispatch-all-things 'word t)))
-      (dolist (cmd '(jinx-correct-nearest
-                     jinx-correct
-                     jinx-correct-all))
-        (setf (alist-get cmd conn-dispatch-default-action-alist)
-              'my-jinx-dispatch-check)))))
+    ;; (let ((fn (apply-partially 'conn--dispatch-all-things 'word t)))
+    ;;   (dolist (cmd '(jinx-correct-nearest
+    ;;                  jinx-correct
+    ;;                  jinx-correct-all))
+    ;;     (setf (alist-get cmd conn-dispatch-default-action-alist)
+    ;;           'my-jinx-dispatch-check)))
+    ))
 
 
 ;;;; ef-themes
@@ -3627,7 +3655,7 @@ see command `isearch-forward' for more information."
           (deactivate-mark)))
 
       (define-keymap
-        :keymap (conn-get-mode-map 'conn-command-state 'smartparens-mode)
+        :keymap (conn-get-minor-mode-map 'conn-command-state 'smartparens-mode)
         "M-s" 'sp-splice-sexp
         "M-r" 'sp-splice-sexp-killing-around
         "<left>" 'sp-backward-symbol
@@ -3687,6 +3715,8 @@ see command `isearch-forward' for more information."
 
 (elpaca aggressive-indent
   (with-eval-after-load 'aggressive-indent
+    (cl-pushnew 'conn-replace aggressive-indent-protected-current-commands)
+    (cl-pushnew 'conn-regexp-replace aggressive-indent-protected-current-commands)
     (with-eval-after-load 'nerd-icons
       (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
             (list (concat (nerd-icons-codicon "nf-cod-blank")
@@ -3866,6 +3896,10 @@ see command `isearch-forward' for more information."
     "?" 'goto-last-change-reverse)
   (keymap-global-set "M-g /" 'goto-last-change)
   (keymap-global-set "M-g ?" 'goto-last-change-reverse))
+
+;;;; eev
+
+;; (elpaca eev)
 
 ;;;; repeat-fu
 

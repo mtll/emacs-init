@@ -7,11 +7,6 @@
           (let ((format mode-line-format))
             (lambda ()
               "Restore default values after init."
-              (message "Emacs loaded %d packages in %s."
-                       (cdar elpaca--status-counts)
-                       (format "%.2f seconds"
-                               (float-time
-                                (time-subtract (current-time) before-init-time))))
               (setq-default mode-line-format format
                             inhibit-message nil
                             inhibit-redisplay nil)
@@ -23,7 +18,12 @@
                                 (lambda ()
                                   (unless (frame-focus-state)
                                     (garbage-collect))))
-                (add-hook 'focus-out-hook 'garbage-collect)))))
+                (add-hook 'focus-out-hook 'garbage-collect))
+              (message "Emacs loaded %d packages in %s."
+                       (cdar elpaca--status-counts)
+                       (format "%.2f seconds"
+                               (float-time
+                                (time-subtract (current-time) before-init-time)))))))
 
 (setq-default mode-line-format nil
               inhibit-message t
