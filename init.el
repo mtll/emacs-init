@@ -183,6 +183,8 @@
 (keymap-global-set "C-x <" #'scroll-right)
 (keymap-global-set "C-x >" #'scroll-left)
 
+(keymap-global-set "C-S-l" 'move-to-window-line-top-bottom)
+
 (keymap-global-set "M-l" 'downcase-dwim)
 (keymap-global-set "M-u" 'upcase-dwim)
 (keymap-global-set "M-c" 'capitalize-dwim)
@@ -335,7 +337,8 @@
 (advice-add 'customize-read-group :override 'customize-read-group-ad)
 
 (defun my-recenter-pulse-ad (&rest _)
-  (pulse-momentary-highlight-one-line))
+  (unless (region-active-p)
+    (pulse-momentary-highlight-one-line)))
 (advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
 
 (with-eval-after-load 'c-ts-mode
@@ -680,19 +683,12 @@
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 (keymap-set isearch-mode-map "M-z"   'transient-resume)
+(keymap-unset isearch-mode-map "C-w")
 
 (defun my-isearch-yank-region ()
   (interactive)
   (isearch-yank-internal (lambda () (mark t))))
 (keymap-set isearch-mode-map "M-Y" 'my-isearch-yank-region)
-
-(defun isearch-kill-region (&optional arg)
-  (interactive "P")
-  (isearch-done)
-  (if arg
-      (delete-region (region-beginning) (region-end))
-    (kill-region (region-beginning) (region-end))))
-(keymap-set isearch-mode-map "C-w" 'isearch-kill-region)
 
 (defun isearch-escapable-split-on-char (string char)
   "Split STRING on CHAR, which can be escaped with backslash."
@@ -1396,7 +1392,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-c S" 'crux-visit-shell-buffer)
 
   (with-eval-after-load 'conn
-    (keymap-set (conn-get-state-map 'conn-command-state) "S" 'crux-visit-shell-buffer)
+    (keymap-set (conn-get-state-map 'conn-command-state) "M-S" 'crux-visit-shell-buffer)
     (keymap-set ctl-x-x-map "b" 'crux-rename-file-and-buffer)
 
     (define-keymap
@@ -1703,7 +1699,11 @@ see command `isearch-forward' for more information."
     (set-keymap-parent isearch-mode-map conn-isearch-map)
     (set-keymap-parent search-map conn-search-map)
     (set-keymap-parent goto-map conn-goto-map)
-    (set-keymap-parent indent-rigidly-map conn-indent-rigidly-map))
+    (set-keymap-parent indent-rigidly-map conn-indent-rigidly-map)
+    (keymap-set isearch-mode-map "C-f" 'conn-isearch-dispatch-region)
+    ;; (keymap-set isearch-mode-map "C-w" 'conn-isearch-kill-region)
+    ;; (keymap-set isearch-mode-map "C-d" 'conn-isearch-kill-region-other-end)
+    )
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
