@@ -812,7 +812,7 @@ see command `isearch-forward' for more information."
 (with-eval-after-load 'cc-mode
   (define-keymap
     :keymap c-mode-base-map
-    "TAB"'c-indent-then-complete
+    "TAB" 'c-indent-then-complete
     "RET" 'newline-and-indent)
 
   (defun c-indent-then-complete ()
@@ -946,6 +946,18 @@ see command `isearch-forward' for more information."
   ;;   "M-s M-r" 'dired-do-isearch-regexp
   ;;   "M-s r" 'dired-do-isearch-regexp)
   )
+
+(with-eval-after-load 'wdired
+  (with-eval-after-load 'conn
+    (defun conn--wdired-cleanup ()
+      (setq conn-major-mode-maps nil)
+      (conn--setup-state-keymaps))
+    (advice-add 'wdired-change-to-dired-mode :after 'conn--wdired-cleanup)
+
+    (defun conn--wdired-setup ()
+      (setq conn-major-mode-maps (list 'wgrep-mode))
+      (conn--setup-state-keymaps))
+    (add-hook 'wdired-mode-hook 'conn--wdired-setup)))
 
 
 ;;;; eldoc
@@ -1715,6 +1727,7 @@ see command `isearch-forward' for more information."
 
   (conn-mode 1)
   (conntext-outline-mode 1)
+  (conn-fontify-state-eval-mode 1)
 
   (setq conn-simple-label-characters
         (list "d" "j" "f" "k" "s" "g" "h" "l" "w" "e"
@@ -1949,11 +1962,6 @@ see command `isearch-forward' for more information."
 
     (keymap-set (conn-get-state-map 'conn-emacs-state) "C-TAB" 'embark-act)
 
-    (define-keymap
-      :keymap embark-general-map
-      "R" 'conn-embark-replace-region)
-
-    (keymap-set embark-kill-ring-map "r" 'conn-embark-replace-region)
     (keymap-unset embark-expression-map "D")
     (keymap-unset embark-defun-map "D")))
 
@@ -2011,6 +2019,8 @@ see command `isearch-forward' for more information."
 ;;;; magit
 
 (elpaca llama)
+
+(elpaca (cond-let :host github :repo "tarsius/cond-let"))
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
   (push (lambda () (require 'magit)) my-to-incremental-load)
@@ -2553,32 +2563,7 @@ see command `isearch-forward' for more information."
         corfu-auto nil
         corfu-preselect 'valid
         corfu-auto-delay nil
-        corfu-auto-prefix 3
-        ;; corfu-map (define-keymap
-        ;;             "<remap> <forward-sentence>" 'corfu-prompt-end
-        ;;             "<remap> <backward-sentence>" 'corfu-prompt-beginning
-        ;;             "<remap> <scroll-down-command>" #'corfu-scroll-down
-        ;;             "<remap> <scroll-up-command>" #'corfu-scroll-up
-        ;;             "<tab>" #'corfu-complete
-        ;;             ;; "RET" nil
-        ;;             ;; "<return>" nil
-        ;;             "SPC" 'corfu-insert-separator
-        ;;             "C-h" #'corfu-info-documentation
-        ;;             "M-h" #'corfu-info-location
-        ;;             "M-<" #'corfu-first
-        ;;             "M->" #'corfu-last
-        ;;             "M-n" #'corfu-next
-        ;;             ;; "C-n" nil
-        ;;             ;; "C-j" nil
-        ;;             "M-p" #'corfu-previous
-        ;;             ;; "C-p" #'corfu-previous
-        ;;             "C-g" #'corfu-quit
-        ;;             "TAB" #'corfu-complete)
-        )
-
-  (defun my-corfu-auto-on ()
-    (setq-local corfu-auto t))
-  ;; (add-hook 'prog-mode-hook 'my-corfu-auto-on)
+        corfu-auto-prefix 3)
 
   (with-eval-after-load 'corfu
     (define-keymap
@@ -2661,7 +2646,18 @@ see command `isearch-forward' for more information."
 
 ;;;; wgrep
 
-(elpaca wgrep)
+(elpaca wgrep
+  (with-eval-after-load 'wgrep
+    (with-eval-after-load 'conn
+      (defun conn--wgrep-cleanup ()
+        (setq conn-major-mode-maps nil)
+        (conn--setup-state-keymaps))
+      (advice-add 'wgrep-to-original-mode :after 'conn--wgrep-cleanup)
+
+      (defun conn--wgrep-setup ()
+        (setq conn-major-mode-maps (list 'wgrep-mode))
+        (conn--setup-state-keymaps))
+      (advice-add 'wgrep-change-to-wgrep-mode :after 'conn--wgrep-setup))))
 
 
 ;;;; separedit
@@ -2685,6 +2681,7 @@ see command `isearch-forward' for more information."
                      (require 'orderless)
                      (remove-hook 'minibuffer-setup-hook loader))))
     (add-hook 'minibuffer-setup-hook loader))
+
   (with-eval-after-load 'orderless
     (setq orderless-affix-dispatch-alist '((?\= . orderless-literal)
                                            (?! . orderless-without-literal)
@@ -3065,28 +3062,6 @@ see command `isearch-forward' for more information."
                       (set-window-point win (marker-position pt))
                       (set-marker pt nil))))))
   (advice-add 'vertico-buffer--setup :around #'vertico-buffer-setup-save-point)
-
-  ;; (defun vertico-buffer--redisplay-ad (win)
-  ;;   (let ((mbwin (active-minibuffer-window)))
-  ;;     (when (and mbwin vertico-buffer-mode
-  ;;                (eq (window-buffer mbwin) (current-buffer))
-  ;;                (not (eq win mbwin))
-  ;;                ;; Without this check we would be running this
-  ;;                ;; in any vertico-posframe windows every time.
-  ;;                (not (equal "posframe" (frame-parameter (window-frame win) 'title))))
-  ;;       (setq-local mode-line-format nil
-  ;;                   header-line-format (or header-line-format "Sets:")))))
-  ;; (advice-remove 'vertico-buffer--redisplay 'vertico-buffer--redisplay-ad)
-
-  ;; I prefer it if the vertico buffer mode-line face
-  ;; is not remapped to always appear active.
-  ;; (defun my-vertico-buffer-stop-face-remap ()
-  ;;   (setq-local face-remapping-alist
-  ;;               (seq-remove (lambda (cons)
-  ;;                             (eq (car cons) 'mode-line-inactive))
-  ;;                           face-remapping-alist)))
-  ;; not needed since I am hiding the mode-line above
-  ;; (advice-add 'vertico-buffer--setup :after #'my-vertico-buffer-stop-face-remap)
 
   ;; Refocus the minibuffer if vertico-repeat is called with a minibuffer open.
   (defun vertico-repeat-ad (&rest _)
@@ -3559,101 +3534,7 @@ see command `isearch-forward' for more information."
 
     (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
 
-    ;; (defun conn-progressive-read (prompt collection)
-    ;;   (let ((so-far "")
-    ;;         (narrowed collection)
-    ;;         (prompt (propertize (concat prompt ": ")
-    ;;                             'face 'minibuffer-prompt))
-    ;;         (display "")
-    ;;         (next nil)
-    ;;         (next-char nil))
-    ;;     (while (not (length= narrowed 1))
-    ;;       (while (not next)
-    ;;         (setq display (cl-loop with display = ""
-    ;;                                for i from 0
-    ;;                                for item in narrowed
-    ;;                                while (length< display 100)
-    ;;                                do (setq display
-    ;;                                         (concat display item
-    ;;                                                 (propertize " | " 'face 'shadow)))
-    ;;                                finally return
-    ;;                                (concat (propertize "{" 'face 'minibuffer-prompt)
-    ;;                                        (substring display 0 -3)
-    ;;                                        (when (length> narrowed i)
-    ;;                                          (propertize "..." 'face 'minibuffer-prompt))
-    ;;                                        (propertize "}" 'face 'minibuffer-prompt))))
-    ;;         (setq next-char (read-char (concat prompt so-far "  " display) t))
-    ;;         (setq next (cl-loop for item in narrowed
-    ;;                             when (eql (aref item (length so-far))
-    ;;                                       next-char)
-    ;;                             collect item)))
-    ;;       (setq narrowed next
-    ;;             next nil)
-    ;;       (setq so-far (concat so-far (string next-char))))
-    ;;     (car narrowed)))
-
     (with-eval-after-load 'conn
-      (defun conn-progressive-read (prompt collection)
-        (let ((so-far "")
-              (narrowed (mapcar #'copy-sequence
-                                (vertico-sort-length-alpha
-                                 (delete-dups (copy-sequence collection)))))
-              (prompt (propertize (concat prompt ": ")
-                                  'face 'minibuffer-prompt))
-              (display "")
-              (next nil)
-              (next-char nil))
-          (unwind-protect
-              (while (not (length= narrowed 1))
-                (while (not next)
-                  (setq display (cl-loop with display = ""
-                                         for i from 0 below 10
-                                         for item in narrowed
-                                         do (setq display (concat display item "\n"))
-                                         finally return display))
-                  (posframe-show " *conn pair posframe*"
-                                 :string display
-                                 :left-fringe 0
-                                 :right-fringe 0
-                                 :background-color (face-attribute 'menu :background)
-                                 :border-width conn-posframe-border-width
-                                 :border-color conn-posframe-border-color
-                                 :min-width 8)
-                  (setq next-char (read-char (concat prompt so-far) t))
-                  (setq next (cl-loop for item in narrowed
-                                      when (eql (aref item (length so-far))
-                                                next-char)
-                                      do (add-text-properties
-                                          0 (1+ (length so-far))
-                                          '(face completions-highlight)
-                                          item)
-                                      and collect item)))
-                (setq narrowed next
-                      next nil)
-                (setq so-far (concat so-far (string next-char))))
-            (posframe-hide " *conn pair posframe*"))
-          (car narrowed)))
-
-      (defun conn-sp-wrap-region ()
-        (interactive)
-        (activate-mark)
-        (unwind-protect
-            (save-excursion
-              (sp-wrap-with-pair
-               (conn-progressive-read
-                "Pair"
-                (mapcar
-                 (pcase-lambda ((map :trigger :open))
-                   (or trigger open))
-                 (append
-                  (alist-get t sp-pairs)
-                  (alist-get major-mode sp-pairs
-                             nil nil
-                             (lambda (a b)
-                               (or (eq t a)
-                                   (provided-mode-derived-p b a)))))))))
-          (deactivate-mark)))
-
       (define-keymap
         :keymap (conn-get-minor-mode-map 'conn-command-state 'smartparens-mode)
         "M-s" 'sp-splice-sexp
@@ -3717,6 +3598,8 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'aggressive-indent
     (cl-pushnew 'conn-replace aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-regexp-replace aggressive-indent-protected-current-commands)
+    (cl-pushnew 'conn-dispatch aggressive-indent-protected-current-commands)
+    (cl-pushnew 'conn-change-thing aggressive-indent-protected-current-commands)
     (with-eval-after-load 'nerd-icons
       (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
             (list (concat (nerd-icons-codicon "nf-cod-blank")
@@ -3892,14 +3775,15 @@ see command `isearch-forward' for more information."
 (elpaca goto-chg
   (defvar-keymap goto-chg-repeat-map
     :repeat t
-    "/" 'goto-last-change
-    "?" 'goto-last-change-reverse)
-  (keymap-global-set "M-g /" 'goto-last-change)
-  (keymap-global-set "M-g ?" 'goto-last-change-reverse))
+    "j" 'goto-last-change
+    "l" 'goto-last-change-reverse)
+  (keymap-global-set "M-g j" 'goto-last-change)
+  (keymap-global-set "M-g l" 'goto-last-change-reverse))
 
 ;;;; eev
 
-;; (elpaca eev)
+;; (elpaca eev
+;;   (require 'eev-load))
 
 ;;;; repeat-fu
 

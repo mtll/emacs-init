@@ -73,6 +73,7 @@
       package-enable-at-startup nil
       initial-buffer-choice t
       ring-bell-function #'ignore
+      pulse-face-duration 0.15
       inhibit-startup-screen t
       inhibit-x-resources t
       load-prefer-newer t
