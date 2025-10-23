@@ -153,7 +153,7 @@
 (minibuffer-depth-indicate-mode 1)
 (global-goto-address-mode 1)
 (show-paren-mode 1)
-(delete-selection-mode -1)
+(delete-selection-mode 1)
 (column-number-mode 1)
 (line-number-mode 1)
 (undelete-frame-mode 1)
@@ -344,6 +344,11 @@
 (with-eval-after-load 'c-ts-mode
   (setq c-ts-mode-indent-offset 4))
 
+;;;; Eshell
+
+(with-eval-after-load 'eshell
+  (cl-pushnew 'eshell-smart eshell-modules-list))
+
 ;;;; lisp
 
 (with-eval-after-load 'elisp-mode
@@ -356,7 +361,7 @@
     "C-c x" 'eval-defun))
 
 (push (lambda ()
-        (setq initial-major-mode 'lisp-interaction-mode))
+        (setq initial-major-mode 'emacs-lisp-mode))
       my-to-incremental-load)
 
 (defmacro my-comment (&rest _))
@@ -416,9 +421,9 @@
 
   (define-keymap
     :keymap hs-minor-mode-map
-    "C-," 'my-hs-toggle-hiding
+    "C-." 'my-hs-toggle-hiding
     "M-s h h" #'hs-hide-all
-    "M-s h ," #'hs-hide-all
+    "M-s h ." #'hs-hide-all
     "M-s h s" #'hs-show-all
     "M-s h v" #'hs-hide-level))
 
@@ -545,7 +550,7 @@
 ;;;; Abbrev
 
 (setq abbrev-all-caps t
-      hippie-expand-try-functions-list '( ;; try-complete-file-name-partially
+      hippie-expand-try-functions-list '(;; try-complete-file-name-partially
                                          ;; try-complete-file-name
                                          try-expand-all-abbrevs
                                          ;; try-expand-list
@@ -683,7 +688,6 @@
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 (keymap-set isearch-mode-map "M-z"   'transient-resume)
-(keymap-unset isearch-mode-map "C-w")
 
 (defun my-isearch-yank-region ()
   (interactive)
@@ -855,6 +859,8 @@ see command `isearch-forward' for more information."
       repeat-on-final-keystroke t
       repeat-keep-prefix nil)
 
+(put 'recenter-top-bottom 'repeat-continue t)
+
 (letrec ((loader (lambda ()
                    (repeat-mode 1)
                    (remove-hook 'pre-command-hook loader))))
@@ -950,13 +956,11 @@ see command `isearch-forward' for more information."
 (with-eval-after-load 'wdired
   (with-eval-after-load 'conn
     (defun conn--wdired-cleanup ()
-      (setq conn-major-mode-maps nil)
-      (conn--setup-state-keymaps))
+      (conn-set-major-mode-maps))
     (advice-add 'wdired-change-to-dired-mode :after 'conn--wdired-cleanup)
 
     (defun conn--wdired-setup ()
-      (setq conn-major-mode-maps (list 'wgrep-mode))
-      (conn--setup-state-keymaps))
+      (conn-set-major-mode-maps 'wdired-mode))
     (add-hook 'wdired-mode-hook 'conn--wdired-setup)))
 
 
@@ -1017,7 +1021,10 @@ see command `isearch-forward' for more information."
 
   (keymap-set erc-mode-map "RET" nil)
   (keymap-set erc-mode-map "C-c RET" 'erc-send-current-line)
-  (keymap-set erc-mode-map "C-c C-RET" 'erc-send-current-line))
+  (keymap-set erc-mode-map "C-c C-RET" 'erc-send-current-line)
+
+  (with-eval-after-load 'conn
+    (cl-pushnew 'erc-mode conn-command-state-modes)))
 
 
 ;;; Packages
@@ -1409,7 +1416,6 @@ see command `isearch-forward' for more information."
 
     (define-keymap
       :keymap global-map
-      "<conn-edit-map> D"   'crux-duplicate-and-comment-current-line-or-region
       "<conn-edit-map> @"   'crux-insert-date)))
 
 
@@ -1678,6 +1684,7 @@ see command `isearch-forward' for more information."
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (put 'conn-recenter-on-region 'repeat-continue t)
   (setq conn-emacs-state-register ?e)
 
   (with-eval-after-load 'org
@@ -1687,11 +1694,13 @@ see command `isearch-forward' for more information."
    '(conn-mark-face ((default (:inherit cursor :background "#b8a2f0"))
                      (((background light)) (:inherit cursor :background "#b8a2f0"))
                      (((background dark)) (:inherit cursor :background "#a742b0"))))
-   '(conn-dispatch-label-face ((t :background "#ff8bd1" :foreground "black" :bold t)))
+   '(conn-dispatch-label-face-1 ((t :background "#ff8bd1" :foreground "black" :bold t)))
+   '(conn-dispatch-label-face-2 ((t :background "#ffc2f2" :foreground "black" :bold t)))
    '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
    '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
 
   (keymap-global-set "C-<escape>" 'exit-recursive-edit)
+  (keymap-global-set "M-," 'conn-dispatch-thing-at-point)
 
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
@@ -1704,7 +1713,7 @@ see command `isearch-forward' for more information."
     (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
   (with-eval-after-load 'conn
-    (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
+    ;; (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
     (keymap-global-set "M-r" (conn-remap-key "<conn-region-map>"))
     (keymap-set (conn-get-state-map 'conn-emacs-state) "C-'" 'conntext-state)
     (keymap-set (conn-get-state-map 'conn-emacs-state) "M-j" 'conn-one-command)
@@ -1726,8 +1735,8 @@ see command `isearch-forward' for more information."
     (add-mode-abbrev (or arg 0)))
 
   (conn-mode 1)
+  (conn-emacs-state-operators-mode 1)
   (conntext-outline-mode 1)
-  (conn-fontify-state-eval-mode 1)
 
   (setq conn-simple-label-characters
         (list "d" "j" "f" "k" "s" "g" "h" "l" "w" "e"
@@ -1762,17 +1771,18 @@ see command `isearch-forward' for more information."
     "M-\\"  'conn-kapply-prefix
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol
-    "C-c v" 'conn-toggle-mark-command
     ;; "M-j" 'conn-open-line-and-indent
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
-    "C-." 'conn-dispatch-on-things
+    "C-," 'conn-dispatch
     "C-<backspace>" 'kill-whole-line
     "S-<return>" 'conn-open-line-and-indent
     "M-`" 'conn-wincontrol-quit-other-window-for-scrolling
     "M-U" 'conn-wincontrol-maximize-vertically
     "M-z" 'conn-exchange-mark-command
+    "C-c v" 'conn-toggle-mark-command
     "C-SPC" 'conn-set-mark-command
+    "C-<return>" 'conn-toggle-mark-command
     "C-x n" 'set-goal-column)
 
   ;; (keymap-set (conn-get-state-map 'conn-emacs-state) "<escape>" 'conn-command-state)
@@ -1802,6 +1812,12 @@ see command `isearch-forward' for more information."
   (keymap-global-set "S-SPC" 'my-space-after-point))
 
 ;;;;; conn extensions
+
+(elpaca (conn-evil-textobj-tree-sitter
+         :host github
+         :repo "mtll/conn"
+         :files ("extensions/conn-evil-textobj-tree-sitter.el"))
+  (add-hook 'c-ts-mode-hook 'conn-etts-things-mode))
 
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
@@ -2106,7 +2122,7 @@ see command `isearch-forward' for more information."
         embark-confirm-act-all nil
         prefix-help-command 'embark-prefix-help-command)
 
-  (keymap-global-set "M-." 'embark-act)
+  ;; (keymap-global-set "M-." 'embark-act)
   (keymap-global-set "C-<tab>" 'embark-act)
   ;; (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
@@ -2804,7 +2820,7 @@ see command `isearch-forward' for more information."
     "O" 'consult-line-multi
     "v" 'consult-git-grep
     "g" 'consult-ripgrep
-    "f" 'consult-find
+    "/" 'consult-find
     "L" 'consult-locate
     "k" 'consult-keep-lines
     "h f" 'consult-focus-lines
@@ -3001,7 +3017,8 @@ see command `isearch-forward' for more information."
 
 ;;;;; consult-eglot
 
-(elpaca consult-eglot)
+(elpaca consult-eglot
+  (keymap-set search-map "l" 'consult-eglot-symbols))
 (elpaca consult-eglot-embark)
 
 ;;;;; consult-lsp
@@ -3145,17 +3162,6 @@ see command `isearch-forward' for more information."
       (when-let* ((sym (intern-soft cand))
                   (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
         (format #(" {%s}" 1 5 (face marginalia-key)) (key-description key))))
-
-    (defun marginalia-annotate-command-with-alias (cand)
-      "Annotate command CAND with its documentation string.
-    Similar to `marginalia-annotate-symbol', but does not show symbol class."
-      (when-let* ((sym (intern-soft cand)))
-        (concat
-         (my-marginalia-annotate-binding cand)
-         (marginalia-annotate-alias cand)
-         (marginalia--documentation (marginalia--function-doc sym)))))
-    (cl-pushnew #'marginalia-annotate-command-with-alias
-                (alist-get 'command marginalia-annotator-registry))
 
     (defvar marginalia-align-column 40)
 
@@ -3432,7 +3438,7 @@ see command `isearch-forward' for more information."
       :keymap (conn-get-minor-mode-map 'conn-command-state 'jinx-mode)
       "<remap> <ispell-word>" 'jinx-correct-nearest
       "$" 'jinx-correct-nearest
-      "b $" 'jinx-correct-all)
+      "SPC $" 'jinx-correct-all)
 
     (defun my-jinx-dispatch-check (window pt _thing)
       (interactive)
@@ -3528,7 +3534,7 @@ see command `isearch-forward' for more information."
     (add-hook 'prog-mode-hook loader))
 
   (with-eval-after-load 'smartparens
-    (setq sp-highlight-pair-overlay nil
+    (setq sp-highlight-pair-overlay t
           sp-highlight-wrap-overlay t
           sp-echo-match-when-invisible nil)
 
@@ -3597,9 +3603,11 @@ see command `isearch-forward' for more information."
 (elpaca aggressive-indent
   (with-eval-after-load 'aggressive-indent
     (cl-pushnew 'conn-replace aggressive-indent-protected-current-commands)
+    (cl-pushnew 'conn-duplicate-and-comment-region aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-regexp-replace aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-dispatch aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-change-thing aggressive-indent-protected-current-commands)
+    (cl-pushnew 'conn-kill-thing aggressive-indent-protected-current-commands)
     (with-eval-after-load 'nerd-icons
       (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
             (list (concat (nerd-icons-codicon "nf-cod-blank")
@@ -3779,6 +3787,12 @@ see command `isearch-forward' for more information."
     "l" 'goto-last-change-reverse)
   (keymap-global-set "M-g j" 'goto-last-change)
   (keymap-global-set "M-g l" 'goto-last-change-reverse))
+
+;;;; evil-textobj-tree-sitter
+
+(elpaca evil-textobj-tree-sitter
+  (with-eval-after-load 'conn
+    (require 'conn-evil-textobj-tree-sitter)))
 
 ;;;; eev
 
