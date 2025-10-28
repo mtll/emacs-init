@@ -2744,11 +2744,13 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'conn
       (defun conn--wgrep-cleanup ()
         (setq conn-major-mode-maps nil)
+        (conn-exit-recursive-stack)
         (conn--setup-state-keymaps))
       (advice-add 'wgrep-to-original-mode :after 'conn--wgrep-cleanup)
 
       (defun conn--wgrep-setup ()
         (setq conn-major-mode-maps (list 'wgrep-mode))
+        (conn-enter-recursive-stack 'conn-emacs-state)
         (conn--setup-state-keymaps))
       (advice-add 'wgrep-change-to-wgrep-mode :after 'conn--wgrep-setup))))
 
@@ -3829,8 +3831,87 @@ see command `isearch-forward' for more information."
 (elpaca rg
   (define-keymap
     :keymap search-map
-    "y" 'rg-menu
-    "u" 'rg))
+    "y" 'rg-menu)
+
+  (with-eval-after-load 'conn
+    (oclosure-define (my-rg-dir-argument
+                      (:parent conn-read-args-argument)))
+
+    (defun my-rg-dir-argument (&optional initial-value)
+      (oclosure-lambda (my-rg-dir-argument
+                        (value initial-value)
+                        (keymap (define-keymap
+                                  "t" 'file
+                                  "d" 'directory
+                                  "p" 'project)))
+          (self cmd)
+        (pcase cmd
+          ('file (conn-set-argument self 'file))
+          ('directory (conn-set-argument self 'directory))
+          ('project (conn-set-argument self 'project))
+          (_ self))))
+
+    (cl-defmethod conn-argument-display ((arg my-rg-dir-argument))
+      (let ((val (conn-read-args-argument-value arg)))
+        (concat
+         "search in: "
+         "\\[project] " (propertize "project"
+                                    'face (unless (or (eq val 'file)
+                                                      (eq val 'directory))
+                                            'eldoc-highlight-function-argument))
+         ", \\[directory] " (propertize "directory"
+                                        'face (when (eq val 'directory)
+                                                'eldoc-highlight-function-argument))
+         ", \\[file] " (propertize "file"
+                                   'face (when (eq val 'file)
+                                           'eldoc-highlight-function-argument)))))
+
+    (cl-defmethod conn-argument-predicate ((_arg my-rg-dir-argument)
+                                           (_cmd (eql cycle-dir)))
+      t)
+
+    (autoload 'my-rg-dwim "rg")
+    (keymap-set search-map "u" 'my-rg-dwim)
+
+    (with-eval-after-load 'rg
+      (defun my-rg-dwim (thing arg transform dir)
+        (interactive
+         (conn-read-args (conn-read-thing-state
+                          :prompt "rg thing")
+             ((`(,thing ,arg) (conn-thing-argument-dwim))
+              (transform (conn-transform-argument))
+              (dir (my-rg-dir-argument)))
+           (list thing arg transform dir)))
+        (save-mark-and-excursion
+          (pcase (conn-bounds-of thing arg)
+            ((conn-bounds `(,beg . ,end) transform)
+             (push-mark)
+             (save-mark-and-excursion
+               (goto-char beg)
+               (conn--push-ephemeral-mark end)
+               (pcase dir
+                 ('file (my-rg-region-current-file))
+                 ('dir (my-rg-region-current-dir))
+                 (_ (my-rg-region))))))))))
+
+  (with-eval-after-load 'rg
+    (rg-define-search my-rg-region
+      :query (buffer-substring-no-properties (region-beginning) (region-end))
+      :format literal
+      :files current
+      :dir project)
+
+    (rg-define-search my-rg-region-current-dir
+      :query (buffer-substring-no-properties (region-beginning) (region-end))
+      :format literal
+      :files current
+      :dir current)
+
+    (rg-define-search my-rg-region-current-file
+      :query (buffer-substring-no-properties (region-beginning) (region-end))
+      :format literal
+      :files (rg-get-buffer-file-name)
+      :dir project)))
 
 
 ;;;; treemacs
