@@ -45,17 +45,30 @@
 
 (setq magit-define-global-key-bindings nil)
 
-(defvar my-to-incremental-load nil)
+(defvar my--to-incremental-load nil)
+(defvar my--incremental-load-timer nil)
 
-(defun my-do-incremental-load ()
-  (while (and my-to-incremental-load
+(defun my-incremental-load (fn)
+  (push fn my--to-incremental-load)
+  (unless my--incremental-load-timer
+    (setq my--incremental-load-timer
+          (run-with-idle-timer 3 nil 'my--do-incremental-load))))
+
+(defun my--do-incremental-load ()
+  (when my--incremental-load-timer
+    (cancel-timer my--incremental-load-timer)
+    (setq my--incremental-load-timer nil))
+  (while (and my--to-incremental-load
               (not (input-pending-p)))
     (with-demoted-errors "Error in incremental loader: %s"
       (let ((inhibit-message t))
-        (funcall (pop my-to-incremental-load)))))
-  (when my-to-incremental-load
-    (run-with-idle-timer 3 nil 'my-do-incremental-load)))
-(run-with-idle-timer 3 nil 'my-do-incremental-load)
+        (funcall (pop my--to-incremental-load)))))
+  (when my--to-incremental-load
+    (setq my--incremental-load-timer
+          (run-with-idle-timer 3 nil 'my--do-incremental-load))))
+(setq my--incremental-load-timer
+      (run-with-idle-timer 3 nil 'my--do-incremental-load))
+(add-hook 'focus-out-hook 'my--do-incremental-load)
 
 ;;;; emacs
 
@@ -360,9 +373,9 @@
     :keymap lisp-interaction-mode-map
     "C-c x" 'eval-defun))
 
-(push (lambda ()
-        (setq initial-major-mode 'emacs-lisp-mode))
-      my-to-incremental-load)
+(my-incremental-load
+ (lambda ()
+   (setq initial-major-mode 'emacs-lisp-mode)))
 
 (defmacro my-comment (&rest _))
 
@@ -370,6 +383,67 @@
   (unless (buffer-file-name)
     (setq-local lexical-binding t)))
 (add-hook 'emacs-lisp-mode-hook 'lexical-in-temp)
+
+;; (with-eval-after-load 'conn
+;;   (defun my-forward-sexp-or-up (arg)
+;;     (interactive "p")
+;;     (let ((beg (save-excursion
+;;                  (ignore-error scan-error
+;;                    (forward-sexp))
+;;                  (backward-sexp)
+;;                  (point))))
+;;       (cond ((= arg 0))
+;;             ((< arg 0)
+;;              (my-backward-sexp-or-up (abs arg)))
+;;             (t
+;;              (while (/= arg 0)
+;;                (condition-case _
+;;                    (while (/= arg 0)
+;;                      (forward-sexp 1)
+;;                      (cl-decf arg))
+;;                  (scan-error
+;;                   (up-list 1)
+;;                   (cl-decf arg)
+;;                   (save-excursion
+;;                     (backward-sexp 1)
+;;                     (setq beg (point))))))))
+;;       (conn--push-ephemeral-mark beg)))
+;; 
+;;   (defun my-backward-sexp-or-up (arg)
+;;     (interactive "p")
+;;     (let ((beg (save-excursion
+;;                  (ignore-error scan-error
+;;                    (backward-sexp))
+;;                  (forward-sexp)
+;;                  (point))))
+;;       (cond ((= arg 0))
+;;             ((< arg 0)
+;;              (my-forward-sexp-or-up (abs arg)))
+;;             (t
+;;              (while (/= arg 0)
+;;                (condition-case _
+;;                    (while (/= arg 0)
+;;                      (forward-sexp -1)
+;;                      (cl-decf arg))
+;;                  (scan-error
+;;                   (up-list -1)
+;;                   (cl-decf arg)
+;;                   (save-excursion
+;;                     (forward-sexp 1)
+;;                     (setq beg (point))))))))
+;;       (conn--push-ephemeral-mark beg)))
+;; 
+;;   (conn-register-thing-commands
+;;    'sexp 'ignore
+;;    'my-backward-sexp-or-up
+;;    'my-forward-sexp-or-up)
+;; 
+;;   (define-minor-mode my-lisp-movement-mode
+;;     "Minor mode for my lisp movement commands."
+;;     :keymap (define-keymap
+;;               "C-M-f" 'my-forward-sexp-or-up
+;;               "C-M-b" 'my-backward-sexp-or-up))
+;;   (add-hook 'lisp-data-mode-hook 'my-lisp-movement-mode))
 
 ;;;; paren context
 
@@ -436,7 +510,7 @@
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
-  ;; (push (lambda () (require 'org)) my-to-incremental-load)
+  ;; (my-incremental-load (lambda () (require 'org)))
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
         org-outline-path-complete-in-steps nil
@@ -908,7 +982,7 @@ see command `isearch-forward' for more information."
 
 ;;;; ibuffer
 
-(push (lambda () (require 'ibuffer)) my-to-incremental-load)
+(my-incremental-load (lambda () (require 'ibuffer)))
 (with-eval-after-load 'ibuffer
   (setq ibuffer-human-readable-size t))
 
@@ -917,7 +991,7 @@ see command `isearch-forward' for more information."
 
 (keymap-global-set "C-x h" 'dired-jump)
 
-(push (lambda () (require 'dired)) my-to-incremental-load)
+(my-incremental-load (lambda () (require 'dired)))
 
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
@@ -1322,8 +1396,7 @@ see command `isearch-forward' for more information."
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
-  (push (lambda () (dtrt-indent-global-mode 1))
-        my-to-incremental-load)
+  (my-incremental-load (lambda () (dtrt-indent-global-mode 1)))
   (with-eval-after-load 'dtrt-indent
     (with-eval-after-load 'diminish
       (diminish 'dtrt-indent-mode))))
@@ -1425,8 +1498,7 @@ see command `isearch-forward' for more information."
 
 (when window-system
   (elpaca posframe
-    (push (lambda () (require 'posframe))
-          my-to-incremental-load)))
+    (my-incremental-load (lambda () (require 'posframe)))))
 
 
 ;;;; isearch+
@@ -1694,8 +1766,7 @@ see command `isearch-forward' for more information."
    '(conn-mark-face ((default (:inherit cursor :background "#b8a2f0"))
                      (((background light)) (:inherit cursor :background "#b8a2f0"))
                      (((background dark)) (:inherit cursor :background "#a742b0"))))
-   '(conn-dispatch-label-face-1 ((t :background "#ff8bd1" :foreground "black" :bold t)))
-   '(conn-dispatch-label-face-2 ((t :background "#ffc2f2" :foreground "black" :bold t)))
+   '(conn-dispatch-label-face ((t :background "#ff8bd1" :foreground "black" :bold t)))
    '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
    '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
 
@@ -1724,7 +1795,14 @@ see command `isearch-forward' for more information."
     (keymap-set isearch-mode-map "C-f" 'conn-isearch-dispatch-region)
     ;; (keymap-set isearch-mode-map "C-w" 'conn-isearch-kill-region)
     ;; (keymap-set isearch-mode-map "C-d" 'conn-isearch-kill-region-other-end)
-    )
+
+    (dolist (state '(conn-command-state conn-emacs-state))
+      (keymap-set (conn-get-major-mode-map state 'occur-mode)
+                  "C-c e" 'occur-edit-mode))
+
+    (dolist (state '(conn-command-state conn-emacs-state))
+      (keymap-set (conn-get-major-mode-map state 'occur-edit-mode)
+                  "C-c e" 'occur-cease-edit)))
 
   (setq conn-wincontrol-initial-help nil
         conn-read-string-timeout 0.35
@@ -2039,7 +2117,7 @@ see command `isearch-forward' for more information."
 (elpaca (cond-let :host github :repo "tarsius/cond-let"))
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
-  (push (lambda () (require 'magit)) my-to-incremental-load)
+  (my-incremental-load (lambda () (require 'magit)))
   (with-eval-after-load 'nerd-icons
     (setq magit-format-file-function #'magit-format-file-nerd-icons))
 
@@ -2612,8 +2690,7 @@ see command `isearch-forward' for more information."
 ;;;; nerd icons
 
 (elpaca nerd-icons
-  (push (lambda () (require 'nerd-icons))
-        my-to-incremental-load))
+  (my-incremental-load (lambda () (require 'nerd-icons))))
 
 (elpaca nerd-icons-dired
   (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
@@ -3293,7 +3370,7 @@ see command `isearch-forward' for more information."
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
-  (push (lambda () (require 'denote)) my-to-incremental-load)
+  (my-incremental-load (lambda () (require 'denote)))
 
   (with-eval-after-load 'denote
     (denote-rename-buffer-mode 1)
@@ -3422,8 +3499,7 @@ see command `isearch-forward' for more information."
 ;;;; jinx
 
 (elpaca jinx
-  (push (lambda () (global-jinx-mode 1))
-        my-to-incremental-load)
+  (my-incremental-load (lambda () (global-jinx-mode 1)))
 
   (with-eval-after-load 'jinx
     ;; (with-eval-after-load 'diminish
@@ -3496,8 +3572,7 @@ see command `isearch-forward' for more information."
 (elpaca projectile
   (setq projectile-mode-line-prefix ""
         projectile-dynamic-mode-line nil)
-  (push (lambda () (projectile-mode 1))
-        my-to-incremental-load)
+  (my-incremental-load (lambda () (projectile-mode 1)))
 
   (defun my-ibuffer-maybe-project (&optional all)
     (interactive "P")
@@ -3541,6 +3616,7 @@ see command `isearch-forward' for more information."
     (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
 
     (with-eval-after-load 'conn
+      (conn-sp-sexp-include-prefix-chars-mode 1)
       (define-keymap
         :keymap (conn-get-minor-mode-map 'conn-command-state 'smartparens-mode)
         "M-s" 'sp-splice-sexp
@@ -3699,8 +3775,7 @@ see command `isearch-forward' for more information."
 ;;;; yasnippet
 
 (elpaca yasnippet
-  (push (lambda () (yas-global-mode 1))
-        my-to-incremental-load)
+  (my-incremental-load (lambda () (yas-global-mode 1)))
 
   (with-eval-after-load 'yasnippet
     ;; Can't do this through diminish since it wants to append a
