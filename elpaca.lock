@@ -99,30 +99,29 @@
                        :files ("Auxiliary/*.el") :source "MELPA"
                        :protocol https :inherit t :depth treeless :ref
                        "75eb71570f79ad487b2ae56744b1e5681c545578"))
- (cond-let
-   :source "elpaca-menu-lock-file" :recipe
-   (:package "cond-let" :fetcher github :repo "tarsius/cond-let"
-             :files
-             ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-              "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-              "lisp/*.el" "docs/dir" "docs/*.info" "docs/*.texi"
-              "docs/*.texinfo"
-              (:exclude ".dir-locals.el" "test.el" "tests.el"
-                        "*-test.el" "*-tests.el" "LICENSE" "README*"
-                        "*-pkg.el"))
-             :source "MELPA" :protocol https :inherit t :depth
-             treeless :host github :ref
-             "09ebf1caa81c99677ce74091a23b48a28d53bcd9"))
+ (cond-let :source "elpaca-menu-lock-file" :recipe
+           (:package "cond-let" :fetcher github :repo
+                     "tarsius/cond-let" :files
+                     ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+                      "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+                      "doc/*.texinfo" "lisp/*.el" "docs/dir"
+                      "docs/*.info" "docs/*.texi" "docs/*.texinfo"
+                      (:exclude ".dir-locals.el" "test.el" "tests.el"
+                                "*-test.el" "*-tests.el" "LICENSE"
+                                "README*" "*-pkg.el"))
+                     :source "MELPA" :protocol https :inherit t :depth
+                     treeless :host github :ref
+                     "09ebf1caa81c99677ce74091a23b48a28d53bcd9"))
  (conn :source "elpaca-menu-lock-file" :recipe
        (:source nil :protocol https :inherit t :depth nil :host github
                 :repo "mtll/conn" :package "conn" :ref
-                "af3480192529b55e0dbd127663166853c96899cb"))
+                "3a9d251601e558c27c57974148236c27984973f6"))
  (conn-consult :source "elpaca-menu-lock-file" :recipe
                (:source nil :protocol https :inherit t :depth treeless
                         :host github :repo "mtll/conn" :files
                         ("extensions/conn-consult.el") :package
                         "conn-consult" :ref
-                        "af3480192529b55e0dbd127663166853c96899cb"))
+                        "3a9d251601e558c27c57974148236c27984973f6"))
  (conn-evil-textobj-tree-sitter :source "elpaca-menu-lock-file"
                                 :recipe
                                 (:source nil :protocol https :inherit
@@ -133,32 +132,32 @@
                                          :package
                                          "conn-evil-textobj-tree-sitter"
                                          :ref
-                                         "af3480192529b55e0dbd127663166853c96899cb"))
+                                         "3a9d251601e558c27c57974148236c27984973f6"))
  (conn-expand-region :source "elpaca-menu-lock-file" :recipe
                      (:source nil :protocol https :inherit t :depth
                               treeless :host github :repo "mtll/conn"
                               :files
                               ("extensions/conn-expand-region.el")
                               :package "conn-expand-region" :ref
-                              "af3480192529b55e0dbd127663166853c96899cb"))
+                              "3a9d251601e558c27c57974148236c27984973f6"))
  (conn-expreg :source "elpaca-menu-lock-file" :recipe
               (:source nil :protocol https :inherit t :depth treeless
                        :host github :repo "mtll/conn" :files
                        ("extensions/conn-expreg.el") :package
                        "conn-expreg" :ref
-                       "af3480192529b55e0dbd127663166853c96899cb"))
+                       "3a9d251601e558c27c57974148236c27984973f6"))
  (conn-posframe :source "elpaca-menu-lock-file" :recipe
                 (:source nil :protocol https :inherit t :depth
                          treeless :host github :repo "mtll/conn"
                          :files ("extensions/conn-posframe.el")
                          :package "conn-posframe" :ref
-                         "af3480192529b55e0dbd127663166853c96899cb"))
+                         "3a9d251601e558c27c57974148236c27984973f6"))
  (conn-smartparens :source "elpaca-menu-lock-file" :recipe
                    (:source nil :protocol https :inherit t :depth
                             treeless :host github :repo "mtll/conn"
                             :files ("extensions/conn-smartparens.el")
                             :package "conn-smartparens" :ref
-                            "af3480192529b55e0dbd127663166853c96899cb"))
+                            "3a9d251601e558c27c57974148236c27984973f6"))
  (consult :source "elpaca-menu-lock-file" :recipe
           (:package "consult" :repo "minad/consult" :fetcher github
                     :files
@@ -1221,19 +1220,20 @@
                   :source "MELPA" :protocol https :inherit t :depth
                   treeless :ref
                   "49f09ab9b706d2312cab1199e1eeb1bcd3f27f6f"))
- (with-editor :source "elpaca-menu-lock-file"
-   :recipe
-   (:package "with-editor" :fetcher github :repo "magit/with-editor"
-             :files
-             ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-              "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-              "lisp/*.el" "docs/dir" "docs/*.info" "docs/*.texi"
-              "docs/*.texinfo"
-              (:exclude ".dir-locals.el" "test.el" "tests.el"
-                        "*-test.el" "*-tests.el" "LICENSE" "README*"
-                        "*-pkg.el"))
-             :source "MELPA" :protocol https :inherit t :depth
-             treeless :ref "87a384a0e59260cca41ca8831d98e195b1ec8ada"))
+ (with-editor :source "elpaca-menu-lock-file" :recipe
+              (:package "with-editor" :fetcher github :repo
+                        "magit/with-editor" :files
+                        ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+                         "*.texinfo" "doc/dir" "doc/*.info"
+                         "doc/*.texi" "doc/*.texinfo" "lisp/*.el"
+                         "docs/dir" "docs/*.info" "docs/*.texi"
+                         "docs/*.texinfo"
+                         (:exclude ".dir-locals.el" "test.el"
+                                   "tests.el" "*-test.el" "*-tests.el"
+                                   "LICENSE" "README*" "*-pkg.el"))
+                        :source "MELPA" :protocol https :inherit t
+                        :depth treeless :ref
+                        "87a384a0e59260cca41ca8831d98e195b1ec8ada"))
  (xterm-color :source "elpaca-menu-lock-file" :recipe
               (:package "xterm-color" :repo "atomontage/xterm-color"
                         :fetcher github :files

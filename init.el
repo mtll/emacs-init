@@ -191,7 +191,6 @@
 (keymap-global-set "<f2>" #'other-window)
 (keymap-global-set "M-z" #'transient-resume)
 (keymap-global-set "C-h A" #'describe-char)
-(keymap-global-set "C-x j" #'dired-jump)
 (keymap-global-set "C-/" #'undo-only)
 (keymap-global-set "C-x <" #'scroll-right)
 (keymap-global-set "C-x >" #'scroll-left)
@@ -209,6 +208,11 @@
 
 (keymap-set tab-bar-switch-repeat-map "u" #'tab-previous)
 (keymap-unset tab-bar-switch-repeat-map "O")
+
+(keymap-set minibuffer-local-map "M-}" 'scroll-other-window)
+(keymap-set minibuffer-local-map "C-M-e" 'scroll-other-window)
+(keymap-set minibuffer-local-map "M-{" 'minibuffer-scroll-other-window-down)
+(keymap-set minibuffer-local-map "C-M-a" 'scroll-other-window-down)
 
 (defvar-keymap scroll-repeat-map
   :repeat t
@@ -350,7 +354,8 @@
 (advice-add 'customize-read-group :override 'customize-read-group-ad)
 
 (defun my-recenter-pulse-ad (&rest _)
-  (unless (region-active-p)
+  (unless (or (region-active-p)
+              executing-kbd-macro)
     (pulse-momentary-highlight-one-line)))
 (advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
 
@@ -1217,7 +1222,8 @@ see command `isearch-forward' for more information."
 
 (elpaca (rustic :host github
                 :repo "emacs-rustic/rustic")
-  (setq rustic-lsp-client 'lsp-mode))
+  (setq rustic-lsp-client 'eglot
+        rust-mode-treesitter-derive t))
 
 
 ;;;; erlang
@@ -1415,7 +1421,7 @@ see command `isearch-forward' for more information."
 (elpaca modus-themes
   (require 'modus-themes)
 
-  (setq modus-themes-common-palette-overrides
+  (setq modus-operandi-tinted-palette-overrides
         (seq-concatenate
          'list
          `((bg-main "#fff5e8")
@@ -1757,7 +1763,9 @@ see command `isearch-forward' for more information."
               :depth nil
               :repo "mtll/conn")
   (put 'conn-recenter-on-region 'repeat-continue t)
-  (setq conn-emacs-state-register ?e)
+  (setq conn-emacs-state-register ?e
+        conn-ts-query-dir (file-name-as-directory
+                           "/home/dave/build/nvim-treesitter-textobjects/queries"))
 
   (with-eval-after-load 'org
     (require 'conn-org))
@@ -1812,15 +1820,16 @@ see command `isearch-forward' for more information."
     (interactive "P")
     (add-mode-abbrev (or arg 0)))
 
+  (require 'conn-extras)
   (conn-mode 1)
   (conn-emacs-state-operators-mode 1)
   (conntext-outline-mode 1)
 
   (setq conn-simple-label-characters
-        (list "d" "j" "f" "k" "s" "g" "h" "l" "w" "e"
-              "r" "t" "y" "u" "i" "c" "v" "b" "n" "m"
-              "2" "3" "4" "5" "6" "7" "8" "x" "," "a"
-              ";" "q" "p"))
+        (list "d" "j" "f" "k" "s" "g" "h" "l" "e" "r"
+              "y" "u" "i" "q" "p" ";" "2" "3" "4" "5" "6"
+              "7" "8" "x" "," "a" "c" "b" "n" "m"
+              "w" "t" "v"))
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
@@ -1858,8 +1867,8 @@ see command `isearch-forward' for more information."
     "M-`" 'conn-wincontrol-quit-other-window-for-scrolling
     "M-U" 'conn-wincontrol-maximize-vertically
     "M-z" 'conn-exchange-mark-command
-    "C-c v" 'conn-toggle-mark-command
-    "C-SPC" 'conn-set-mark-command
+    "C-c v" 'dired-jump
+    "C-SPC" 'set-mark-command
     "C-<return>" 'conn-toggle-mark-command
     "C-x n" 'set-goal-column)
 
@@ -1891,11 +1900,16 @@ see command `isearch-forward' for more information."
 
 ;;;;; conn extensions
 
-(elpaca (conn-evil-textobj-tree-sitter
+(elpaca (conn-tree-sitter
          :host github
          :repo "mtll/conn"
-         :files ("extensions/conn-evil-textobj-tree-sitter.el"))
-  (add-hook 'c-ts-mode-hook 'conn-etts-things-mode))
+         :files ("extensions/conn-tree-sitter.el"))
+  (require 'treesit)
+  (add-hook 'c-ts-mode-hook 'conn-ts-things-mode)
+  (defun my-setup-ts-defuns ()
+    (setq conn-extract-defuns-function
+          #'conn--dispatch-extract-defuns-treesit))
+  (add-hook 'conn-ts-things-mode-hook #'my-setup-ts-defuns))
 
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
@@ -2495,7 +2509,7 @@ see command `isearch-forward' for more information."
       "r" 'consult-ripgrep
       "h" nil
       "h o" 'consult-line
-      "h f" 'consult-find
+      "h ," 'consult-find
       "h v" 'consult-git-grep
       "h O" 'consult-locate
       "h i" 'consult-imenu
@@ -2506,7 +2520,7 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap embark-general-map
       "h l" 'consult-line
-      "h f" 'consult-find
+      "h ," 'consult-find
       "h v" 'consult-git-grep
       "h O" 'consult-locate
       "h i" 'consult-imenu
@@ -2652,7 +2666,7 @@ see command `isearch-forward' for more information."
         corfu-bar-width 0.4
         corfu-quit-at-boundary 'separator
         corfu-quit-no-match nil
-        corfu-preview-current 'insert
+        corfu-preview-current nil
         corfu-on-exact-match nil
         corfu-auto nil
         corfu-preselect 'valid
@@ -2662,8 +2676,10 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'corfu
     (define-keymap
       :keymap corfu-map
-      "C-h" 'corfu-info-documentation
-      "M-h" 'corfu-info-location
+      "M-f" 'corfu-info-documentation
+      "M-b" 'corfu-info-location
+      "C-M-f" 'scroll-other-window
+      "C-M-b" 'scroll-other-window-down
       "M-TAB" 'corfu-insert-separator
       "TAB" 'corfu-insert
       "C-g" 'corfu-quit)
@@ -2899,7 +2915,7 @@ see command `isearch-forward' for more information."
     "O" 'consult-line-multi
     "v" 'consult-git-grep
     "g" 'consult-ripgrep
-    "/" 'consult-find
+    "," 'consult-find
     "L" 'consult-locate
     "k" 'consult-keep-lines
     "h f" 'consult-focus-lines
@@ -3871,7 +3887,7 @@ see command `isearch-forward' for more information."
       t)
 
     (autoload 'my-rg-dwim "rg")
-    (keymap-set search-map "u" 'my-rg-dwim)
+    (keymap-set search-map "d" 'my-rg-dwim)
 
     (with-eval-after-load 'rg
       (defun my-rg-dwim (thing arg transform dir)
@@ -3943,12 +3959,6 @@ see command `isearch-forward' for more information."
     "l" 'goto-last-change-reverse)
   (keymap-global-set "M-g j" 'goto-last-change)
   (keymap-global-set "M-g l" 'goto-last-change-reverse))
-
-;;;; evil-textobj-tree-sitter
-
-(elpaca evil-textobj-tree-sitter
-  (with-eval-after-load 'conn
-    (require 'conn-evil-textobj-tree-sitter)))
 
 ;;;; eev
 
