@@ -150,6 +150,8 @@
                                restore)
       project-vc-extra-root-markers '(".projectile" ".project"))
 
+(add-hook 'lisp-data-mode-hook 'prettify-symbols-mode)
+
 (defun my-kill-buffer ()
   (interactive)
   (kill-buffer))
@@ -1319,6 +1321,10 @@ see command `isearch-forward' for more information."
 
   (setq pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
 
+  (with-eval-after-load 'pdf-links
+    (keymap-set pdf-links-minor-mode-map "f" #'pdf-links-action-perform)
+    (keymap-set pdf-links-minor-mode-map "F" #'pdf-links-isearch-link))
+
   (with-eval-after-load 'pdf-tools
     (setq pdf-annot-latex-header "")
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode)
@@ -1330,6 +1336,9 @@ see command `isearch-forward' for more information."
       "h" 'conn-wincontrol-one-command))
 
   (pdf-loader-install))
+
+(elpaca saveplace-pdf-view
+  (require 'saveplace-pdf-view))
 
 ;;;;; org-pdf-tools
 
@@ -1754,7 +1763,15 @@ see command `isearch-forward' for more information."
 
 ;;;; elixir-ts
 
-(elpaca elixir-ts-mode)
+(elpaca elixir-ts-mode
+  (defun my-ex-setup-ts-sexp ()
+    (conn-ts-things-mode 1)
+    (make-variable-buffer-local 'treesit-thing-settings)
+    (setf (alist-get 'sexp (alist-get 'elixir treesit-thing-settings))
+          (list elixir-ts--sexp-regexp))
+    (setf (alist-get 'sexp (alist-get 'heex treesit-thing-settings))
+          (list heex-ts--sexp-regexp)))
+  (add-hook 'elixir-ts-mode-hook 'my-ex-setup-ts-sexp))
 
 
 ;;;; conn
@@ -1905,11 +1922,7 @@ see command `isearch-forward' for more information."
          :repo "mtll/conn"
          :files ("extensions/conn-tree-sitter.el"))
   (require 'treesit)
-  (add-hook 'c-ts-mode-hook 'conn-ts-things-mode)
-  (defun my-setup-ts-defuns ()
-    (setq conn-extract-defuns-function
-          #'conn--dispatch-extract-defuns-treesit))
-  (add-hook 'conn-ts-things-mode-hook #'my-setup-ts-defuns))
+  (add-hook 'c-ts-mode-hook 'conn-ts-things-mode))
 
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
