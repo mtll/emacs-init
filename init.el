@@ -216,6 +216,8 @@
 (keymap-set minibuffer-local-map "M-{" 'minibuffer-scroll-other-window-down)
 (keymap-set minibuffer-local-map "C-M-a" 'scroll-other-window-down)
 
+(keymap-set query-replace-map "a" 'automatic)
+
 (defvar-keymap scroll-repeat-map
   :repeat t
   "<" 'scroll-right
@@ -3864,7 +3866,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn
     (oclosure-define (my-rg-dir-argument
-                      (:parent conn-read-args-argument)))
+                      (:parent conn-anonymous-argument)))
 
     (defun my-rg-dir-argument (&optional initial-value)
       (oclosure-lambda (my-rg-dir-argument
@@ -3873,12 +3875,14 @@ see command `isearch-forward' for more information."
                                   "t" 'file
                                   "d" 'directory
                                   "p" 'project)))
-          (self cmd)
+          (self cmd update-fn)
         (pcase cmd
-          ('file (conn-set-argument self 'file))
-          ('directory (conn-set-argument self 'directory))
-          ('project (conn-set-argument self 'project))
-          (_ self))))
+          ('file
+           (funcall update-fn (conn-set-argument self 'file)))
+          ('directory
+           (funcall update-fn (conn-set-argument self 'directory)))
+          ('project
+           (funcall update-fn (conn-set-argument self 'project))))))
 
     (cl-defmethod conn-argument-display ((arg my-rg-dir-argument))
       (let ((val (conn-read-args-argument-value arg)))
