@@ -118,7 +118,7 @@
       show-paren-highlight-openparen t
       show-paren-when-point-inside-paren t
       show-paren-when-point-in-periphery t
-      sentence-end-double-space t
+      sentence-end-double-space nil
       tab-always-indent 'complete
       read-minibuffer-restore-windows nil
       dired-listing-switches "-alFh --dired --group-directories-first"
@@ -498,12 +498,17 @@
   (require 'hideshow)
   (save-excursion (hs-toggle-hiding)))
 
+(setq hs-indicator-type 'fringe
+      hs-show-indicators nil)
+
 (with-eval-after-load 'hideshow
   (with-eval-after-load 'diminish
     (diminish 'hs-minor-mode ""))
 
   (define-keymap
     :keymap hs-minor-mode-map
+    "<end>" 'my-hs-toggle-hiding
+    "<home>" 'hs-show-all
     "C-." 'my-hs-toggle-hiding
     "M-s h h" #'hs-hide-all
     "M-s h ." #'hs-hide-all
@@ -664,6 +669,8 @@
 
 
 ;;;; misearch
+
+(defvar coding-system--for-buffer-diff nil)
 
 (defun my-read-buffers (&optional predicate)
   "Return a list of buffers specified interactively, one by one."
@@ -1783,8 +1790,7 @@ see command `isearch-forward' for more information."
               :repo "mtll/conn")
   (put 'conn-recenter-on-region 'repeat-continue t)
   (setq conn-emacs-state-register ?e
-        conn-ts-query-dir (file-name-as-directory
-                           "/home/dave/build/nvim-treesitter-textobjects/queries"))
+        conn-argument-region-dwim nil)
 
   (with-eval-after-load 'org
     (require 'conn-org))
@@ -1922,7 +1928,8 @@ see command `isearch-forward' for more information."
 (elpaca (conn-tree-sitter
          :host github
          :repo "mtll/conn"
-         :files ("extensions/conn-tree-sitter.el"))
+         :files ("extensions/tree-sitter/conn-tree-sitter.el"
+                 "extensions/tree-sitter/queries"))
   (require 'treesit)
   (add-hook 'c-ts-mode-hook 'conn-ts-things-mode))
 
@@ -2524,23 +2531,23 @@ see command `isearch-forward' for more information."
       "r" 'consult-ripgrep
       "h" nil
       "h o" 'consult-line
-      "h ," 'consult-find
+      "h ," 'consult-fd
       "h v" 'consult-git-grep
-      "h O" 'consult-locate
+      "h L" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
-      "h L" 'consult-line-multi
+      "h O" 'consult-line-multi
       "h g" 'consult-ripgrep)
 
     (define-keymap
       :keymap embark-general-map
       "h l" 'consult-line
-      "h ," 'consult-find
+      "h ," 'consult-fd
       "h v" 'consult-git-grep
-      "h O" 'consult-locate
+      "h L" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
-      "h L" 'consult-line-multi
+      "h O" 'consult-line-multi
       "h g" 'consult-ripgrep)))
 
 ;;;;; embark buttons
@@ -2930,7 +2937,7 @@ see command `isearch-forward' for more information."
     "O" 'consult-line-multi
     "v" 'consult-git-grep
     "g" 'consult-ripgrep
-    "," 'consult-find
+    "," 'consult-fd
     "L" 'consult-locate
     "k" 'consult-keep-lines
     "h f" 'consult-focus-lines
@@ -3546,8 +3553,8 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap (conn-get-minor-mode-map 'conn-command-state 'jinx-mode)
       "<remap> <ispell-word>" 'jinx-correct-nearest
-      "$" 'jinx-correct-nearest
-      "SPC $" 'jinx-correct-all)
+      "^" 'jinx-correct-nearest
+      "SPC ^" 'jinx-correct-all)
 
     (defun my-jinx-dispatch-check (window pt _thing)
       (interactive)
@@ -3634,19 +3641,13 @@ see command `isearch-forward' for more information."
     (with-eval-after-load 'diminish
       (diminish 'smartparens-mode)))
 
-  (letrec ((loader (lambda ()
-                     (require 'smartparens-config)
-                     (smartparens-global-mode 1)
-                     ;; (show-smartparens-global-mode 1)
-                     (remove-hook 'prog-mode-hook loader))))
-    (add-hook 'prog-mode-hook loader))
+  (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
 
   (with-eval-after-load 'smartparens
+    (require 'smartparens-config)
     (setq sp-highlight-pair-overlay t
           sp-highlight-wrap-overlay t
           sp-echo-match-when-invisible nil)
-
-    (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
 
     (with-eval-after-load 'conn
       (conn-sp-sexp-include-prefix-chars-mode 1)
@@ -3717,6 +3718,9 @@ see command `isearch-forward' for more information."
     (cl-pushnew 'conn-dispatch aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-change-thing aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-kill-thing aggressive-indent-protected-current-commands)
+    (cl-pushnew 'defining-kbd-macro aggressive-indent-dont-indent-if)
+    (cl-pushnew 'executing-kbd-macro aggressive-indent-dont-indent-if)
+    ;; (cl-pushnew 'conn-dispatch-in-progress aggressive-indent-dont-indent-if)
     (with-eval-after-load 'nerd-icons
       (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
             (list (concat (nerd-icons-codicon "nf-cod-blank")
@@ -3840,6 +3844,14 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap yas-minor-mode-map
       "M-P" 'consult-yasnippet)))
+
+(elpaca yasnippet-capf
+  (setq yasnippet-capf-lookup-by 'name)
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (add-to-list 'completion-at-point-functions
+                           (cape-capf-super #'elisp-completion-at-point
+                                            #'yasnippet-capf)))))
 
 ;; (elpaca yasnippet-snippets)
 
