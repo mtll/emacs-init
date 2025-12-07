@@ -1302,7 +1302,7 @@ see command `isearch-forward' for more information."
 
 (elpaca j-mode
   (setq j-console-cmd
-        (locate-file "~/build/j9.5/bin/jconsole" nil
+        (locate-file "~/j9.6/bin/jconsole" nil
                      nil #'file-executable-p)))
 
 
@@ -2534,8 +2534,8 @@ see command `isearch-forward' for more information."
       "h ," 'consult-fd
       "h v" 'consult-git-grep
       "h L" 'consult-locate
-      "h i" 'consult-imenu
-      "h I" 'consult-imenu-multi
+      "h m" 'consult-imenu
+      "h M" 'consult-imenu-multi
       "h O" 'consult-line-multi
       "h g" 'consult-ripgrep)
 
@@ -2920,7 +2920,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "C-h i" 'consult-info)
   (keymap-global-set "C-h TAB" 'info)
   (keymap-global-set "<remap> <imenu>" 'consult-imenu)
-  (keymap-global-set "M-g I" 'consult-imenu-multi)
+  (keymap-global-set "M-g M" 'consult-imenu-multi)
 
   (keymap-set minibuffer-local-map "M-r" 'consult-history)
 
@@ -2938,7 +2938,10 @@ see command `isearch-forward' for more information."
     "v" 'consult-git-grep
     "g" 'consult-ripgrep
     "," 'consult-fd
-    "L" 'consult-locate
+    "~" (lambda ()
+          (interactive)
+          (consult-fd (expand-file-name "~/")))
+    "l" 'consult-locate
     "k" 'consult-keep-lines
     "h f" 'consult-focus-lines
     "i" 'my-consult-grep-file)
@@ -3135,7 +3138,7 @@ see command `isearch-forward' for more information."
 ;;;;; consult-eglot
 
 (elpaca consult-eglot
-  (keymap-set search-map "l" 'consult-eglot-symbols))
+  (keymap-set search-map "u" 'consult-eglot-symbols))
 (elpaca consult-eglot-embark)
 
 ;;;;; consult-lsp
@@ -3150,6 +3153,7 @@ see command `isearch-forward' for more information."
 
 (elpaca consult-projectile
   (keymap-global-set "C-c j" 'consult-projectile)
+  (keymap-global-set "C-c J" 'consult-projectile-switch-project)
   (with-eval-after-load 'projectile
     (with-eval-after-load 'consult
       (consult-customize consult-projectile :preview-key "C-o"))))
@@ -3897,7 +3901,7 @@ see command `isearch-forward' for more information."
            (funcall update-fn (conn-set-argument self 'project))))))
 
     (cl-defmethod conn-argument-display ((arg my-rg-dir-argument))
-      (let ((val (conn-read-args-argument-value arg)))
+      (let ((val (conn-anonymous-argument-value arg)))
         (concat
          "search in: "
          "\\[project] " (propertize "project"
