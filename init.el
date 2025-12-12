@@ -76,7 +76,6 @@
 ;; visual-order-cursor-movement t
 (setq edmacro-reverse-macro-lines t
       git-commit-major-mode 'log-edit-mode
-      next-line-add-newlines t
       scroll-conservatively 0
       visual-order-cursor-movement t
       register-use-preview nil
@@ -88,7 +87,7 @@
       find-file-visit-truename t
       ffap-machine-p-known 'reject
       word-wrap t
-      truncate-string-ellipsis "…"
+      ;; truncate-string-ellipsis "…"
       comment-multi-line t
       help-enable-symbol-autoload t
       mac-option-modifier 'meta
@@ -1178,10 +1177,7 @@ see command `isearch-forward' for more information."
   (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
   (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
 
-  (push '(help-mode . helpful-mode) major-mode-remap-alist)
-
-  (with-eval-after-load 'embark
-    (keymap-set embark-symbol-map "M-RET" 'helpful-symbol)))
+  (push '(help-mode . helpful-mode) major-mode-remap-alist))
 
 
 ;;;; sly
@@ -2018,7 +2014,8 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'embark
     (defcustom conn-embark-alt-default-action-overrides
-      '((identifier . xref-find-references))
+      ;; '((identifier . xref-find-references))
+      nil
       "`embark-default-action-overrides' for alternate actions."
       :type '(alist :key-type (choice (symbol :tag "Type")
                                       (cons (symbol :tag "Type")
@@ -2030,6 +2027,22 @@ see command `isearch-forward' for more information."
       "Key for embark-alt-dwim."
       :type 'string
       :group 'conn-embark)
+
+    (defvar my-embark-doc-hook nil)
+    (add-hook 'emacs-lisp-mode-hook
+              (lambda ()
+                (add-hook 'my-embark-doc-hook
+                          (lambda (sym)
+                            (when-let* ((sym (intern-soft sym)))
+                              (helpful-symbol sym)
+                              t))
+                          0 t)))
+
+    (defun my-embark-doc (symbol)
+      (interactive "sSymbol: ")
+      (run-hook-with-args-until-success 'my-embark-doc-hook symbol))
+
+    (keymap-set embark-identifier-map "M-RET" 'my-embark-doc)
 
     (defun conn-embark-alt--default-action (type)
       "`embark--default-action' for alt actions"
@@ -2296,7 +2309,7 @@ see command `isearch-forward' for more information."
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
+    ;; (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
@@ -2965,7 +2978,9 @@ see command `isearch-forward' for more information."
     (consult-customize consult--source-bookmark :preview-key "C-o")
     (consult-customize consult-bookmark :preview-key "C-o")
     (consult-customize consult-buffer :preview-key "C-o")
-    (consult-customize consult-project-buffer :preview-key "C-o"))
+    (consult-customize consult-project-buffer :preview-key "C-o")
+    ;; (consult-customize consult-ripgrep :preview-key "C-o")
+    )
 
   (defun conn-occur-keep-lines ()
     (interactive)
@@ -3992,6 +4007,25 @@ see command `isearch-forward' for more information."
     "l" 'goto-last-change-reverse)
   (keymap-global-set "M-g j" 'goto-last-change)
   (keymap-global-set "M-g l" 'goto-last-change-reverse))
+
+;;;; geiser
+
+(elpaca geiser)
+
+(elpaca geiser-guile
+  (setq geiser-guile-binary "guile3.0"))
+
+;;;; Racket
+
+(elpaca racket-mode
+  (add-hook 'racket-mode-hook #'racket-xp-mode)
+  (add-hook 'racket-xp-mode-hook
+            (lambda ()
+              (add-hook 'my-embark-doc-hook
+                        (lambda (_sym)
+                          (racket-xp-documentation nil)
+                          t)
+                        -20 t))))
 
 ;;;; eev
 
