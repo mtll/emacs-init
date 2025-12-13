@@ -506,7 +506,7 @@
 
   (define-keymap
     :keymap hs-minor-mode-map
-    "<end>" 'my-hs-toggle-hiding
+    ;; "<end>" 'my-hs-toggle-hiding
     "<home>" 'hs-show-all
     "C-." 'my-hs-toggle-hiding
     "M-s h h" #'hs-hide-all
@@ -661,6 +661,7 @@
   electric-pair-mode
   my-electric-pair-turn-on
   :predicate '((not lisp-data-mode)
+               (not racket-mode)
                prog-mode)
   :group 'electricity)
 
@@ -1854,6 +1855,7 @@ see command `isearch-forward' for more information."
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
+  (keymap-set (conn-get-state-map 'conn-command-state) "<end>" 'conntext-state)
   (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "C-<left>" 'conntext-state)
@@ -3661,6 +3663,8 @@ see command `isearch-forward' for more information."
       (diminish 'smartparens-mode)))
 
   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
+  (add-hook 'racket-mode-hook 'smartparens-mode)
+  (add-hook 'racket-mode-hook 'smartparens-strict-mode)
 
   (with-eval-after-load 'smartparens
     (require 'smartparens-config)
