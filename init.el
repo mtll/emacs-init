@@ -128,7 +128,7 @@
       uniquify-after-kill-buffer-p t
       uniquify-ignore-buffers-re "^\\*"
       global-mark-ring-max 32
-      mark-ring-max 12
+      mark-ring-max 24
       undo-limit 8000000
       undo-strong-limit 16000000
       undo-outer-limit 32000000
@@ -148,6 +148,9 @@
                                delete-space-before
                                restore)
       project-vc-extra-root-markers '(".projectile" ".project"))
+
+(add-hook 'emacs-lisp-mode-hook
+          (lambda () (setq-local sentence-end-double-space t)))
 
 (add-hook 'lisp-data-mode-hook 'prettify-symbols-mode)
 
@@ -548,6 +551,7 @@
 
   (with-eval-after-load 'org
     (with-eval-after-load 'conn
+      (keymap-set org-mode-map "C-M-<return>" #'org-insert-subheading)
       (keymap-set org-mode-map "C-c b" (conn-remap-key "C-c C-v"))
       (keymap-set org-mode-map "C-c x" (conn-remap-key "C-c C-x"))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
@@ -778,11 +782,6 @@
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 (keymap-set isearch-mode-map "M-z"   'transient-resume)
-
-(defun my-isearch-yank-region ()
-  (interactive)
-  (isearch-yank-internal (lambda () (mark t))))
-(keymap-set isearch-mode-map "M-Y" 'my-isearch-yank-region)
 
 (defun isearch-escapable-split-on-char (string char)
   "Split STRING on CHAR, which can be escaped with backslash."
@@ -1042,16 +1041,6 @@ see command `isearch-forward' for more information."
   ;;   "M-s M-r" 'dired-do-isearch-regexp
   ;;   "M-s r" 'dired-do-isearch-regexp)
   )
-
-(with-eval-after-load 'wdired
-  (with-eval-after-load 'conn
-    (defun conn--wdired-cleanup ()
-      (conn-set-major-mode-maps))
-    (advice-add 'wdired-change-to-dired-mode :after 'conn--wdired-cleanup)
-
-    (defun conn--wdired-setup ()
-      (conn-set-major-mode-maps 'wdired-mode))
-    (add-hook 'wdired-mode-hook 'conn--wdired-setup)))
 
 
 ;;;; eldoc
@@ -1787,7 +1776,7 @@ see command `isearch-forward' for more information."
               :repo "mtll/conn")
   (put 'conn-recenter-on-region 'repeat-continue t)
   (setq conn-emacs-state-register ?e
-        conn-argument-region-dwim nil)
+        conn-thing-argument-region-dwim nil)
 
   (with-eval-after-load 'org
     (require 'conn-org))
@@ -1815,14 +1804,7 @@ see command `isearch-forward' for more information."
 
   (with-eval-after-load 'conn
     ;; (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
-    (keymap-global-set "M-r" (conn-remap-key "<conn-region-map>"))
-    (keymap-set (conn-get-state-map 'conn-emacs-state) "C-'" 'conntext-state)
     (keymap-set (conn-get-state-map 'conn-emacs-state) "M-j" 'conn-one-command)
-    (set-keymap-parent isearch-mode-map conn-isearch-map)
-    (set-keymap-parent search-map conn-search-map)
-    (set-keymap-parent goto-map conn-goto-map)
-    (set-keymap-parent indent-rigidly-map conn-indent-rigidly-map)
-    (keymap-set isearch-mode-map "C-f" 'conn-isearch-dispatch-region)
     ;; (keymap-set isearch-mode-map "C-w" 'conn-isearch-kill-region)
     ;; (keymap-set isearch-mode-map "C-d" 'conn-isearch-kill-region-other-end)
 
@@ -1844,27 +1826,25 @@ see command `isearch-forward' for more information."
 
   (require 'conn-extras)
   (conn-mode 1)
+  (conn-duplicate-repeat-mode 1)
   (conn-emacs-state-operators-mode 1)
-  (conntext-outline-mode 1)
+  (conn-setup-isearch-map)
 
   (setq conn-simple-label-characters
         (list "d" "j" "f" "k" "s" "g" "h" "l" "e" "r"
               "y" "u" "i" "q" "p" ";" "2" "3" "4" "5" "6"
-              "7" "8" "x" "," "a" "c" "b" "n" "m"
-              "w" "t" "v"))
+              "7" "8" "x" "a" "c" "b" "n" "m" "w" "t" "v"))
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
-  (keymap-set (conn-get-state-map 'conn-command-state) "<end>" 'conntext-state)
   (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-<left>" 'conntext-state)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-," 'conn-dispatch)
 
   (defvar-keymap conn-buffer-repeat-map
     :repeat t
     "l" 'next-buffer
     "j" 'previous-buffer)
-  (add-hook 'outline-minor-mode-hook 'conntext-outline-mode)
 
   (defun my-org-capture-buffer-p (buffer &rest _alist)
     (bound-and-true-p org-capture-mode))
@@ -1910,9 +1890,9 @@ see command `isearch-forward' for more information."
   ;; (keymap-global-set "S-<mouse-1>" 'conn-last-dispatch-at-mouse)
   ;; (keymap-global-set "S-<mouse-3>" 'undo-only)
   (with-eval-after-load 'outline
-    (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-prev-heading))
+    (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-up-heading))
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-h" 'conn-org-state-prev-heading))
+    (keymap-set org-mode-map "M-h" 'conn-org-state-up-heading))
 
   (defun my-space-after-point (N)
     (interactive "p")
@@ -1938,7 +1918,7 @@ see command `isearch-forward' for more information."
                    (require 'posframe)
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
-  (setq conn-window-labeling-function 'conn-posframe-window-label)
+  (setq conn-window-label-function 'conn-posframe-window-labels)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
 
@@ -1948,10 +1928,10 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'consult
     (require 'conn-consult))
   (with-eval-after-load 'conn
-    (keymap-global-set "<conn-region-map> o" 'conn-consult-line-region)
-    (keymap-global-set "<conn-region-map> O" 'conn-consult-line-multi-region)
-    (keymap-global-set "<conn-region-map> g" 'conn-consult-ripgrep-region)
-    (keymap-global-set "<conn-region-map> v" 'conn-consult-git-grep-region)))
+    (keymap-global-set "<conn-edit-map> o" 'conn-consult-line-thing)
+    (keymap-global-set "<conn-edit-map> O" 'conn-consult-line-multi-thing)
+    (keymap-global-set "<conn-edit-map> g" 'conn-consult-ripgrep-thing)
+    (keymap-global-set "<conn-edit-map> G" 'conn-consult-git-grep-thing)))
 
 (with-eval-after-load 'conn
   (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
@@ -2124,8 +2104,7 @@ see command `isearch-forward' for more information."
                           :repo "mtll/conn"
                           :files ("extensions/conn-smartparens.el"))
   (with-eval-after-load 'smartparens
-    (require 'conn-smartparens)
-    (add-hook 'lisp-data-mode-hook 'conntext-smartparens-mode)))
+    (require 'conn-smartparens)))
 
 ;; (when (>= emacs-major-version 30)
 ;;   (elpaca (conn-treesit :host github
@@ -2152,7 +2131,7 @@ see command `isearch-forward' for more information."
 
 (elpaca ialign
   (with-eval-after-load 'conn
-    (keymap-global-set "<conn-region-map> a i" 'ialign))
+    (keymap-global-set "<conn-edit-map> a i" 'ialign))
 
   (with-eval-after-load 'embark
     (defun embark-ialign (_reg)
@@ -2770,11 +2749,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'outline
     (define-keymap
       :keymap outline-minor-mode-map
-      "<backtab>" 'bicycle-cycle-global))
-
-  (with-eval-after-load 'org
-    (define-keymap
-      :keymap org-mode-map
       "<backtab>" 'bicycle-cycle-global)))
 
 
@@ -2792,20 +2766,7 @@ see command `isearch-forward' for more information."
 
 ;;;; wgrep
 
-(elpaca wgrep
-  (with-eval-after-load 'wgrep
-    (with-eval-after-load 'conn
-      (defun conn--wgrep-cleanup ()
-        (setq conn-major-mode-maps nil)
-        (conn-exit-recursive-stack)
-        (conn--setup-state-keymaps))
-      (advice-add 'wgrep-to-original-mode :after 'conn--wgrep-cleanup)
-
-      (defun conn--wgrep-setup ()
-        (setq conn-major-mode-maps (list 'wgrep-mode))
-        (conn-enter-recursive-stack 'conn-emacs-state)
-        (conn--setup-state-keymaps))
-      (advice-add 'wgrep-change-to-wgrep-mode :after 'conn--wgrep-setup))))
+(elpaca wgrep)
 
 
 ;;;; separedit
@@ -2906,7 +2867,6 @@ see command `isearch-forward' for more information."
 (elpaca consult
   (setq consult--gc-percentage 0.5
         consult-async-min-input 3
-        consult-yank-rotate t
         consult-narrow-key "M-N"
         xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref
@@ -2925,7 +2885,6 @@ see command `isearch-forward' for more information."
   (keymap-global-set "M-g y" #'consult-global-mark)
   (keymap-global-set "<remap> <Info-search>" #'consult-info)
   (keymap-global-set "<remap> <bookmark-jump>" #'consult-bookmark)
-  (keymap-global-set "<remap> <yank-pop>" #'consult-yank-pop)
   (keymap-global-set "<remap> <yank-from-kill-ring>" #'consult-yank-from-kill-ring)
   (keymap-global-set "<remap> <jump-to-register>" #'consult-register-load)
   (keymap-global-set "<remap> <switch-to-buffer>" 'consult-buffer)
@@ -2939,27 +2898,30 @@ see command `isearch-forward' for more information."
 
   (keymap-set minibuffer-local-map "M-r" 'consult-history)
 
-  (define-keymap
-    :keymap search-map
-    "c" 'occur
-    "y" 'rgrep
-    "p" 'consult-page
-    "K" 'consult-kmacro
-    "w" 'consult-man
-    "e" 'consult-isearch-history
-    "t" 'consult-outline
-    "o" 'consult-line
-    "O" 'consult-line-multi
-    "v" 'consult-git-grep
-    "g" 'consult-ripgrep
-    "," 'consult-fd
-    "~" (lambda ()
-          (interactive)
-          (consult-fd (expand-file-name "~/")))
-    "l" 'consult-locate
-    "k" 'consult-keep-lines
-    "h f" 'consult-focus-lines
-    "i" 'my-consult-grep-file)
+  (defun my-consult-fd-home ()
+    (interactive)
+    (consult-fd (expand-file-name "~/")))
+
+  (with-eval-after-load 'conn
+    (define-keymap
+      :keymap conn-search-map
+      "c" 'occur
+      "y" 'rgrep
+      "p" 'consult-page
+      "K" 'consult-kmacro
+      "w" 'consult-man
+      "e" 'consult-isearch-history
+      "t" 'consult-outline
+      "o" 'consult-line
+      "O" 'consult-line-multi
+      "v" 'consult-git-grep
+      "g" 'consult-ripgrep
+      "," 'consult-fd
+      "~" 'my-consult-fd-home
+      "l" 'consult-locate
+      "k" 'consult-keep-lines
+      "h f" 'consult-focus-lines
+      "i" 'my-consult-grep-file))
 
   (keymap-set goto-map "g" 'consult-goto-line)
   (keymap-global-set "<remap> <project-switch-to-buffer>" 'consult-project-buffer)
@@ -3532,17 +3494,9 @@ see command `isearch-forward' for more information."
                    :no-save t
                    :immediate-finish nil
                    :kill-buffer t
-                   :jump-to-captured t)))
+                   :jump-to-captured t))))
 
-  (defun denote-backlinks-file (file)
-    (when (denote-file-is-writable-and-supported-p file)
-      (let* ((id (denote-retrieve-filename-identifier-with-error file))
-             (xref-show-xrefs-function #'denote-link--prepare-backlinks)
-             (project-find-functions #'denote-project-find))
-        (xref--show-xrefs
-         (apply-partially #'xref-matches-in-files id
-                          (denote-directory-files nil :omit-current :text-only))
-         nil)))))
+(elpaca denote-org)
 
 
 ;;;; teco
@@ -3646,6 +3600,7 @@ see command `isearch-forward' for more information."
     (keymap-global-unset "C-x p")
     (keymap-global-set "C-x p" 'projectile-command-map)
     (keymap-global-set "C-c c" 'projectile-command-map)
+    (keymap-set goto-map "R" 'projectile-find-references)
 
     (define-keymap
       :keymap projectile-command-map
@@ -3990,17 +3945,17 @@ see command `isearch-forward' for more information."
 
 ;;;; dirvish
 
-(elpaca dirvish
-  (custom-set-faces
-   '(dirvish-hl-line ((t :inherit region :extend t)))
-   '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
-
-  (setq dirvish-hide-cursor t)
-
-  (with-eval-after-load 'dired
-    (dirvish-override-dired-mode 1))
-
-  (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
+;; (elpaca dirvish
+;;   (custom-set-faces
+;;    '(dirvish-hl-line ((t :inherit region :extend t)))
+;;    '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
+;; 
+;;   (setq dirvish-hide-cursor t)
+;; 
+;;   (with-eval-after-load 'dired
+;;     (dirvish-override-dired-mode 1))
+;; 
+;;   (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
 
 ;;;; goto-chg
 
@@ -4031,6 +3986,10 @@ see command `isearch-forward' for more information."
                           t)
                         -20 t))))
 
+;;;; vterm
+
+(elpaca vterm)
+
 ;;;; eev
 
 ;; (elpaca eev
@@ -4040,6 +3999,14 @@ see command `isearch-forward' for more information."
 
 ;; (elpaca (repeat-fu :host codeberg
 ;;                    :repo "ideasman42/emacs-repeat-fu"))
+
+;; (defun big-ding ()
+;;   (when (= 0 (random 100))
+;;     (let ((mpv (executable-find "mpv"))
+;;           (boom (expand-file-name "vine-boom.mp3" user-emacs-directory)))
+;;       (start-process "boom" nil mpv boom))))
+;;
+;; (setq ring-bell-function #'big-ding)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
