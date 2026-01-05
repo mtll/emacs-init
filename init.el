@@ -74,7 +74,8 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq edmacro-reverse-macro-lines t
+(setq exchange-point-and-mark-highlight-region nil
+      edmacro-reverse-macro-lines t
       git-commit-major-mode 'log-edit-mode
       scroll-conservatively 0
       visual-order-cursor-movement t
@@ -289,10 +290,6 @@
   (delete-frame))
 (keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
 
-(defun disable-minibuffer-max-height (fn &rest args)
-  (let ((max-mini-window-height 1.0))
-    (apply fn args)))
-
 (defun crm-indicator (args)
   (cons (format "[CRM%s] %s"
                 (replace-regexp-in-string
@@ -461,34 +458,34 @@
 ;; Fix bug causing indent commands to delete text when
 ;; show-paren-context-when-offscreen is set to 'overlay
 
-(with-eval-after-load 'paren
-  (defun show-paren--delete-context-overlay ()
-    (when show-paren--context-overlay
-      (delete-overlay show-paren--context-overlay)
-      (setq show-paren--context-overlay nil))
-    (remove-hook 'pre-command-hook #'show-paren--delete-overlays
-                 'local))
-
-  (defun show-paren--show-context-in-overlay (text)
-    "Show TEXT in an overlay at the top-left of the current window."
-    (setq text (replace-regexp-in-string "\n" " " text))
-    (show-paren--delete-context-overlay)
-    (let* ((beg (window-start))
-           (end (save-excursion
-                  (goto-char beg)
-                  (line-end-position))))
-      (setq show-paren--context-overlay (make-overlay beg end)))
-    (overlay-put show-paren--context-overlay 'display text)
-    ;; Use the (default very high) `show-paren-priority' ensuring that
-    ;; not other overlays shine through (bug#59527).
-    (overlay-put show-paren--context-overlay 'priority
-                 show-paren-priority)
-    (overlay-put show-paren--context-overlay
-                 'face `(:box
-                         ( :line-width (1 . -1)
-                           :color ,(face-attribute 'shadow :foreground))))
-    (add-hook 'pre-command-hook #'show-paren--delete-context-overlay
-              nil 'local)))
+;; (with-eval-after-load 'paren
+;;   (defun show-paren--delete-context-overlay ()
+;;     (when show-paren--context-overlay
+;;       (delete-overlay show-paren--context-overlay)
+;;       (setq show-paren--context-overlay nil))
+;;     (remove-hook 'pre-command-hook #'show-paren--delete-overlays
+;;                  'local))
+;; 
+;;   (defun show-paren--show-context-in-overlay (text)
+;;     "Show TEXT in an overlay at the top-left of the current window."
+;;     (setq text (replace-regexp-in-string "\n" " " text))
+;;     (show-paren--delete-context-overlay)
+;;     (let* ((beg (window-start))
+;;            (end (save-excursion
+;;                   (goto-char beg)
+;;                   (line-end-position))))
+;;       (setq show-paren--context-overlay (make-overlay beg end)))
+;;     (overlay-put show-paren--context-overlay 'display text)
+;;     ;; Use the (default very high) `show-paren-priority' ensuring that
+;;     ;; not other overlays shine through (bug#59527).
+;;     (overlay-put show-paren--context-overlay 'priority
+;;                  show-paren-priority)
+;;     (overlay-put show-paren--context-overlay
+;;                  'face `(:box
+;;                          ( :line-width (1 . -1)
+;;                            :color ,(face-attribute 'shadow :foreground))))
+;;     (add-hook 'pre-command-hook #'show-paren--delete-context-overlay
+;;               nil 'local)))
 
 
 ;;;; hideshow
@@ -1359,18 +1356,6 @@ see command `isearch-forward' for more information."
   (add-hook 'latex-mode-hook #'cdlatex-mode)
   (add-hook 'org-mode-hook #'org-cdlatex-mode)
 
-  (defun my-cdlatex-tab-handler ()
-    (letrec ((tick (buffer-chars-modified-tick))
-             (beg (point))
-             (hook (lambda ()
-                     (when (and (eql tick (buffer-chars-modified-tick))
-                                (/= (point) beg))
-                       (conn--push-ephemeral-mark beg))
-                     (remove-hook 'post-command-hook hook))))
-      (add-hook 'post-command-hook hook)
-      nil))
-  (add-hook 'cdlatex-tab-hook 'my-cdlatex-tab-handler 91)
-
   (with-eval-after-load 'cdlatex
     (setq
      cdlatex-math-symbol-alist '((?. ("\\cdot" "\\ldot"))
@@ -1508,6 +1493,7 @@ see command `isearch-forward' for more information."
 
 (when window-system
   (elpaca posframe
+    (setq posframe-inhibit-double-buffering t)
     (my-incremental-load (lambda () (require 'posframe)))))
 
 
@@ -3528,8 +3514,7 @@ see command `isearch-forward' for more information."
     (define-keymap
       :keymap (conn-get-minor-mode-map 'conn-command-state 'jinx-mode)
       "<remap> <ispell-word>" 'jinx-correct-nearest
-      "^" 'jinx-correct-nearest
-      "SPC ^" 'jinx-correct-all)
+      "^" 'jinx-correct-nearest)
 
     (defun my-jinx-dispatch-check (window pt _thing)
       (interactive)
@@ -3855,6 +3840,11 @@ see command `isearch-forward' for more information."
     "y" 'rg-menu)
 
   (with-eval-after-load 'conn
+    (define-keymap
+      :keymap conn-search-map
+      "y" 'rg-menu))
+
+  (with-eval-after-load 'conn
     (oclosure-define (my-rg-dir-argument
                       (:parent conn-anonymous-argument)))
 
@@ -3862,7 +3852,7 @@ see command `isearch-forward' for more information."
       (oclosure-lambda (my-rg-dir-argument
                         (value initial-value)
                         (keymap (define-keymap
-                                  "t" 'file
+                                  "/" 'file
                                   "d" 'directory
                                   "p" 'project)))
           (self cmd update-fn)
@@ -3911,7 +3901,7 @@ see command `isearch-forward' for more information."
              (push-mark)
              (save-mark-and-excursion
                (goto-char beg)
-               (conn--push-ephemeral-mark end)
+               (push-mark end t)
                (pcase dir
                  ('file (my-rg-region-current-file))
                  ('dir (my-rg-region-current-dir))
