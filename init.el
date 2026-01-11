@@ -1761,22 +1761,9 @@ see command `isearch-forward' for more information."
               :depth nil
               :repo "mtll/conn")
   (put 'conn-recenter-on-region 'repeat-continue t)
-  (setq conn-emacs-state-register ?e
-        conn-thing-argument-region-dwim nil)
 
   (with-eval-after-load 'org
     (require 'conn-org))
-
-  (custom-set-faces
-   '(conn-mark-face ((default (:inherit cursor :background "#b8a2f0"))
-                     (((background light)) (:inherit cursor :background "#b8a2f0"))
-                     (((background dark)) (:inherit cursor :background "#a742b0"))))
-   '(conn-dispatch-label-face ((t :background "#ff8bd1" :foreground "black" :bold t)))
-   '(conn-dispatch-mode-line-face ((t (:inherit mode-line :background "#9ac793"))))
-   '(conn-read-thing-mode-line-face ((t (:inherit mode-line :background "#98a3d4")))))
-
-  (keymap-global-set "C-<escape>" 'exit-recursive-edit)
-  (keymap-global-set "M-," 'conn-dispatch-thing-at-point)
 
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
@@ -1784,9 +1771,6 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'org
     (keymap-set org-mode-map "<conn-thing-map> M" 'conn-mark-org-math)
     (keymap-set org-mode-map "<conn-thing-map> m" 'conn-mark-org-inner-math))
-
-  (with-eval-after-load 'ibuffer
-    (keymap-set ibuffer-mode-map "f" 'conn-dispatch-on-things))
 
   (with-eval-after-load 'conn
     ;; (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
@@ -1802,19 +1786,16 @@ see command `isearch-forward' for more information."
       (keymap-set (conn-get-major-mode-map state 'occur-edit-mode)
                   "C-c e" 'occur-cease-edit)))
 
-  (setq conn-wincontrol-initial-help nil
-        conn-read-string-timeout 0.35
-        conn-bind-isearch-mode-keys t)
+  (setq conn-read-string-timeout 0.35)
 
   (defun my-add-mode-abbrev (arg)
     (interactive "P")
     (add-mode-abbrev (or arg 0)))
 
-  (require 'conn-extras)
   (conn-mode 1)
-  (conn-duplicate-repeat-mode 1)
-  (conn-emacs-state-operators-mode 1)
+  (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
+  (require 'conn-extras)
 
   (setq conn-simple-label-characters
         (list "d" "j" "f" "k" "s" "g" "h" "l" "e" "r"
@@ -1835,16 +1816,10 @@ see command `isearch-forward' for more information."
   (defun my-org-capture-buffer-p (buffer &rest _alist)
     (bound-and-true-p org-capture-mode))
 
-  ;; (setf (alist-get "\\*Edit Macro\\*" conn-buffer-state-setup-alist #'equal)
-  ;;       #'conn-setup-command-state
-  ;;       (alist-get 'my-org-capture-buffer-p conn-buffer-state-setup-alist)
-  ;;       #'conn-setup-command-state)
-
   (define-keymap
     :keymap global-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
-    "M-\\"  'conn-kapply-prefix
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol
     ;; "M-j" 'conn-open-line-and-indent
@@ -1878,14 +1853,7 @@ see command `isearch-forward' for more information."
   (with-eval-after-load 'outline
     (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-up-heading))
   (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-h" 'conn-org-state-up-heading))
-
-  (defun my-space-after-point (N)
-    (interactive "p")
-    (save-excursion
-      (let ((last-command-event ?\ ))
-        (self-insert-command N))))
-  (keymap-global-set "S-SPC" 'my-space-after-point))
+    (keymap-set org-mode-map "M-h" 'conn-org-state-up-heading)))
 
 ;;;;; conn extensions
 
@@ -3979,6 +3947,22 @@ see command `isearch-forward' for more information."
 ;;;; vterm
 
 (elpaca vterm)
+
+;;;; macrostep
+
+(elpaca macrostep
+  (define-keymap
+    :keymap emacs-lisp-mode-map
+    "C-c e" 'macrostep-expand)
+  (with-eval-after-load 'macrostep
+    (define-keymap
+      :keymap (conn-get-minor-mode-map 'conn-command-state 'macrostep-mode)
+      "e" #'macrostep-expand
+      "c" #'macrostep-collapse
+      "l" #'macrostep-next-macro
+      "j" #'macrostep-prev-macro
+      "q" #'macrostep-collapse-all)
+    (conn-set-mode-map-depth 'macrostep-mode -50 'conn-command-state)))
 
 ;;;; eev
 
