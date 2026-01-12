@@ -647,7 +647,7 @@
                                          try-expand-dabbrev-all-buffers
                                          try-expand-dabbrev-from-kill))
 
-(keymap-global-set "C-M-h" 'hippie-expand)
+(keymap-global-set "M-h" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
@@ -780,77 +780,77 @@
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 (keymap-set isearch-mode-map "M-z"   'transient-resume)
 
-(defun isearch-escapable-split-on-char (string char)
-  "Split STRING on CHAR, which can be escaped with backslash."
-  (let ((quoted (concat "\\" char)))
-    (mapcar
-     (lambda (piece) (replace-regexp-in-string (string 0) char piece))
-     (split-string (replace-regexp-in-string
-                    (concat "\\\\\\" (substring quoted 0 (1- (length quoted)))
-                            "\\|\\\\" quoted)
-                    (lambda (x) (if (equal x quoted) (string 0) x))
-                    string 'fixedcase 'literal)
-                   (concat quoted "+")))))
+;; (defun isearch-escapable-split-on-char (string char)
+;;   "Split STRING on CHAR, which can be escaped with backslash."
+;;   (let ((quoted (concat "\\" char)))
+;;     (mapcar
+;;      (lambda (piece) (replace-regexp-in-string (string 0) char piece))
+;;      (split-string (replace-regexp-in-string
+;;                     (concat "\\\\\\" (substring quoted 0 (1- (length quoted)))
+;;                             "\\|\\\\" quoted)
+;;                     (lambda (x) (if (equal x quoted) (string 0) x))
+;;                     string 'fixedcase 'literal)
+;;                    (concat quoted "+")))))
+;; 
+;; (defun isearch-globs-compile (string &optional lax)
+;;   (string-join
+;;    (mapcar (lambda (string)
+;;              (string-join
+;;               (mapcar (lambda (string)
+;;                         (string-join
+;;                          (mapcar (lambda (string)
+;;                                    (regexp-quote string))
+;;                                  (isearch-escapable-split-on-char string "."))
+;;                          ".+?"))
+;;                       (isearch-escapable-split-on-char string "&"))
+;;               "\\(?:\\s_\\|\\w\\)*"))
+;;            (isearch-escapable-split-on-char string " "))
+;;    search-whitespace-regexp))
+;; 
+;; (isearch-define-mode-toggle globs "*" isearch-globs-compile "\
+;; Turning on globs turns off regexp mode.")
+;; (put 'isearch-globs-compile 'isearch-message-prefix
+;;      (propertize "glob " 'face 'minibuffer-prompt))
+;; 
+;; (defun isearch-forward-glob (&optional arg no-recursive-edit)
+;;   "Do incremental search forward.
+;; See command `isearch-forward' for more information."
+;;   (interactive "P\np")
+;;   (let ((numarg  (prefix-numeric-value arg)))
+;;     (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+;;            (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+;;           ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+;;            (call-interactively #'multi-isearch-buffers))
+;;           (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
+;;                            #'isearch-globs-compile)))))
+;; (keymap-global-set "C-s" 'isearch-forward-glob)
+;; 
+;; (defun isearch-backward-glob (&optional arg no-recursive-edit)
+;;   "do incremental search backward.
+;; see command `isearch-forward' for more information."
+;;   (interactive "p\np")
+;;   (let ((numarg  (prefix-numeric-value arg)))
+;;     (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
+;;            (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
+;;           ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
+;;            (call-interactively #'multi-isearch-buffers))
+;;           (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
+;;                            #'isearch-globs-compile)))))
+;; (keymap-global-set "C-r" 'isearch-backward-glob)
 
-(defun isearch-globs-compile (string &optional lax)
-  (string-join
-   (mapcar (lambda (string)
-             (string-join
-              (mapcar (lambda (string)
-                        (string-join
-                         (mapcar (lambda (string)
-                                   (regexp-quote string))
-                                 (isearch-escapable-split-on-char string "."))
-                         ".+?"))
-                      (isearch-escapable-split-on-char string "&"))
-              "\\(?:\\s_\\|\\w\\)*"))
-           (isearch-escapable-split-on-char string " "))
-   search-whitespace-regexp))
-
-(isearch-define-mode-toggle globs "*" isearch-globs-compile "\
-Turning on globs turns off regexp mode.")
-(put 'isearch-globs-compile 'isearch-message-prefix
-     (propertize "glob " 'face 'minibuffer-prompt))
-
-(defun isearch-forward-glob (&optional arg no-recursive-edit)
-  "Do incremental search forward.
-See command `isearch-forward' for more information."
-  (interactive "P\np")
-  (let ((numarg  (prefix-numeric-value arg)))
-    (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-           (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-          ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-           (call-interactively #'multi-isearch-buffers))
-          (t (isearch-mode t (not (null arg)) nil (not no-recursive-edit)
-                           #'isearch-globs-compile)))))
-(keymap-global-set "C-s" 'isearch-forward-glob)
-
-(defun isearch-backward-glob (&optional arg no-recursive-edit)
-  "do incremental search backward.
-see command `isearch-forward' for more information."
-  (interactive "p\np")
-  (let ((numarg  (prefix-numeric-value arg)))
-    (cond ((and (eq arg '-)  (fboundp 'multi-isearch-buffers))
-           (let ((current-prefix-arg  nil)) (call-interactively #'multi-isearch-buffers)))
-          ((and arg  (fboundp 'multi-isearch-buffers)  (< numarg 0))
-           (call-interactively #'multi-isearch-buffers))
-          (t (isearch-mode nil (not (null arg)) nil (not no-recursive-edit)
-                           #'isearch-globs-compile)))))
-(keymap-global-set "C-r" 'isearch-backward-glob)
-
-(with-eval-after-load 'conn
-  (conn-register-thing-commands
-   'isearch nil
-   'isearch-forward-glob
-   'isearch-backward-glob)
-
-  (cl-defmethod conn-dispatch-select-command-case ((_command (eql isearch-forward-glob)))
-    (conn-with-dispatch-suspended
-      (isearch-forward-glob)))
-
-  (cl-defmethod conn-dispatch-select-command-case ((_command (eql isearch-backward-glob)))
-    (conn-with-dispatch-suspended
-      (isearch-backward-glob))))
+;; (with-eval-after-load 'conn
+;;   (conn-register-thing-commands
+;;    'isearch nil
+;;    'isearch-forward-glob
+;;    'isearch-backward-glob)
+;; 
+;;   (cl-defmethod conn-dispatch-select-command-case ((_command (eql isearch-forward-glob)))
+;;     (conn-with-dispatch-suspended
+;;       (isearch-forward-glob)))
+;; 
+;;   (cl-defmethod conn-dispatch-select-command-case ((_command (eql isearch-backward-glob)))
+;;     (conn-with-dispatch-suspended
+;;       (isearch-backward-glob))))
 
 (defun isearch-repeat-direction ()
   (interactive)
@@ -1851,9 +1851,9 @@ see command `isearch-forward' for more information."
   ;; (keymap-global-set "S-<mouse-1>" 'conn-last-dispatch-at-mouse)
   ;; (keymap-global-set "S-<mouse-3>" 'undo-only)
   (with-eval-after-load 'outline
-    (keymap-set outline-minor-mode-map "M-h" 'conn-outline-state-up-heading))
-  (with-eval-after-load 'org
-    (keymap-set org-mode-map "M-h" 'conn-org-state-up-heading)))
+    (keymap-set
+     (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
+     "M-h" 'conn-outline-state-up-heading)))
 
 ;;;;; conn extensions
 
@@ -2651,6 +2651,7 @@ see command `isearch-forward' for more information."
       "C-M-f" 'scroll-other-window
       "C-M-b" 'scroll-other-window-down
       "M-TAB" 'corfu-insert-separator
+      "M-SPC" 'corfu-insert-separator
       "TAB" 'corfu-insert
       "C-g" 'corfu-quit)
 
@@ -2661,7 +2662,7 @@ see command `isearch-forward' for more information."
       (completion-at-point)
       (corfu-insert-separator))
 
-    (keymap-set corfu-mode-map "<remap> <completion-at-point>" #'corfu-sep-and-start)
+    (keymap-set corfu-mode-map "M-SPC" #'corfu-sep-and-start)
 
     (with-eval-after-load 'conn
       (defun my-corfu-off ()
