@@ -1799,8 +1799,8 @@
 
   (setq conn-simple-label-characters
         (list "d" "j" "f" "k" "s" "g" "h" "l" "e" "r"
-              "y" "u" "i" "q" "p" ";" "2" "3" "4" "5" "6"
-              "7" "8" "x" "a" "c" "b" "n" "m" "w" "t" "v"))
+              "y" "u" "i" "q" "p" ";" "x" "a" "c" "b"
+              "n" "m" "w" "t" "v"))
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
