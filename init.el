@@ -661,9 +661,7 @@
 (define-globalized-minor-mode my-electric-pair-mode
   electric-pair-mode
   my-electric-pair-turn-on
-  :predicate '((not lisp-data-mode)
-               (not racket-mode)
-               prog-mode)
+  :predicate '(prog-mode)
   :group 'electricity)
 
 (my-electric-pair-mode 1)
@@ -1472,7 +1470,6 @@
   (keymap-global-set "C-<backspace>" 'crux-kill-whole-line)
   (keymap-global-set "C-c s" 'crux-create-scratch-buffer)
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
-  (define-key global-map [remap kill-line] 'crux-smart-kill-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
   (keymap-global-set "<remap> <whitespace-cleanup>" 'crux-cleanup-buffer-or-region)
   (keymap-global-set "C-S-k" 'crux-kill-line-backwards)
@@ -1784,7 +1781,20 @@
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-edit-mode)
-                  "C-c e" 'occur-cease-edit)))
+                  "C-c e" 'occur-cease-edit))
+
+    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+                "M-L" "S ( m e")
+    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+                "M-J" "S ( z n e")
+    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+                "M-s" "d g (")
+    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+                "M-r" "C , x (")
+    (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
+                "M-L" "<escape> S ( m e e")
+    (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
+                "M-J" "<escape> S ( z n e e"))
 
   (setq conn-read-string-timeout 0.35)
 
@@ -1798,9 +1808,8 @@
   (require 'conn-extras)
 
   (setq conn-simple-label-characters
-        (list "d" "j" "f" "k" "s" "g" "h" "l" "e" "r"
-              "y" "u" "i" "q" "p" ";" "x" "a" "c" "b"
-              "n" "m" "w" "t" "v"))
+        (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
+              "i" "q" "p" "c" "b" "n" "m" "e" "d" "k"))
 
   (keymap-global-set "C-x l" 'next-buffer)
   (keymap-global-set "C-x j" 'previous-buffer)
@@ -2054,11 +2063,11 @@
                      :files ("extensions/conn-expreg.el"))
   (cl-pushnew 'conn-expreg-expansions conn-expansion-functions))
 
-(elpaca (conn-smartparens :host github
-                          :repo "mtll/conn"
-                          :files ("extensions/conn-smartparens.el"))
-  (with-eval-after-load 'smartparens
-    (require 'conn-smartparens)))
+;; (elpaca (conn-smartparens :host github
+;;                           :repo "mtll/conn"
+;;                           :files ("extensions/conn-smartparens.el"))
+;;   (with-eval-after-load 'smartparens
+;;     (require 'conn-smartparens)))
 
 ;; (when (>= emacs-major-version 30)
 ;;   (elpaca (conn-treesit :host github
@@ -2665,13 +2674,11 @@
     (keymap-set corfu-mode-map "M-SPC" #'corfu-sep-and-start)
 
     (with-eval-after-load 'conn
-      (defun my-corfu-off ()
-        (global-corfu-mode -1))
-      (add-hook 'conn-macro-dispatch-start-hook 'my-corfu-off)
-
-      (defun my-corfu-on ()
-        (global-corfu-mode 1))
-      (add-hook 'conn-macro-dispatch-end-hook 'my-corfu-on))))
+      (defun my/cancel-completion ()
+        (when conn-local-mode
+          (conn-state-on-exit-once cancel-completion _type
+            (completion-in-region-mode -1))))
+      (add-hook 'completion-in-region-mode-hook #'my/cancel-completion))))
 
 
 ;;;; nerd icons
@@ -2827,15 +2834,7 @@
         xref-show-definitions-function #'consult-xref
         register-preview-delay 0.3
         ;; register-preview-function #'consult-register-format
-        completion-in-region-function #'consult-completion-in-region
-        consult-buffer-sources '(consult--source-hidden-buffer
-                                 consult--source-modified-buffer
-                                 consult--source-buffer
-                                 consult--source-bookmark
-                                 consult--source-recent-file
-                                 consult--source-file-register
-                                 consult--source-project-buffer-hidden
-                                 consult--source-project-recent-file-hidden))
+        completion-in-region-function #'consult-completion-in-region)
 
   (keymap-global-set "M-g y" #'consult-global-mark)
   (keymap-global-set "<remap> <Info-search>" #'consult-info)
@@ -2894,7 +2893,6 @@
 
   (with-eval-after-load 'consult
     (consult-customize consult-completion-in-region :preview-key nil)
-    (consult-customize consult--source-bookmark :preview-key "C-o")
     (consult-customize consult-bookmark :preview-key "C-o")
     (consult-customize consult-buffer :preview-key "C-o")
     (consult-customize consult-project-buffer :preview-key "C-o")
@@ -3563,71 +3561,76 @@
       "D" 'projectile-find-dir
       "j" 'projectile-run-gdb)))
 
+;;;; puni
+
+(elpaca puni
+  (puni-mode ))
+
 ;;;; smart parens
 
-(elpaca (smartparens :host github
-                     :repo "Fuco1/smartparens")
-  (with-eval-after-load 'smartparens
-    (with-eval-after-load 'diminish
-      (diminish 'smartparens-mode)))
-
-  (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
-  (add-hook 'racket-mode-hook 'smartparens-mode)
-  (add-hook 'racket-mode-hook 'smartparens-strict-mode)
-
-  (with-eval-after-load 'smartparens
-    (require 'smartparens-config)
-    (setq sp-highlight-pair-overlay t
-          sp-highlight-wrap-overlay t
-          sp-echo-match-when-invisible nil)
-
-    (with-eval-after-load 'conn
-      (conn-sp-sexp-include-prefix-chars-mode 1)
-      (define-keymap
-        :keymap (conn-get-minor-mode-map 'conn-command-state 'smartparens-mode)
-        "M-s" 'sp-splice-sexp
-        "M-r" 'sp-splice-sexp-killing-around
-        "<left>" 'sp-backward-symbol
-        "<right>" 'sp-forward-symbol))
-
-    (define-keymap
-      :keymap smartparens-mode-map
-      "C-M-f" `(menu-item
-                "forward-sexp"
-                sp-forward-sexp
-                :filter ,(lambda (&rest _)
-                           (if (bound-and-true-p treesit-primary-parser)
-                               'forward-sexp
-                             'sp-forward-sexp)))
-      "C-M-b" `(menu-item
-                "forward-sexp"
-                sp-backward-sexp
-                :filter ,(lambda (&rest _)
-                           (if (bound-and-true-p treesit-primary-parser)
-                               'backward-sexp
-                             'sp-backward-sexp)))
-      "C-M-u" 'sp-backward-up-sexp
-      "C-M-d" 'sp-down-sexp
-      "C-M-p" 'sp-backward-down-sexp
-      "C-M-n" 'sp-up-sexp
-      "M-C" 'sp-copy-sexp
-      "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-      "M-)" 'sp-splice-sexp-killing-forward
-      "M-K" 'sp-raise-sexp
-      "M-I" 'sp-splice-sexp
-      "M-J" 'sp-backward-slurp-sexp
-      "M-L" 'sp-forward-slurp-sexp
-      "M-O" 'sp-forward-barf-sexp
-      "M-U" 'sp-backward-barf-sexp
-      "M-B" 'sp-convolute-sexp
-      "M-H" 'sp-join-sexp
-      "M-N" 'sp-beginning-of-sexp
-      "M-M" 'sp-end-of-sexp)
-
-    (define-keymap
-      :keymap smartparens-mode-map
-      "<conn-thing-map> n" 'sp-beginning-of-sexp
-      "<conn-thing-map> m" 'sp-end-of-sexp)))
+;; (elpaca (smartparens :host github
+;;                      :repo "Fuco1/smartparens")
+;;   (with-eval-after-load 'smartparens
+;;     (with-eval-after-load 'diminish
+;;       (diminish 'smartparens-mode)))
+;; 
+;;   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
+;;   (add-hook 'racket-mode-hook 'smartparens-mode)
+;;   (add-hook 'racket-mode-hook 'smartparens-strict-mode)
+;; 
+;;   (with-eval-after-load 'smartparens
+;;     (require 'smartparens-config)
+;;     (setq sp-highlight-pair-overlay t
+;;           sp-highlight-wrap-overlay t
+;;           sp-echo-match-when-invisible nil)
+;; 
+;;     (with-eval-after-load 'conn
+;;       (conn-sp-sexp-include-prefix-chars-mode 1)
+;;       (define-keymap
+;;         :keymap (conn-get-minor-mode-map 'conn-command-state 'smartparens-mode)
+;;         "M-s" 'sp-splice-sexp
+;;         "M-r" 'sp-splice-sexp-killing-around
+;;         "<left>" 'sp-backward-symbol
+;;         "<right>" 'sp-forward-symbol))
+;; 
+;;     (define-keymap
+;;       :keymap smartparens-mode-map
+;;       "C-M-f" `(menu-item
+;;                 "forward-sexp"
+;;                 sp-forward-sexp
+;;                 :filter ,(lambda (&rest _)
+;;                            (if (bound-and-true-p treesit-primary-parser)
+;;                                'forward-sexp
+;;                              'sp-forward-sexp)))
+;;       "C-M-b" `(menu-item
+;;                 "forward-sexp"
+;;                 sp-backward-sexp
+;;                 :filter ,(lambda (&rest _)
+;;                            (if (bound-and-true-p treesit-primary-parser)
+;;                                'backward-sexp
+;;                              'sp-backward-sexp)))
+;;       "C-M-u" 'sp-backward-up-sexp
+;;       "C-M-d" 'sp-down-sexp
+;;       "C-M-p" 'sp-backward-down-sexp
+;;       "C-M-n" 'sp-up-sexp
+;;       "M-C" 'sp-copy-sexp
+;;       "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+;;       "M-)" 'sp-splice-sexp-killing-forward
+;;       "M-K" 'sp-raise-sexp
+;;       "M-I" 'sp-splice-sexp
+;;       "M-J" 'sp-backward-slurp-sexp
+;;       "M-L" 'sp-forward-slurp-sexp
+;;       "M-O" 'sp-forward-barf-sexp
+;;       "M-U" 'sp-backward-barf-sexp
+;;       "M-B" 'sp-convolute-sexp
+;;       "M-H" 'sp-join-sexp
+;;       "M-N" 'sp-beginning-of-sexp
+;;       "M-M" 'sp-end-of-sexp)
+;; 
+;;     (define-keymap
+;;       :keymap smartparens-mode-map
+;;       "<conn-thing-map> n" 'sp-beginning-of-sexp
+;;       "<conn-thing-map> m" 'sp-end-of-sexp)))
 
 
 ;;;; djvu
