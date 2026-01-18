@@ -1430,6 +1430,7 @@
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (keymap-global-set "C-c r" 'conn-register-prefix)
   (put 'conn-recenter-on-region 'repeat-continue t)
 
   (with-eval-after-load 'org
@@ -2959,9 +2960,10 @@
   (keymap-global-set "C-c n h" #'my-denote-consult-ripgrep-heading))
 
 (elpaca denote-org
+  (with-eval-after-load 'org-capture
+    (load (expand-file-name "local-captures.el" user-emacs-directory) t t))
   (with-eval-after-load 'org
-    (require 'denote-org)
-    (require 'local-captures nil t)))
+    (require 'denote-org)))
 
 
 ;;;; teco
