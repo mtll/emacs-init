@@ -191,7 +191,7 @@
 (keymap-global-set "C-:" #'read-only-mode)
 (keymap-global-set "C-x C-b" #'ibuffer)
 (keymap-global-set "M-;" #'comment-line)
-(keymap-global-set "C-c c" #'compile)
+(keymap-global-set "C-c k" #'compile)
 (keymap-global-set "C-S-w" #'delete-region)
 (keymap-global-set "<f2>" #'other-window)
 (keymap-global-set "M-z" #'transient-resume)
@@ -529,7 +529,6 @@
         org-outline-path-complete-in-steps nil
         org-agenda-start-on-weekday nil
         org-preview-latex-image-directory "/tmp/ltximg/"
-        org-agenda-include-diary t
         org-src-window-setup 'plain
         org-startup-truncated nil
         org-insert-mode-line-in-empty-file t
@@ -538,15 +537,16 @@
         org-agenda-files (list "~/Documents/notes/")
         org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'")
 
-  (keymap-global-set "C-c p" 'org-capture)
+  (keymap-global-set "C-c c" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
   (keymap-global-set "C-c l" 'org-insert-link-global)
-  (keymap-global-set "C-c a" 'org-agenda)
+  (keymap-global-set "C-c h" 'org-agenda)
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
   ;; (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
+    (keymap-set org-mode-map "C-c t" 'org-todo)
     (with-eval-after-load 'conn
       (keymap-set org-mode-map "C-M-<return>" #'org-insert-subheading)
       (keymap-set org-mode-map "C-c b" (conn-remap-key "C-c C-v"))
@@ -717,8 +717,9 @@
 (with-eval-after-load 'outline
   (setq outline-minor-mode-prefix (kbd "C-c u"))
 
-  (keymap-set (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
-              "<conn-thing-map> h" 'outline-previous-visible-heading)
+  (with-eval-after-load 'conn
+    (keymap-set (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
+                "<conn-thing-map> h" 'outline-previous-visible-heading))
   (define-keymap
     :keymap outline-mode-prefix-map
     "@" 'outline-mark-subtree
@@ -1003,6 +1004,8 @@
 
 (my-incremental-load (lambda () (require 'dired)))
 
+(add-hook 'dired-mode-hook 'dired-hide-details-mode)
+
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
                                  (seq string-start (1+ "#"))))
@@ -1010,32 +1013,7 @@
         dired-movement-style 'bounded
         dired-recursive-deletes 'top
         dired-recursive-copies 'always
-        dired-create-destination-dirs 'ask
-        ;; dired-auto-revert-buffer #'dired-buffer-stale-p
-        )
-
-  ;; (define-keymap
-  ;;   :keymap dired-mode-map
-  ;;   "/" 'dired-undo
-  ;;   "C-<tab>" 'dired-maybe-insert-subdir
-  ;;   "<backtab>" 'dired-kill-subdir
-  ;;   "<remap> <dired-do-find-regexp-and-replace>" 'dired-do-replace-regexp-as-diff
-  ;;   "b" 'dired-up-directory
-  ;;   "* e" 'dired-mark-executables
-  ;;   "* l" 'dired-mark-symlinks
-  ;;   "* d" 'dired-mark-directories
-  ;;   "* r" 'dired-mark-files-regexp
-  ;;   "% c" 'dired-do-copy-regexp
-  ;;   "% h" 'dired-do-hardlink-regexp
-  ;;   "% s" 'dired-do-symlink-regexp
-  ;;   "% y" 'dired-do-relsymlink-regexp
-  ;;   "% t" 'dired-flag-garbage-files
-  ;;   "F" 'dired-create-empty-file
-  ;;   "M-s M-s" 'dired-do-isearch
-  ;;   "M-s s" 'dired-do-isearch
-  ;;   "M-s M-r" 'dired-do-isearch-regexp
-  ;;   "M-s r" 'dired-do-isearch-regexp)
-  )
+        dired-create-destination-dirs 'ask))
 
 
 ;;;; eldoc
@@ -1107,10 +1085,6 @@
 
 (elpaca transient
   (setq transient-enable-popup-navigation nil
-        ;; transient-display-buffer-action
-        ;; '(display-buffer-below-selected
-        ;;   (dedicated . t)
-        ;;   (inhibit-same-window . t))
         transient-mode-line-format 'line))
 
 ;;;; treesit-auto
@@ -1133,16 +1107,6 @@
 (elpaca diminish
   (diminish 'visual-line-mode))
 
-;;;; minions
-
-;; (elpaca minions
-;;   (setq minions-mode-line-lighter " ≡"
-;;         minions-prominent-modes (list 'conn-local-mode
-;;                                       'conn-dot-mode
-;;                                       'conn-wincontrol-mode
-;;                                       'defining-kbd-macro))
-;;   (minions-mode 1))
-
 
 ;;;; expreg
 
@@ -1150,9 +1114,6 @@
 
 
 ;;;; helpful
-
-;; (with-eval-after-load 'conn
-;;   (conn-help-state-mode 1))
 
 (elpaca helpful
   (keymap-global-set "C-h v" 'helpful-variable)
@@ -1234,46 +1195,6 @@
     (require 'inf-elixir)))
 
 
-;;;; lsp-mode
-
-;; (elpaca lsp-mode
-;;   (add-hook 'lsp-mode-hook 'lsp-ui-peek-mode)
-;;   (add-hook 'lsp-mode-hook 'lsp-modeline-code-actions-mode)
-;;
-;;   (setq lsp-keymap-prefix "C-c s"
-;;         lsp-eldoc-render-all nil
-;;         lsp-enable-on-type-formatting nil
-;;         lsp-ui-doc-alignment 'window
-;;         lsp-ui-doc-header t
-;;         lsp-ui-doc-border "black"
-;;         lsp-ui-doc-background '((t (:background "#dfd9cf")))
-;;         lsp-inlay-hint-face '((t (:inherit shadow :height 0.8))))
-;;
-;;   (setq lsp-clients-clangd-args '("-j=4"
-;;                                   "--log=error"
-;;                                   "--background-index"
-;;                                   "--clang-tidy"
-;;                                   "--cross-file-rename"
-;;                                   "--header-insertion=never")
-;;         lsp-zig-zls-executable "~/build/zls/zig-out/bin/zls")
-;;
-;;   (defun my-lsp-mode-setup-completion ()
-;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-;;           '(orderless))) ;; Configure orderless
-;;   (add-hook 'lsp-completion-mode-hook #'my-lsp-mode-setup-completion)
-;;
-;;   (with-eval-after-load 'lsp-mode
-;;     (define-keymap
-;;       :keymap lsp-mode-map
-;;       "C-c I" 'lsp-inlay-hints-mode)))
-
-;;;;; lsp-ui
-
-;; (elpaca lsp-ui
-;;   (with-eval-after-load 'lsp
-;;     (add-hook 'lsp-mode-hook 'lsp-ui-mode)
-;;     (keymap-set lsp-mode-map "M-g m" 'lsp-ui-imenu)))
-
 ;;;; dape
 
 (elpaca dape)
@@ -1306,9 +1227,6 @@
 ;;;; pdf-tools
 
 (elpaca pdf-tools
-  ;; (with-eval-after-load 'org
-  ;;   (require 'pdf-tools))
-
   (setq pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
 
   (with-eval-after-load 'pdf-links
@@ -1494,251 +1412,6 @@
     (my-incremental-load (lambda () (require 'posframe)))))
 
 
-;;;; isearch+
-
-;; (elpaca (isearch+ :host github
-;;                   :repo "emacsmirror/isearch-plus"
-;;                   :main "isearch+.el")
-;;   (run-with-timer 2 nil (lambda () (require 'isearch+)))
-;;   (with-eval-after-load 'isearch+
-;;     ;; (require 'isearch+)
-;;     (setq isearchp-dimming-color "#cddfcc"
-;;           isearchp-lazy-dim-filter-failures-flag nil
-;;           isearchp-restrict-to-region-flag nil
-;;           isearchp-deactivate-region-flag nil
-;;           isearchp-movement-unit-alist '((?w . forward-word)
-;;                                          (?s . forward-sexp)
-;;                                          (?i . forward-list)
-;;                                          (?s . forward-sentence)
-;;                                          (?c . forward-char)
-;;                                          (?l . forward-line)))
-;;     (require 'transient)
-;;
-;;     (setopt isearchp-initiate-edit-commands nil)
-;;
-;;     (define-keymap
-;;       :keymap isearch-mode-map
-;;       "C-y m" 'isearchp-yank-sexp-symbol-or-char
-;;       "C-y o" 'isearchp-yank-word-or-char-forward
-;;       "C-y u" 'isearchp-yank-word-or-char-backward
-;;       "C-y i" 'isearchp-yank-line-backward
-;;       "C-y k" 'isearchp-yank-line-forward
-;;       "C-y l" 'isearchp-yank-char
-;;       "C-y r" 'my-isearch-yank-region)
-;;
-;;     (defun my-supress-in-macro () executing-kbd-macro)
-;;     (advice-add 'isearchp-highlight-lighter :before-until 'my-supress-in-macro)
-;;
-;;     (transient-define-prefix my-isearch+-do-filter (filter-action)
-;;       "Isearch+ add filter-action prefix"
-;;       [ :description "Filter"
-;;         [("c" " [;]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[;]"         isearchp-in-comment-p               "[;]")))
-;;           :transient transient--do-return)
-;;          ("C" "~[;]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[;]"         isearchp-not-in-comment-p           "~[;]")))
-;;           :transient transient--do-return)
-;;
-;;          ("'" " [\"]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[\"]"        isearchp-in-string-p                "[\"]")))
-;;           :transient transient--do-return)
-;;          ("\"" "~[\"]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[\"]"        isearchp-not-in-string-p            "~[\"]")))
-;;           :transient transient--do-return)]
-;;
-;;         [(";" " [\"|;]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[\"|;]"      isearchp-in-string-or-comment-p     "[\"|;]")))
-;;           :transient transient--do-return)
-;;          (":" "~[\"|;]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[\"|;]"      isearchp-not-in-string-or-comment-p "~[\"|;]")))
-;;           :transient transient--do-return)
-;;
-;;          ("d" " [defun]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[defun]"     isearchp-in-defun-p                 "[DEFUN]")))
-;;           :transient transient--do-return)
-;;          ("D" "~[defun]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[defun]"     isearchp-not-in-defun-p             "~[DEFUN]")))
-;;           :transient transient--do-return)]
-;;
-;;         [("(" " [()]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[()]"        isearchp-in-list-p                  "[()]")))
-;;           :transient transient--do-return)
-;;          (")" "~[()]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[()]"        isearchp-not-in-list-p              "~[()]")))
-;;           :transient transient--do-return)
-;;
-;;          ("[" " [page]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[page]"      isearchp-in-page-p                  "[PAGE]")))
-;;           :transient transient--do-return)
-;;          ("]" "~[page]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[page]"      isearchp-not-in-page-p              "~[PAGE]")))
-;;           :transient transient--do-return)]
-;;
-;;         [("f" " [file|url]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[file|url])" isearchp-in-file-or-url-p           "[FILE|URL])")))
-;;           :transient transient--do-return)
-;;          ("F" "~[file|url]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[file|url])" isearchp-not-in-file-or-url-p       "~[FILE|URL])")))
-;;           :transient transient--do-return)
-;;
-;;          ("n" " [narrow]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '( "[narrow]"     conn-isearch-in-narrow-p         "[NARROW]")))
-;;           :transient transient--do-return)
-;;          ("N" "~[narrow]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (funcall
-;;              filter-action
-;;              '("~[narrow]"     conn-isearch-in-narrow-p     "~[NARROW]")))
-;;           :transient transient--do-return)]
-;;
-;;         [("t" " [thing]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (let* ((regions
-;;                     (catch 'regions
-;;                       (with-isearch-suspended
-;;                        (throw 'regions
-;;                               (cdr (conn-read-thing-region "Thing Mover"))))))
-;;                    (regions (or (conn--merge-regions (cdr regions) t)
-;;                                 regions))
-;;                    (in-regions-p (lambda (beg end)
-;;                                    (cl-loop for (nbeg . nend) in regions
-;;                                             thereis (<= nbeg beg end nend)))))
-;;               (funcall
-;;                filter-action
-;;                `("[thing]"     ,in-regions-p     "[THING]"))))
-;;           :transient transient--do-return)
-;;          ("T" " ~[thing]"
-;;           (lambda (filter-action)
-;;             (interactive (list (oref transient-current-prefix scope)))
-;;             (let* ((regions
-;;                     (catch 'regions
-;;                       (with-isearch-suspended
-;;                        (throw 'regions
-;;                               (cdr (conn-read-thing-region "Thing Mover"))))))
-;;                    (regions (or (conn--merge-regions (cdr regions) t)
-;;                                 regions))
-;;                    (not-in-regions-p (lambda (beg end)
-;;                                        (cl-loop for (nbeg . nend) in regions
-;;                                                 never (or (<= nbeg beg nend)
-;;                                                           (<= nbeg end nend))))))
-;;               (funcall
-;;                filter-action
-;;                `("~[thing]"     ,not-in-regions-p     "~[THING]"))))
-;;           :transient transient--do-return)]]
-;;       (interactive (list nil))
-;;       (transient-setup 'my-isearch+-do-filter nil nil :scope filter-action))
-;;
-;;     (transient-define-prefix my-isearch+-filter-prefix ()
-;;       "Isearch+ filter prefix"
-;;       :transient-non-suffix 'transient--do-leave
-;;       [["Filter"
-;;         ("k" "Keep" isearchp-keep-filter-predicate :transient t)
-;;         ("s" "Set" isearchp-keep-filter-predicate :transient t)
-;;         ("0" "Reset" isearchp-reset-filter-predicate :transient t)]
-;;        ["Last Filter"
-;;         ("p" "Pop"
-;;          (lambda ()
-;;            (interactive)
-;;            (isearchp-remove-filter-predicate
-;;             (format "%s"
-;;                     (and (advice--p isearch-filter-predicate)
-;;                          (isearchp-last-isearch-advice)))
-;;             t))
-;;          :transient t)
-;;         ("l" "Or"
-;;          (lambda ()
-;;            (interactive)
-;;            (my-isearch+-do-filter 'isearchp-or-last-filter))
-;;          :transient transient--do-recurse)
-;;         ("n" "Negate" isearchp-negate-last-filter :transient t)]
-;;        ["Add Filter"
-;;         ("a" "And"
-;;          (lambda ()
-;;            (interactive)
-;;            (my-isearch+-do-filter 'isearchp-add-filter-predicate))
-;;          :transient transient--do-recurse)
-;;         ("o" "Or"
-;;          (lambda ()
-;;            (interactive)
-;;            (my-isearch+-do-filter 'isearchp-or-filter-predicate))
-;;          :transient transient--do-recurse)
-;;         ("c" "Complement" isearchp-complement-filter :transient t)]])
-;;
-;;     (keymap-unset isearch-mode-map "C-t")
-;;     (keymap-set isearch-mode-map "C-;" 'my-isearch+-filter-prefix)
-;;     (keymap-set isearch-mode-map "C-y m" 'isearchp-yank-sexp-symbol-or-char)
-;;     (keymap-set isearch-mode-map "C-y o" 'isearchp-yank-word-or-char-forward)
-;;     (keymap-set isearch-mode-map "C-y u" 'isearchp-yank-word-or-char-backward)
-;;     (keymap-set isearch-mode-map "C-y i" 'isearchp-yank-line-backward)
-;;     (keymap-set isearch-mode-map "C-y k" 'isearchp-yank-line-forward)
-;;     (keymap-set isearch-mode-map "C-y l" 'isearchp-yank-char)
-;;     (keymap-set isearch-mode-map "C-M-o" 'isearchp-open-recursive-edit)
-;;     (keymap-set isearchp-filter-map "f" 'isearchp-add-filter-predicate)
-;;     (keymap-set isearchp-filter-map "r" 'isearchp-add-regexp-filter-predicate)))
-
-
 ;;;; elixir-ts
 
 (elpaca elixir-ts-mode
@@ -1770,10 +1443,7 @@
     (keymap-set org-mode-map "<conn-thing-map> m" 'conn-mark-org-inner-math))
 
   (with-eval-after-load 'conn
-    ;; (keymap-global-set "M-n" (conn-remap-key "<conn-edit-map>"))
     (keymap-set (conn-get-state-map 'conn-emacs-state) "M-j" 'conn-one-command)
-    ;; (keymap-set isearch-mode-map "C-w" 'conn-isearch-kill-region)
-    ;; (keymap-set isearch-mode-map "C-d" 'conn-isearch-kill-region-other-end)
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-mode)
@@ -1831,7 +1501,6 @@
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol
-    ;; "M-j" 'conn-open-line-and-indent
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
     "C-," 'conn-dispatch
@@ -1842,23 +1511,16 @@
     "M-z" 'conn-exchange-mark-command
     "C-c v" 'dired-jump
     "C-SPC" 'set-mark-command
-    "C-<return>" 'conn-toggle-mark-command
     "C-x n" 'set-goal-column)
 
-  ;; (keymap-set (conn-get-state-map 'conn-emacs-state) "<escape>" 'conn-command-state)
   (keymap-set (conn-get-state-map 'conn-org-state) "<f8>" 'conn-command-state)
-  ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "," 'conn-org-edit-state)
-  ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'org-mode) "<f9>" 'conn-org-edit-state)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
   (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project)
   (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command)
   (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
   (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
-  (keymap-global-set "C-c c" (conn-remap-key "C-c C-c"))
   (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
-  ;; (keymap-global-set "S-<mouse-1>" 'conn-last-dispatch-at-mouse)
-  ;; (keymap-global-set "S-<mouse-3>" 'undo-only)
   (with-eval-after-load 'outline
     (keymap-set
      (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
@@ -2063,27 +1725,6 @@
                      :files ("extensions/conn-expreg.el"))
   (cl-pushnew 'conn-expreg-expansions conn-expansion-functions))
 
-;; (elpaca (conn-smartparens :host github
-;;                           :repo "mtll/conn"
-;;                           :files ("extensions/conn-smartparens.el"))
-;;   (with-eval-after-load 'smartparens
-;;     (require 'conn-smartparens)))
-
-;; (when (>= emacs-major-version 30)
-;;   (elpaca (conn-treesit :host github
-;;                         :repo "mtll/conn"
-;;                         :files ("extensions/conn-treesit.el"))
-;;     (with-eval-after-load 'treesit
-;;       (require 'conn-treesit))))
-
-
-;;;; orderless set operations
-
-;; (elpaca (orderless-set-operations :host github
-;;                                   :repo "mtll/orderless-set-operations")
-;;   (with-eval-after-load 'orderless
-;;     (oso-mode 1)))
-
 
 ;;;; expand region
 
@@ -2128,11 +1769,6 @@
 ;;;; cape
 
 (elpaca cape
-  ;; (keymap-global-set "M-L" #'cape-line)
-  ;; (keymap-global-set "M-K" #'cape-dict)
-  ;; (keymap-global-set "C-M-h" #'cape-dabbrev)
-  ;; M-h C-M-j M-u M-n M-p
-
   (cl-pushnew #'cape-file completion-at-point-functions)
 
   (with-eval-after-load 'lsp-mode
@@ -2151,30 +1787,7 @@
                    (cape-capf-noninterruptible
                     (cape-capf-buster #'eglot-completion-at-point))
                    #'eglot-completion-at-point completion-at-point-functions)))
-    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf))
-
-  ;; (defun dictionary-doc-lookup (cand)
-  ;;   (let* ((buffer)
-  ;;          (dictionary-display-definition-function
-  ;;           (lambda (word dictionary definition)
-  ;;             (let ((help-buffer-under-preparation t))
-  ;;               (help-setup-xref (list #'dictionary-search word dictionary)
-  ;;                                (called-interactively-p 'interactive))
-  ;;               (with-current-buffer (help-buffer)
-  ;;                 (insert definition)
-  ;;                 (goto-char (point-min))
-  ;;                 (setq buffer (current-buffer)))))))
-  ;;     (dictionary-search cand)
-  ;;     buffer))
-  ;;
-  ;; (add-hook 'text-mode-hook
-  ;;           (lambda ()
-  ;;             (keymap-set text-mode-map "C-M-i" 'completion-at-point)
-  ;;             (add-to-list 'completion-at-point-functions
-  ;;                          (cape-capf-properties
-  ;;                           #'cape-dict
-  ;;                           :company-doc-buffer #'dictionary-doc-lookup))))
-  )
+    (add-hook 'eglot-managed-mode-hook #'wrap-eglot-capf)))
 
 
 ;;;; embark
@@ -2193,9 +1806,7 @@
         embark-confirm-act-all nil
         prefix-help-command 'embark-prefix-help-command)
 
-  ;; (keymap-global-set "M-." 'embark-act)
   (keymap-global-set "C-<tab>" 'embark-act)
-  ;; (keymap-global-set "C-<tab>" 'embark-act)
   (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
@@ -2573,62 +2184,6 @@
   (defun my-insert-bookmark-button (bmk)
     (interactive (list (bookmark-completing-read "Bookmark: ")))
     (insert "<[bmk:" bmk "]>")))
-
-
-;;;; company
-
-;; (elpaca company
-;;   (run-with-timer
-;;    2 nil
-;;    (lambda ()
-;;      (global-company-mode 1)))
-
-;;   (with-eval-after-load 'company
-;;     (diminish 'company-mode)
-
-;;     (define-keymap
-;;       :keymap company-active-map
-;;       "<tab>" 'company-complete-selection
-;;       "C-n" nil
-;;       "C-p" nil
-;;       "<return>" nil
-;;       "RET" nil)
-
-;;     (defun just-one-face (fn &rest args)
-;;       (let ((orderless-match-faces [completions-common-part]))
-;;         (apply fn args)))
-;;     (advice-add 'company-capf--candidates :around #'just-one-face)
-
-;;     (defun company-capf--candidates-ad (input suffix)
-;;       (require 'vertico)
-;;       (let* ((res (company--capf-data))
-;;              (table (nth 3 res))
-;;              (pred (plist-get (nthcdr 4 res) :predicate))
-;;              (meta (and res
-;;                         (completion-metadata
-;;                          (buffer-substring (nth 1 res) (nth 2 res))
-;;                          table pred))))
-;;         (company-capf--save-current-data res meta)
-;;         (when res
-;;           (let* ((interrupt (plist-get (nthcdr 4 res) :company-use-while-no-input))
-;;                  (all-result (company-capf--candidates-1 input suffix
-;;                                                          table pred
-;;                                                          meta
-;;                                                          (and non-essential
-;;                                                               (eq interrupt t))))
-;;                  (sortfun (or (cdr (assq 'display-sort-function meta))
-;;                               #'vertico-sort-length-alpha))
-;;                  (candidates (assoc-default :completions all-result)))
-;;             (setq company-capf--sorted (functionp sortfun))
-;;             (when candidates
-;;               (setq company-capf--current-boundaries
-;;                     (company--capf-boundaries-markers
-;;                      (assoc-default :boundaries all-result)
-;;                      company-capf--current-boundaries)))
-;;             (when sortfun
-;;               (setq candidates (funcall sortfun candidates)))
-;;             candidates))))
-;;     (advice-add 'company-capf--candidates :override 'company-capf--candidates-ad)))
 
 
 ;;;; corfu
@@ -3073,14 +2628,6 @@
   (keymap-set search-map "u" 'consult-eglot-symbols))
 (elpaca consult-eglot-embark)
 
-;;;;; consult-lsp
-
-;; (elpaca consult-lsp
-;;   (with-eval-after-load 'lsp-mode
-;;     (keymap-set lsp-mode-map "M-s x" #'consult-lsp-symbols)
-;;     (keymap-set lsp-mode-map "M-s >" #'consult-lsp-diagnostics)
-;;     (keymap-set lsp-mode-map "M-s <" #'consult-lsp-file-symbols)))
-
 ;;;;; consult-projectile
 
 (elpaca consult-projectile
@@ -3259,46 +2806,30 @@
 
 ;;;; tempel
 
-;; (elpaca tempel
-;;   (keymap-global-set "M-I" 'tempel-insert)
-;;   (keymap-global-set "M-TAB" 'my-tempel-expand-or-complete)
-;;   (global-tempel-abbrev-mode 1)
+(elpaca tempel
+  (keymap-global-set "M-I" 'tempel-insert)
+  (global-tempel-abbrev-mode 1)
 
-;;   (defun my-tempel-expand-or-complete (&optional interactive)
-;;     (interactive (list t))
-;;     (require 'tempel)
-;;     (if interactive
-;;         (tempel--interactive #'my-tempel-expand-or-complete)
-;;       (if-let ((templates (tempel--templates))
-;;                (bounds (tempel--prefix-bounds))
-;;                (name (buffer-substring-no-properties
-;;                       (car bounds) (cdr bounds)))
-;;                (sym (intern-soft name))
-;;                (template (assq sym templates)))
-;;           (progn
-;;             (setq templates (list template))
-;;             (list (car bounds) (cdr bounds) templates
-;;                   :category 'tempel
-;;                   :exclusive 'no
-;;                   :exit-function (apply-partially #'tempel--exit templates nil)))
-;;         (tempel-complete))))
+  (with-eval-after-load 'tempel
+    (keymap-set tempel-map "M-n" 'tempel-next)
+    (keymap-set tempel-map "M-p" 'tempel-previous)
+    (keymap-set tempel-map "M-i" 'tempel-done)
 
-;;   (with-eval-after-load 'tempel
-;;     (keymap-set tempel-map "M-n" 'tempel-next)
-;;     (keymap-set tempel-map "M-p" 'tempel-previous)
-;;     (keymap-set tempel-map "M-i" 'tempel-done)
+    (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
-;;     (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
+    (defun conn-tempel-insert-ad (fn &rest args)
+      (apply fn args)
+      (add-to-history 'conn-command-history
+                      `(tempel-insert
+                        ,(alist-get (intern-soft (car tempel--history))
+                                    (tempel--templates))))
+      (when tempel--active
+        (conn-push-state 'conn-emacs-state)))
+    (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
 
-;;     (defun tempel-edit-template ()
-;;       (interactive)
-;;       (let ((default-directory (expand-file-name "templates/" user-emacs-directory)))
-;;         (call-interactively 'find-file)))
-
-;;     (defun conn-tempel-insert-ad (fn &rest args)
-;;       (apply fn args)
-;;       (when tempel--active (conn-emacs-state)))
-;;     (advice-add 'tempel-insert :around 'conn-tempel-insert-ad)))
+(elpaca eglot-tempel
+  (with-eval-after-load 'eglot
+    (eglot-tempel-mode 1)))
 
 
 ;;;; vundo
@@ -3336,11 +2867,6 @@
 ;;;; heex-ts-mode
 
 (elpaca heex-ts-mode)
-
-
-;;;; polymode
-
-;; (elpaca polymode)
 
 
 ;;;; denote
@@ -3421,13 +2947,6 @@
                               opts paths)
                       hl))))))))
 
-  (defun my-denote-consult-ripgrep ()
-    (interactive)
-    (require 'denote)
-    (require 'consult)
-    (consult--grep "Notes" #'my-consult-denote-ripgrep-make-builder denote-directory nil))
-  (keymap-global-set "C-c n g" #'my-denote-consult-ripgrep)
-
   (defun my-denote-consult-ripgrep-heading ()
     (interactive)
     (require 'denote)
@@ -3437,19 +2956,12 @@
                      (concat "^[*]+"
                              (string (or (plist-get style :separator)
                                          (plist-get style :initial)))))))
-  (keymap-global-set "C-c n h" #'my-denote-consult-ripgrep-heading)
+  (keymap-global-set "C-c n h" #'my-denote-consult-ripgrep-heading))
 
-  (with-eval-after-load 'org-capture
-    (add-to-list 'org-capture-templates
-                 '("n" "New note (with Denote)" plain
-                   (file denote-last-path)
-                   #'denote-org-capture
-                   :no-save t
-                   :immediate-finish nil
-                   :kill-buffer t
-                   :jump-to-captured t))))
-
-(elpaca denote-org)
+(elpaca denote-org
+  (with-eval-after-load 'org
+    (require 'denote-org)
+    (require 'local-captures nil t)))
 
 
 ;;;; teco
@@ -3502,15 +3014,7 @@
      'word nil
      'jinx-correct-nearest
      'jinx-correct
-     'jinx-correct-all)
-
-    ;; (let ((fn (apply-partially 'conn--dispatch-all-things 'word t)))
-    ;;   (dolist (cmd '(jinx-correct-nearest
-    ;;                  jinx-correct
-    ;;                  jinx-correct-all))
-    ;;     (setf (alist-get cmd conn-dispatch-default-action-alist)
-    ;;           'my-jinx-dispatch-check)))
-    ))
+     'jinx-correct-all)))
 
 
 ;;;; ef-themes
@@ -3522,16 +3026,6 @@
 
 ;; (elpaca (pgmacs :host github
 ;;                 :repo "emarsden/pgmacs"))
-
-
-;;;; eat
-
-;; (elpaca eat)
-
-
-;;;; beancount
-
-;; (elpaca beancount)
 
 
 ;;;; projectile
@@ -3551,7 +3045,6 @@
   (with-eval-after-load 'projectile
     (keymap-global-unset "C-x p")
     (keymap-global-set "C-x p" 'projectile-command-map)
-    (keymap-global-set "C-c c" 'projectile-command-map)
     (keymap-set goto-map "R" 'projectile-find-references)
 
     (define-keymap
@@ -3563,8 +3056,7 @@
 
 ;;;; puni
 
-(elpaca puni
-  (puni-mode ))
+(elpaca puni)
 
 ;;;; smart parens
 
@@ -3746,47 +3238,47 @@
 
 ;;;; yasnippet
 
-(elpaca yasnippet
-  (my-incremental-load (lambda () (yas-global-mode 1)))
+;; (elpaca yasnippet
+;;   (my-incremental-load (lambda () (yas-global-mode 1)))
+;; 
+;;   (with-eval-after-load 'yasnippet
+;;     ;; Can't do this through diminish since it wants to append a
+;;     ;; space.
+;;     (with-eval-after-load 'nerd-icons
+;;       (setf (alist-get 'yas-minor-mode minor-mode-alist)
+;;             (list (concat (nerd-icons-codicon "nf-cod-blank")
+;;                           (nerd-icons-codicon "nf-cod-symbol_snippet")))))
+;; 
+;;     (setq yas-wrap-around-region t
+;;           yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
+;; 
+;;     (define-keymap
+;;       :keymap yas-minor-mode-map
+;;       "C-c y" 'yas-new-snippet
+;;       "C-c Y" 'yas-visit-snippet-file)
+;; 
+;;     (define-keymap
+;;       :keymap yas-keymap
+;;       "TAB" nil
+;;       "M-n" 'yas-next-field
+;;       "M-p" 'yas-prev-field)))
 
-  (with-eval-after-load 'yasnippet
-    ;; Can't do this through diminish since it wants to append a
-    ;; space.
-    (with-eval-after-load 'nerd-icons
-      (setf (alist-get 'yas-minor-mode minor-mode-alist)
-            (list (concat (nerd-icons-codicon "nf-cod-blank")
-                          (nerd-icons-codicon "nf-cod-symbol_snippet")))))
-
-    (setq yas-wrap-around-region t
-          yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
-
-    (define-keymap
-      :keymap yas-minor-mode-map
-      "C-c y" 'yas-new-snippet
-      "C-c Y" 'yas-visit-snippet-file)
-
-    (define-keymap
-      :keymap yas-keymap
-      "TAB" nil
-      "M-n" 'yas-next-field
-      "M-p" 'yas-prev-field)))
-
-(elpaca consult-yasnippet
-  (with-eval-after-load 'consult-yasnippet
-    (consult-customize consult-yasnippet :preview-key nil))
-
-  (with-eval-after-load 'yasnippet
-    (define-keymap
-      :keymap yas-minor-mode-map
-      "M-P" 'consult-yasnippet)))
-
-(elpaca yasnippet-capf
-  (setq yasnippet-capf-lookup-by 'name)
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (add-to-list 'completion-at-point-functions
-                           (cape-capf-super #'elisp-completion-at-point
-                                            #'yasnippet-capf)))))
+;; (elpaca consult-yasnippet
+;;   (with-eval-after-load 'consult-yasnippet
+;;     (consult-customize consult-yasnippet :preview-key nil))
+;; 
+;;   (with-eval-after-load 'yasnippet
+;;     (define-keymap
+;;       :keymap yas-minor-mode-map
+;;       "M-P" 'consult-yasnippet)))
+;; 
+;; (elpaca yasnippet-capf
+;;   (setq yasnippet-capf-lookup-by 'name)
+;;   (add-hook 'emacs-lisp-mode-hook
+;;             (lambda ()
+;;               (add-to-list 'completion-at-point-functions
+;;                            (cape-capf-super #'elisp-completion-at-point
+;;                                             #'yasnippet-capf)))))
 
 ;; (elpaca yasnippet-snippets)
 
@@ -3967,24 +3459,6 @@
       "j" #'macrostep-prev-macro
       "q" #'macrostep-collapse-all)
     (conn-set-mode-map-depth 'macrostep-mode -50 'conn-command-state)))
-
-;;;; eev
-
-;; (elpaca eev
-;;   (require 'eev-load))
-
-;;;; repeat-fu
-
-;; (elpaca (repeat-fu :host codeberg
-;;                    :repo "ideasman42/emacs-repeat-fu"))
-
-;; (defun big-ding ()
-;;   (when (= 0 (random 100))
-;;     (let ((mpv (executable-find "mpv"))
-;;           (boom (expand-file-name "vine-boom.mp3" user-emacs-directory)))
-;;       (start-process "boom" nil mpv boom))))
-;;
-;; (setq ring-bell-function #'big-ding)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
