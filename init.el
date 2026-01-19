@@ -2285,7 +2285,7 @@
 
 ;;;; wgrep
 
-(elpaca wgrep)
+;; (elpaca wgrep)
 
 
 ;;;; separedit
@@ -2659,7 +2659,7 @@
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
-  (keymap-set vertico-multiform-map "M-i" 'vertico-multiform-buffer)
+  (keymap-set vertico-multiform-map "M-H" 'vertico-multiform-buffer)
   (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
 
   (defun vertico-buffer-setup-ad ()
@@ -2815,7 +2815,7 @@
   (with-eval-after-load 'tempel
     (keymap-set tempel-map "M-n" 'tempel-next)
     (keymap-set tempel-map "M-p" 'tempel-previous)
-    (keymap-set tempel-map "M-i" 'tempel-done)
+    (keymap-set tempel-map "M-t" 'tempel-done)
 
     (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
@@ -3538,8 +3538,8 @@
       "M-J" 'paredit-backward-slurp-sexp
       "M-O" 'paredit-forward-barf-sexp
       "M-U" 'paredit-backward-barf-sexp
-      "<delete>" 'paredit-forward-delete
-      "<deletechar>" 'paredit-forward-delete
+      ;; "<delete>" 'paredit-forward-delete
+      ;; "<deletechar>" 'paredit-forward-delete
       "DEL" 'paredit-backward-delete
       "C-d" 'paredit-delete-char
       "C-k" 'paredit-kill
@@ -3557,11 +3557,16 @@
        'paredit-backward)
 
       (conn-register-thing-commands
-       'list 'conn-discrete-thing-handler
+       'list 'conn-up-list-other-end-handler
        'paredit-backward-up
-       'paredit-forward-down
-       'paredit-backward-down
        'paredit-forward-up)
+
+      (conn-register-thing-commands
+       'inner-list (conn-down-list-other-end-handler
+                    #'paredit-forward-up
+                    #'paredit-forward-down)
+       'paredit-forward-down
+       'paredit-backward-down)
 
       (define-keymap
         :keymap (conn-get-minor-mode-map 'conn-command-state 'paredit-mode)
@@ -3584,59 +3589,6 @@
       (cl-defmethod conn-argument-predicate ((_arg conn-transpose-thing-argument)
                                              (_cmd (eql paredit-convolute-sexp)))
         t))))
-
-;;;; smartparens
-
-;; (elpaca (smartparens :host github
-;;                      :repo "Fuco1/smartparens")
-;;   (with-eval-after-load 'smartparens
-;;     (with-eval-after-load 'diminish
-;;       (diminish 'smartparens-mode)))
-;; 
-;;   (with-eval-after-load 'conn
-;;     (add-hook 'lisp-data-mode-hook 'conn-sp-mode)
-;;     (add-hook 'conn-sp-mode-hook 'conn-sp-sexp-include-prefix-chars-mode)
-;;     (define-keymap
-;;       :keymap (conn-get-minor-mode-map 'conn-command-state 'conn-sp-mode)
-;;       "M-s" 'sp-splice-sexp
-;;       "M-r" 'sp-splice-sexp-killing-around)
-;; 
-;;     (with-eval-after-load 'conn-smartparens
-;;       (define-keymap
-;;         :keymap conn-sp-mode-map
-;;         "C-M-f" `(menu-item
-;;                   "forward-sexp"
-;;                   sp-forward-sexp
-;;                   :filter ,(lambda (&rest _)
-;;                              (if (bound-and-true-p treesit-primary-parser)
-;;                                  'forward-sexp
-;;                                'sp-forward-sexp)))
-;;         "C-M-b" `(menu-item
-;;                   "forward-sexp"
-;;                   sp-backward-sexp
-;;                   :filter ,(lambda (&rest _)
-;;                              (if (bound-and-true-p treesit-primary-parser)
-;;                                  'backward-sexp
-;;                                'sp-backward-sexp)))
-;;         "C-M-u" 'sp-backward-up-sexp
-;;         "C-M-d" 'sp-down-sexp
-;;         "C-M-p" 'sp-backward-down-sexp
-;;         "C-M-n" 'sp-up-sexp
-;;         "M-C" 'sp-copy-sexp
-;;         "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-;;         "M-)" 'sp-splice-sexp-killing-forward
-;;         "M-K" 'sp-raise-sexp
-;;         "M-I" 'sp-splice-sexp
-;;         "M-J" 'sp-backward-slurp-sexp
-;;         "M-L" 'sp-forward-slurp-sexp
-;;         "M-O" 'sp-forward-barf-sexp
-;;         "M-U" 'sp-backward-barf-sexp
-;;         "M-B" 'sp-convolute-sexp
-;;         "M-H" 'sp-join-sexp
-;;         "M-N" 'sp-beginning-of-sexp
-;;         "M-M" 'sp-end-of-sexp
-;;         "<conn-thing-map> n" 'sp-beginning-of-sexp
-;;         "<conn-thing-map> m" 'sp-end-of-sexp))))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
