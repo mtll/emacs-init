@@ -3525,14 +3525,13 @@
   (add-hook 'paredit-mode-hook 'my-setup-bounds-checker)
 
   (with-eval-after-load 'paredit
-    (conn-register-thing-commands
-     'sexp 'conn-nestable-thing-handler
-     'paredit-forward
-     'paredit-backward)
-
     (setcdr paredit-mode-map nil)
     (define-keymap
       :keymap paredit-mode-map
+      "C-M-u" 'paredit-backward-up
+      "C-M-d" 'paredit-forward-down
+      "C-M-p" 'paredit-backward-down
+      "C-M-n" 'paredit-forward-up
       "C-M-f" 'paredit-forward
       "C-M-b" 'paredit-backward
       "M-L" 'paredit-forward-slurp-sexp
@@ -3552,10 +3551,26 @@
       "M-N" 'paredit-splice-sexp-killing-forward)
 
     (with-eval-after-load 'conn
+      (conn-register-thing-commands
+       'sexp 'conn-nestable-thing-handler
+       'paredit-forward
+       'paredit-backward)
+
+      (conn-register-thing-commands
+       'list 'conn-discrete-thing-handler
+       'paredit-backward-up
+       'paredit-forward-down
+       'paredit-backward-down
+       'paredit-forward-up)
+
       (define-keymap
         :keymap (conn-get-minor-mode-map 'conn-command-state 'paredit-mode)
         "M-s" 'paredit-splice-sexp
-        "M-r" 'paredit-raise-sexp)
+        "M-r" 'paredit-raise-sexp
+        "(" 'paredit-backward-up
+        "]" 'paredit-forward-down
+        "[" 'paredit-backward-down
+        ")" 'paredit-forward-up)
 
       (define-keymap
         :keymap (conn-get-minor-mode-map 'conn-transpose-state 'paredit-mode)
