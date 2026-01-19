@@ -2809,13 +2809,13 @@
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-t" 'tempel-insert)
+  (keymap-global-set "M-i" 'tempel-insert)
   (global-tempel-abbrev-mode 1)
 
   (with-eval-after-load 'tempel
     (keymap-set tempel-map "M-n" 'tempel-next)
     (keymap-set tempel-map "M-p" 'tempel-previous)
-    (keymap-set tempel-map "M-t" 'tempel-done)
+    (keymap-set tempel-map "M-i" 'tempel-done)
 
     (setq tempel-path (expand-file-name "templates/*.eld" user-emacs-directory))
 
