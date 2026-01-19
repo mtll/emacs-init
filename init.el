@@ -1454,18 +1454,19 @@
       (keymap-set (conn-get-major-mode-map state 'occur-edit-mode)
                   "C-c e" 'occur-cease-edit))
 
-    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-                "M-L" "S ( m e")
-    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-                "M-J" "S ( z n e")
-    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-                "M-s" "d g (")
-    (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-                "M-r" "C , x (")
-    (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
-                "M-L" "<escape> S ( m e e")
-    (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
-                "M-J" "<escape> S ( z n e e"))
+    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+    ;;             "M-L" "S ( m e")
+    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+    ;;             "M-J" "S ( z n e")
+    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+    ;;             "M-s" "d g (")
+    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
+    ;;             "M-r" "C , x (")
+    ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
+    ;;             "M-L" "<escape> S ( m e e")
+    ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
+    ;;             "M-J" "<escape> S ( z n e e")
+    )
 
   (setq conn-read-string-timeout 0.35)
 
@@ -2808,7 +2809,7 @@
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-I" 'tempel-insert)
+  (keymap-global-set "M-t" 'tempel-insert)
   (global-tempel-abbrev-mode 1)
 
   (with-eval-after-load 'tempel
@@ -3058,7 +3059,51 @@
 
 ;;;; puni
 
-(elpaca puni)
+;; (elpaca puni
+;;   (with-eval-after-load 'conn
+;;     (add-hook 'lisp-data-mode-hook 'conn-sp-mode)
+;;     (add-hook 'conn-sp-mode-hook 'conn-sp-sexp-include-prefix-chars-mode)
+;;     (define-keymap
+;;       :keymap (conn-get-minor-mode-map 'conn-command-state 'conn-sp-mode)
+;;       "M-s" 'sp-splice-sexp
+;;       "M-r" 'sp-splice-sexp-killing-around)
+;; 
+;;     (with-eval-after-load 'conn-smartparens
+;;       (define-keymap
+;;         :keymap conn-sp-mode-map
+;;         "C-M-f" `(menu-item
+;;                   "forward-sexp"
+;;                   sp-forward-sexp
+;;                   :filter ,(lambda (&rest _)
+;;                              (if (bound-and-true-p treesit-primary-parser)
+;;                                  'forward-sexp
+;;                                'sp-forward-sexp)))
+;;         "C-M-b" `(menu-item
+;;                   "forward-sexp"
+;;                   sp-backward-sexp
+;;                   :filter ,(lambda (&rest _)
+;;                              (if (bound-and-true-p treesit-primary-parser)
+;;                                  'backward-sexp
+;;                                'sp-backward-sexp)))
+;;         "C-M-u" 'sp-backward-up-sexp
+;;         "C-M-d" 'sp-down-sexp
+;;         "C-M-p" 'sp-backward-down-sexp
+;;         "C-M-n" 'sp-up-sexp
+;;         "M-C" 'sp-copy-sexp
+;;         "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+;;         "M-)" 'sp-splice-sexp-killing-forward
+;;         "M-K" 'sp-raise-sexp
+;;         "M-I" 'sp-splice-sexp
+;;         "M-J" 'sp-backward-slurp-sexp
+;;         "M-L" 'sp-forward-slurp-sexp
+;;         "M-O" 'sp-forward-barf-sexp
+;;         "M-U" 'sp-backward-barf-sexp
+;;         "M-B" 'sp-convolute-sexp
+;;         "M-H" 'sp-join-sexp
+;;         "M-N" 'sp-beginning-of-sexp
+;;         "M-M" 'sp-end-of-sexp
+;;         "<conn-thing-map> n" 'sp-beginning-of-sexp
+;;         "<conn-thing-map> m" 'sp-end-of-sexp))))
 
 ;;;; smart parens
 
@@ -3461,6 +3506,122 @@
       "j" #'macrostep-prev-macro
       "q" #'macrostep-collapse-all)
     (conn-set-mode-map-depth 'macrostep-mode -50 'conn-command-state)))
+
+;;;; paredit
+
+(elpaca paredit
+  (with-eval-after-load 'paredit
+    (with-eval-after-load 'diminish
+      (diminish 'paredit-mode)))
+
+  (add-hook 'lisp-data-mode-hook 'paredit-mode)
+
+  (defun my-paredit-check-bounds (bounds)
+    (pcase bounds
+      ((conn-bounds `(,beg . ,end))
+       (paredit-check-region-for-delete beg end))))
+  (defun my-setup-bounds-checker ()
+    (add-hook 'conn-check-bounds-functions 'my-paredit-check-bounds nil t))
+  (add-hook 'paredit-mode-hook 'my-setup-bounds-checker)
+
+  (with-eval-after-load 'paredit
+    (conn-register-thing-commands
+     'sexp 'conn-nestable-thing-handler
+     'paredit-forward
+     'paredit-backward)
+
+    (setcdr paredit-mode-map nil)
+    (define-keymap
+      :keymap paredit-mode-map
+      "C-M-f" 'paredit-forward
+      "C-M-b" 'paredit-backward
+      "M-L" 'paredit-forward-slurp-sexp
+      "M-J" 'paredit-backward-slurp-sexp
+      "M-O" 'paredit-forward-barf-sexp
+      "M-U" 'paredit-backward-barf-sexp
+      "<delete>" 'paredit-forward-delete
+      "<deletechar>" 'paredit-forward-delete
+      "DEL" 'paredit-backward-delete
+      "C-d" 'paredit-delete-char
+      "C-k" 'paredit-kill
+      "M-d" 'paredit-forward-kill-word
+      "M-DEL" 'paredit-backward-kill-word
+      "M-I" 'paredit-split-sexp
+      "M-K" 'paredit-join-sexps
+      "M-M" 'paredit-splice-sexp-killing-backward
+      "M-N" 'paredit-splice-sexp-killing-forward)
+
+    (with-eval-after-load 'conn
+      (define-keymap
+        :keymap (conn-get-minor-mode-map 'conn-command-state 'paredit-mode)
+        "M-s" 'paredit-splice-sexp
+        "M-r" 'paredit-raise-sexp)
+
+      (define-keymap
+        :keymap (conn-get-minor-mode-map 'conn-transpose-state 'paredit-mode)
+        "c" 'paredit-convolute-sexp)
+
+      (cl-defmethod conn-transpose-things-do ((cmd (eql paredit-convolute-sexp))
+                                              arg
+                                              _at-point-and-mark)
+        (paredit-convolute-sexp arg))
+
+      (cl-defmethod conn-argument-predicate ((_arg conn-transpose-thing-argument)
+                                             (_cmd (eql paredit-convolute-sexp)))
+        t))))
+
+;;;; smartparens
+
+;; (elpaca (smartparens :host github
+;;                      :repo "Fuco1/smartparens")
+;;   (with-eval-after-load 'smartparens
+;;     (with-eval-after-load 'diminish
+;;       (diminish 'smartparens-mode)))
+;; 
+;;   (with-eval-after-load 'conn
+;;     (add-hook 'lisp-data-mode-hook 'conn-sp-mode)
+;;     (add-hook 'conn-sp-mode-hook 'conn-sp-sexp-include-prefix-chars-mode)
+;;     (define-keymap
+;;       :keymap (conn-get-minor-mode-map 'conn-command-state 'conn-sp-mode)
+;;       "M-s" 'sp-splice-sexp
+;;       "M-r" 'sp-splice-sexp-killing-around)
+;; 
+;;     (with-eval-after-load 'conn-smartparens
+;;       (define-keymap
+;;         :keymap conn-sp-mode-map
+;;         "C-M-f" `(menu-item
+;;                   "forward-sexp"
+;;                   sp-forward-sexp
+;;                   :filter ,(lambda (&rest _)
+;;                              (if (bound-and-true-p treesit-primary-parser)
+;;                                  'forward-sexp
+;;                                'sp-forward-sexp)))
+;;         "C-M-b" `(menu-item
+;;                   "forward-sexp"
+;;                   sp-backward-sexp
+;;                   :filter ,(lambda (&rest _)
+;;                              (if (bound-and-true-p treesit-primary-parser)
+;;                                  'backward-sexp
+;;                                'sp-backward-sexp)))
+;;         "C-M-u" 'sp-backward-up-sexp
+;;         "C-M-d" 'sp-down-sexp
+;;         "C-M-p" 'sp-backward-down-sexp
+;;         "C-M-n" 'sp-up-sexp
+;;         "M-C" 'sp-copy-sexp
+;;         "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
+;;         "M-)" 'sp-splice-sexp-killing-forward
+;;         "M-K" 'sp-raise-sexp
+;;         "M-I" 'sp-splice-sexp
+;;         "M-J" 'sp-backward-slurp-sexp
+;;         "M-L" 'sp-forward-slurp-sexp
+;;         "M-O" 'sp-forward-barf-sexp
+;;         "M-U" 'sp-backward-barf-sexp
+;;         "M-B" 'sp-convolute-sexp
+;;         "M-H" 'sp-join-sexp
+;;         "M-N" 'sp-beginning-of-sexp
+;;         "M-M" 'sp-end-of-sexp
+;;         "<conn-thing-map> n" 'sp-beginning-of-sexp
+;;         "<conn-thing-map> m" 'sp-end-of-sexp))))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
