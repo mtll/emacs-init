@@ -3528,6 +3528,15 @@
     (setcdr paredit-mode-map nil)
     (define-keymap
       :keymap paredit-mode-map
+      "M-q" 'paredit-reindent-defun
+      "M-)" 'paredit-close-round-and-newline
+      "M-]" 'paredit-wrap-round
+      "(" 'paredit-open-round
+      ")" 'paredit-close-round
+      "[" 'paredit-open-square
+      "]" 'paredit-close-square
+      "\"" 'paredit-doublequote
+      "M-\"" 'paredit-meta-doublequote
       "C-M-u" 'paredit-backward-up
       "C-M-d" 'paredit-forward-down
       "C-M-p" 'paredit-backward-down
