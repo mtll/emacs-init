@@ -3525,6 +3525,13 @@
   (add-hook 'paredit-mode-hook 'my-setup-bounds-checker)
 
   (with-eval-after-load 'paredit
+    (defun my-splice-no-space (endp delimiter)
+      (not (and (null endp)
+                (char-equal delimiter ?\()
+                (char-equal (char-before) ?@))))
+    (cl-pushnew 'my-splice-no-space
+                paredit-space-for-delimiter-predicates)
+
     (setcdr paredit-mode-map nil)
     (define-keymap
       :keymap paredit-mode-map
