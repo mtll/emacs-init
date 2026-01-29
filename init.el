@@ -43,6 +43,8 @@
 
 ;;; Built-in
 
+(keymap-set input-decode-map "M-[ 3 4 ~" [escape])
+
 (setq magit-define-global-key-bindings nil)
 
 (defvar my--to-incremental-load nil)
@@ -148,7 +150,8 @@
                                delete-space-after
                                delete-space-before
                                restore)
-      project-vc-extra-root-markers '(".projectile" ".project"))
+      project-vc-extra-root-markers '(".projectile" ".project")
+      kill-region-dwim 'emacs-word)
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda () (setq-local sentence-end-double-space t)))
@@ -192,7 +195,6 @@
 (keymap-global-set "C-x C-b" #'ibuffer)
 (keymap-global-set "M-;" #'comment-line)
 (keymap-global-set "C-c k" #'compile)
-(keymap-global-set "C-S-w" #'delete-region)
 (keymap-global-set "<f2>" #'other-window)
 (keymap-global-set "M-z" #'transient-resume)
 (keymap-global-set "C-h A" #'describe-char)
@@ -553,7 +555,8 @@
       (keymap-set org-mode-map "C-c x" (conn-remap-key "C-c C-x"))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
-      (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "TAB" 'org-cycle)
+      ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode)
+      ;;             "TAB" 'org-cycle)
       (keymap-set org-mode-map "C-c t" 'org-todo))
 
     ;; Increase preview width
@@ -1131,7 +1134,8 @@
 (elpaca sly
   (with-eval-after-load 'sly
     (setq sly-default-lisp 'sbcl
-          sly-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096"))))
+          sly-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096"))
+                                     (clisp ("clisp" "-ansi"))))
 
     (defun sly-setup-embark ()
       (require 'embark)
@@ -1230,6 +1234,9 @@
   (setq pdf-info-epdfinfo-program "~/.emacs.d/elpaca/builds/pdf-tools/server/epdfinfo")
 
   (with-eval-after-load 'pdf-links
+    ;; pdf-links is called non-autoloaded pdf-roll functions and does
+    ;; not require pdf-roll.
+    (require 'pdf-roll)
     (keymap-set pdf-links-minor-mode-map "f" #'pdf-links-action-perform)
     (keymap-set pdf-links-minor-mode-map "F" #'pdf-links-isearch-link))
 
@@ -1416,7 +1423,6 @@
 
 (elpaca elixir-ts-mode
   (defun my-ex-setup-ts-sexp ()
-    (conn-ts-things-mode 1)
     (make-variable-buffer-local 'treesit-thing-settings)
     (setf (alist-get 'sexp (alist-get 'elixir treesit-thing-settings))
           (list elixir-ts--sexp-regexp))
@@ -1477,7 +1483,7 @@
   (conn-mode 1)
   (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
-  (require 'conn-extras)
+  (conn-special-state-mode 1)
 
   (setq conn-simple-label-characters
         (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
@@ -1535,8 +1541,7 @@
          :repo "mtll/conn"
          :files ("extensions/tree-sitter/conn-tree-sitter.el"
                  "extensions/tree-sitter/queries"))
-  (require 'treesit)
-  (add-hook 'c-ts-mode-hook 'conn-ts-things-mode))
+  (require 'treesit))
 
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
@@ -1555,8 +1560,8 @@
   (with-eval-after-load 'consult
     (require 'conn-consult))
   (with-eval-after-load 'conn
-    (keymap-global-set "<conn-edit-map> o" 'conn-consult-line-thing)
-    (keymap-global-set "<conn-edit-map> O" 'conn-consult-line-multi-thing)
+    (keymap-global-set "<conn-edit-map> f" 'conn-consult-line-thing)
+    (keymap-global-set "<conn-edit-map> F" 'conn-consult-line-multi-thing)
     (keymap-global-set "<conn-edit-map> g" 'conn-consult-ripgrep-thing)
     (keymap-global-set "<conn-edit-map> G" 'conn-consult-git-grep-thing)))
 
@@ -1579,6 +1584,7 @@
       my-embark-gh-issue-finder
       my-embark-abbrev-target-finder
       embark-org-target-link
+      embark-org-target-agenda-item
       embark-target-collect-candidate
       embark-target-text-heading-at-point
       embark-start-of-defun-target-finder
@@ -1868,7 +1874,6 @@
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
     ;; (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
-    (keymap-set embark-heading-map "M-RET" #'outline-up-heading)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
 
     (keymap-set embark-file-map "O" 'find-file-other-frame)
@@ -1877,7 +1882,13 @@
     (keymap-set embark-heading-map "RET" #'bicycle-cycle)
     (with-eval-after-load 'org
       (with-eval-after-load 'embark
-        (keymap-set embark-org-heading-map "RET" #'bicycle-cycle)))
+        (keymap-set embark-org-heading-map "M-RET"
+                    (lambda ()
+                      (interactive)
+                      (org-cycle)
+                      (set-transient-map
+                       (define-keymap "TAB" 'org-cycle)
+                       t)))))
 
     ;; (keymap-set embark-heading-map "RET" #'conn-outline-state)
     ;; (with-eval-after-load 'org
@@ -2416,14 +2427,14 @@
   (with-eval-after-load 'conn
     (define-keymap
       :keymap conn-search-map
-      "c" 'occur
+      "o" 'occur
       "y" 'rgrep
       "p" 'consult-page
       "K" 'consult-kmacro
       "w" 'consult-man
       "e" 'consult-isearch-history
       "t" 'consult-outline
-      "o" 'consult-line
+      "f" 'consult-line
       "O" 'consult-line-multi
       "v" 'consult-git-grep
       "g" 'consult-ripgrep
@@ -3187,6 +3198,7 @@
 (elpaca aggressive-indent
   (with-eval-after-load 'aggressive-indent
     (cl-pushnew 'conn-replace aggressive-indent-protected-current-commands)
+    (cl-pushnew 'conn-change-thing aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-duplicate-and-comment-region aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-regexp-replace aggressive-indent-protected-current-commands)
     (cl-pushnew 'conn-dispatch aggressive-indent-protected-current-commands)
@@ -3519,7 +3531,8 @@
   (defun my-paredit-check-bounds (bounds)
     (pcase bounds
       ((conn-bounds `(,beg . ,end))
-       (paredit-check-region-for-delete beg end))))
+       (paredit-check-region-for-delete (min beg end)
+                                        (max beg end)))))
   (defun my-setup-bounds-checker ()
     (add-hook 'conn-check-bounds-functions 'my-paredit-check-bounds nil t))
   (add-hook 'paredit-mode-hook 'my-setup-bounds-checker)
@@ -3535,6 +3548,8 @@
     (setcdr paredit-mode-map nil)
     (define-keymap
       :keymap paredit-mode-map
+      "\\" 'paredit-backslash
+      "M-;" 'paredit-comment-dwim
       "M-q" 'paredit-reindent-defun
       "M-)" 'paredit-close-round-and-newline
       "M-]" 'paredit-wrap-round
@@ -3578,7 +3593,7 @@
        'paredit-forward-up)
 
       (conn-register-thing-commands
-       'inner-list (conn-down-list-other-end-handler
+       'inner-list (conn-make-inner-list-other-end-handler
                     #'paredit-forward-up
                     #'paredit-forward-down)
        'paredit-forward-down
