@@ -999,6 +999,7 @@
 (my-incremental-load (lambda () (require 'ibuffer)))
 (with-eval-after-load 'ibuffer
   (setq ibuffer-human-readable-size t))
+(add-hook 'ibuffer-mode-hook 'hl-line-mode)
 
 
 ;;;; dired
@@ -1008,6 +1009,7 @@
 (my-incremental-load (lambda () (require 'dired)))
 
 (add-hook 'dired-mode-hook 'dired-hide-details-mode)
+(add-hook 'dired-mode-hook 'hl-line-mode)
 
 (with-eval-after-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
@@ -1494,11 +1496,6 @@
   (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-," 'conn-dispatch)
-
-  (defvar-keymap conn-buffer-repeat-map
-    :repeat t
-    "l" 'next-buffer
-    "j" 'previous-buffer)
 
   (defun my-org-capture-buffer-p (buffer &rest _alist)
     (bound-and-true-p org-capture-mode))
@@ -3025,7 +3022,7 @@
                                          (- (overlay-end ov) (overlay-start ov)))))))
 
     (conn-register-thing-commands
-     'word nil
+     '(word) nil
      'jinx-correct-nearest
      'jinx-correct
      'jinx-correct-all)))
@@ -3583,19 +3580,19 @@
 
     (with-eval-after-load 'conn
       (conn-register-thing-commands
-       'sexp 'conn-nestable-thing-handler
+       '(sexp) 'conn-nestable-thing-handler
        'paredit-forward
        'paredit-backward)
 
       (conn-register-thing-commands
-       'list 'conn-up-list-other-end-handler
+       '(list) 'conn-up-list-other-end-handler
        'paredit-backward-up
        'paredit-forward-up)
 
       (conn-register-thing-commands
-       'inner-list (conn-make-inner-list-other-end-handler
-                    #'paredit-forward-up
-                    #'paredit-forward-down)
+       '(inner-list) (conn-make-inner-list-other-end-handler
+                      #'paredit-forward-up
+                      #'paredit-forward-down)
        'paredit-forward-down
        'paredit-backward-down)
 
