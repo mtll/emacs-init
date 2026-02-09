@@ -1491,8 +1491,6 @@
         (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
               "i" "q" "p" "c" "b" "n" "m" "e" "d" "k"))
 
-  (keymap-global-set "C-x l" 'next-buffer)
-  (keymap-global-set "C-x j" 'previous-buffer)
   (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
   (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-," 'conn-dispatch)
@@ -1575,6 +1573,7 @@
     '(;; embark-target-active-region
       my-embark-abbrev-target-finder
       my-embark-commit-target-finder
+      my/embark-cycling-target-finder
       my-embark-button-target
       my-embark-cve-target-finder
       my-embark-gnu-bug-finder
@@ -1622,6 +1621,39 @@
              (indent-for-tab-command))
          (user-error (completion-at-point))))))
 
+  (defvar my/elisp-cycling-forms
+    (cl-loop for list in `((let let*)
+                           (cl-flet cl-labels)
+                           (defvar defconst)
+                           (eq eql equal)
+                           (consp listp)
+                           (when if cond)
+                           (when-let* if-let* cond*))
+             collect (mapcar #'symbol-name list)))
+
+  (defun my/embark-cycling-target-finder ()
+    (save-match-data
+      (and (looking-at
+            (concat
+             "\\("
+             (regexp-opt (flatten-list my/elisp-cycling-forms))
+             "\\)"))
+           (eql ?\( (char-before))
+           `(my/cycle ,(match-string 1) ,(match-beginning 1) . ,(match-end 1)))))
+
+  (defun my/cycle-form (str)
+    (save-excursion
+      (and (search-forward str)
+           (cl-loop with beg = (match-beginning 0)
+                    with end = (match-end 0)
+                    for list in my/elisp-cycling-forms
+                    for cons = (member str list)
+                    when cons
+                    return (progn
+                             (delete-region beg end)
+                             (goto-char beg)
+                             (insert (or (cadr cons) (car list))))))))
+
   (keymap-global-set "TAB" 'my-embark-smart-tab)
 
   (with-eval-after-load 'embark
@@ -1634,6 +1666,14 @@
                                             (symbol :tag "Command")))
                     :value-type (function :tag "Default action"))
       :group 'conn-embark)
+
+    (defun my/cycle-elisp-setup ()
+      (setf (alist-get 'my/cycle (buffer-local-value 'embark-default-action-overrides
+                                                     (current-buffer)))
+            'my/cycle-form)
+      (cl-pushnew 'my/embark-cycling-target-finder
+                  (buffer-local-value 'embark-target-finders (current-buffer))))
+    (add-hook 'emacs-lisp-mode-hook #'my/cycle-elisp-setup)
 
     (defcustom conn-embark-alt-key "M-RET"
       "Key for embark-alt-dwim."
@@ -2119,7 +2159,7 @@
 
     (define-keymap
       :keymap embark-general-map
-      "h l" 'consult-line
+      "h o" 'consult-line
       "h ," 'consult-fd
       "h v" 'consult-git-grep
       "h L" 'consult-locate
@@ -2424,14 +2464,14 @@
   (with-eval-after-load 'conn
     (define-keymap
       :keymap conn-search-map
-      "o" 'occur
+      ;; "o" 'occur
       "y" 'rgrep
       "p" 'consult-page
       "K" 'consult-kmacro
       "w" 'consult-man
       "e" 'consult-isearch-history
       "t" 'consult-outline
-      "f" 'consult-line
+      "o" 'consult-line
       "O" 'consult-line-multi
       "v" 'consult-git-grep
       "g" 'consult-ripgrep
