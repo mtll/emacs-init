@@ -201,6 +201,9 @@
 (keymap-global-set "C-/" #'undo-only)
 (keymap-global-set "C-x <" #'scroll-right)
 (keymap-global-set "C-x >" #'scroll-left)
+(keymap-global-set "C-x j" #'dired-jump)
+(keymap-global-set "C-x C-j" #'previous-buffer)
+(keymap-global-set "C-x C-l" #'next-buffer)
 
 (keymap-global-set "C-S-l" 'move-to-window-line-top-bottom)
 
@@ -510,7 +513,7 @@
     :keymap hs-minor-mode-map
     ;; "<end>" 'my-hs-toggle-hiding
     "<home>" 'hs-show-all
-    "C-." 'my-hs-toggle-hiding
+    "C-." 'hs-toggle-hiding
     "M-s h h" #'hs-hide-all
     "M-s h ." #'hs-hide-all
     "M-s h s" #'hs-show-all
@@ -1504,6 +1507,7 @@
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol
+    "C-S-w" 'conn-wincontrol-one-command
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
     "C-," 'conn-dispatch
@@ -1512,7 +1516,6 @@
     "M-`" 'conn-wincontrol-quit-other-window-for-scrolling
     "M-U" 'conn-wincontrol-maximize-vertically
     "M-z" 'conn-exchange-mark-command
-    "C-c v" 'dired-jump
     "C-SPC" 'set-mark-command
     "C-x n" 'set-goal-column)
 
@@ -2148,24 +2151,24 @@
       "l" 'consult-line
       "r" 'consult-ripgrep
       "h" nil
-      "h o" 'consult-line
+      "h f" 'consult-line
       "h ," 'consult-fd
       "h v" 'consult-git-grep
       "h L" 'consult-locate
       "h m" 'consult-imenu
       "h M" 'consult-imenu-multi
-      "h O" 'consult-line-multi
+      "h F" 'consult-line-multi
       "h g" 'consult-ripgrep)
 
     (define-keymap
       :keymap embark-general-map
-      "h o" 'consult-line
+      "h f" 'consult-line
       "h ," 'consult-fd
       "h v" 'consult-git-grep
       "h L" 'consult-locate
       "h i" 'consult-imenu
       "h I" 'consult-imenu-multi
-      "h O" 'consult-line-multi
+      "h F" 'consult-line-multi
       "h g" 'consult-ripgrep)))
 
 ;;;;; embark buttons
@@ -2464,15 +2467,15 @@
   (with-eval-after-load 'conn
     (define-keymap
       :keymap conn-search-map
-      ;; "o" 'occur
+      "o" 'occur
       "y" 'rgrep
       "p" 'consult-page
       "K" 'consult-kmacro
       "w" 'consult-man
       "e" 'consult-isearch-history
       "t" 'consult-outline
-      "o" 'consult-line
-      "O" 'consult-line-multi
+      "f" 'consult-line
+      "F" 'consult-line-multi
       "v" 'consult-git-grep
       "g" 'consult-ripgrep
       "," 'consult-fd
