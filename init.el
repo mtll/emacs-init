@@ -295,14 +295,15 @@
   (delete-frame))
 (keymap-set ctl-x-5-map "k" #'kill-frame-and-buffer)
 
-(defun crm-indicator (args)
-  (cons (format "[CRM%s] %s"
-                (replace-regexp-in-string
-                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                 crm-separator)
-                (car args))
-        (cdr args)))
-(advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+(when (< emacs-major-version 31)
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator))
 
 (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
@@ -522,13 +523,13 @@
 
 ;;;; org
 
-(elpaca (org :repo ("https://code.tecosaur.net/tec/org-mode.git/" . "org")
-             :branch "dev"
+(elpaca (org :repo ("https://https.git.savannah.nongnu.org/git/org-mode.git" . "org")
+             :tag "release_9.8"
              :pre-build (progn (require 'elpaca-menu-org) (elpaca-menu-org--build))
              :autoloads "org-loaddefs.el"
              :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
-  ;; (my-incremental-load (lambda () (require 'org)))
+  (my-incremental-load (lambda () (require 'org)))
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
         org-outline-path-complete-in-steps nil
@@ -563,28 +564,28 @@
       (keymap-set org-mode-map "C-c t" 'org-todo))
 
     ;; Increase preview width
-    (plist-put org-latex-preview-appearance-options
-               :page-width 0.8)
+    ;; (plist-put org-latex-preview-appearance-options
+    ;;            :page-width 0.8)
 
-    (add-hook 'org-mode-hook 'org-latex-preview-auto-mode)
+    ;; (add-hook 'org-mode-hook 'org-latex-preview-auto-mode)
 
     ;; Block C-n, C-p etc from opening up previews when using auto-mode
-    (setq org-latex-preview-auto-ignored-commands
-          '(next-line previous-line mwheel-scroll
-                      scroll-up-command scroll-down-command))
-
-    ;; Enable consistent equation numbering
-    (setq org-latex-preview-numbered t)
-
-    ;; Bonus: Turn on live previews.  This shows you a live preview of a LaTeX
-    ;; fragment and updates the preview in real-time as you edit it.
-    ;; To preview only environments, set it to '(block edit-special) instead
-    (setq org-latex-preview-live t)
-
-    ;; More immediate live-previews -- the default delay is 1 second
-    (setq org-latex-preview-live-debounce 0.25)
-    (setq org-latex-preview-cache 'temp)
-    (setq org-element-cache-persistent nil)
+    ;; (setq org-latex-preview-auto-ignored-commands
+    ;;       '(next-line previous-line mwheel-scroll
+    ;;                   scroll-up-command scroll-down-command))
+    ;; 
+    ;; ;; Enable consistent equation numbering
+    ;; (setq org-latex-preview-numbered t)
+    ;; 
+    ;; ;; Bonus: Turn on live previews.  This shows you a live preview of a LaTeX
+    ;; ;; fragment and updates the preview in real-time as you edit it.
+    ;; ;; To preview only environments, set it to '(block edit-special) instead
+    ;; (setq org-latex-preview-live t)
+    ;; 
+    ;; ;; More immediate live-previews -- the default delay is 1 second
+    ;; (setq org-latex-preview-live-debounce 0.25)
+    ;; (setq org-latex-preview-cache 'temp)
+    ;; (setq org-element-cache-persistent nil)
 
     (cl-loop for c across "abcdefghijklmnopqrstuvwxyz" do
              (keymap-unset org-mode-map (concat "C-c " (string c)) t)
@@ -1441,6 +1442,11 @@
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (defun my-scratch-buffer-state ()
+    (when (buffer-match-p "\\*scratch\\*.*" (current-buffer))
+      (conn-push-state 'conn-command-state)
+      t))
+  (add-hook 'conn-setup-state-hook 'my-scratch-buffer-state)
   (keymap-global-set "C-c r" 'conn-register-prefix)
   (put 'conn-recenter-on-region 'repeat-continue t)
 
@@ -1485,6 +1491,9 @@
     (interactive "P")
     (add-mode-abbrev (or arg 0)))
 
+  (require 'conn-keymaps-qwerty)
+  (require 'conn-extras-qwerty)
+  ;; (require 'conn-extras-generic)
   (conn-mode 1)
   (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
@@ -1519,9 +1528,12 @@
     "C-SPC" 'set-mark-command
     "C-x n" 'set-goal-column)
 
-  (keymap-set (conn-get-state-map 'conn-org-state) "<f8>" 'conn-command-state)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
-  (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project)
+  (pcase conn-keymaps-defined
+    ('qwerty
+     (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project))
+    ('generic
+     (keymap-set (conn-get-state-map 'conn-command-state) "I" 'my-ibuffer-maybe-project)))
   (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command)
   (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
   (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
@@ -2699,12 +2711,17 @@
         vertico-buffer-hide-prompt nil
         vertico-cycle t
         vertico-multiform-categories '((t buffer))
-        vertico-count 0)
+        vertico-count 10)
 
   (face-spec-set 'vertico-current
                  '((t :inherit region)))
   (face-spec-set 'vertico-group-title
                  '((t :inherit modus-themes-heading-0 :italic t :bold t)))
+
+  (when (>= emacs-major-version 31)
+    (add-hook 'vertico-mode-hook
+              (lambda ()
+                (advice-remove 'completing-read-multiple #'vertico--advice))))
 
   (vertico-mode 1)
   (vertico-multiform-mode 1)
@@ -3256,19 +3273,15 @@
 ;;;; org-modern
 
 (elpaca org-modern
-  (setq
-   ;; Edit settings
-   org-auto-align-tags nil
-   org-tags-column 0
-   org-catch-invisible-edits 'show-and-error
-   org-special-ctrl-a/e t
-   org-insert-heading-respect-content t
-
-   ;; Org styling, hide markup etc.
-   org-hide-emphasis-markers t
-   org-pretty-entities t
-   org-agenda-tags-column 0
-   org-ellipsis "…")
+  (setq org-auto-align-tags nil
+        org-tags-column 0
+        org-catch-invisible-edits 'show-and-error
+        org-special-ctrl-a/e t
+        org-insert-heading-respect-content t
+        org-hide-emphasis-markers t
+        org-pretty-entities t
+        org-agenda-tags-column 0
+        org-ellipsis "…")
 
   (setq org-modern-block-indent t  ; to enable org-modern-indent when org-indent is active
         org-modern-hide-stars nil
