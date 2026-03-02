@@ -1448,6 +1448,7 @@
       t))
   (add-hook 'conn-setup-state-hook 'my-scratch-buffer-state)
   (keymap-global-set "C-c r" 'conn-register-prefix)
+  (keymap-global-set "C-`" 'conn-wincontrol-mru-window)
   (put 'conn-recenter-on-region 'repeat-continue t)
 
   (with-eval-after-load 'org
@@ -1494,10 +1495,11 @@
   (require 'conn-keymaps-qwerty)
   (require 'conn-extras-qwerty)
   ;; (require 'conn-extras-generic)
+
+  (conn-special-state-mode 1)
   (conn-mode 1)
   (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
-  (conn-special-state-mode 1)
 
   (setq conn-simple-label-characters
         (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
@@ -3576,6 +3578,13 @@
 
 (elpaca paredit
   (with-eval-after-load 'paredit
+    (eldoc-add-command 'paredit-forward
+                       'paredit-backward
+                       'paredit-backward-up
+                       'paredit-forward-up
+                       'paredit-backward-down
+                       'paredit-forward-down)
+
     (with-eval-after-load 'diminish
       (diminish 'paredit-mode)))
 
