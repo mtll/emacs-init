@@ -1249,12 +1249,7 @@
   (with-eval-after-load 'pdf-tools
     (setq pdf-annot-latex-header "")
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode)
-    (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window)
-
-    (define-keymap
-      :keymap pdf-view-mode-map
-      ";" 'conn-wincontrol
-      "h" 'conn-wincontrol-one-command))
+    (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window))
 
   (pdf-loader-install))
 
@@ -1517,8 +1512,8 @@
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
-    "C-;" 'conn-wincontrol
-    "C-S-w" 'conn-wincontrol-one-command
+    "C-;" 'conn-wincontrol-mode
+    "C-S-w" 'conn-wincontrol-one-command-mode
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
     "C-," 'conn-dispatch
@@ -1530,13 +1525,13 @@
     "C-SPC" 'set-mark-command
     "C-x n" 'set-goal-column)
 
-  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command-mode)
   (pcase conn-keymaps-defined
     ('qwerty
      (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project))
     ('generic
      (keymap-set (conn-get-state-map 'conn-command-state) "I" 'my-ibuffer-maybe-project)))
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command-mode)
   (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
   (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
   (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
