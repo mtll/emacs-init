@@ -516,7 +516,6 @@
     "<home>" 'hs-show-all
     "C-." 'hs-toggle-hiding
     "M-s h h" #'hs-hide-all
-    "M-s h ." #'hs-hide-all
     "M-s h s" #'hs-show-all
     "M-s h v" #'hs-hide-level))
 
@@ -1353,12 +1352,7 @@
            (bg-completion-match-3 "#bef1da")
            (bg-search-lazy bg-magenta-subtle)
            (bg-search-current bg-yellow-intense))
-         modus-themes-preset-overrides-warmer)
-        hi-lock-face-defaults '("modus-themes-subtle-cyan"
-                                "modus-themes-subtle-red"
-                                "modus-themes-subtle-green"
-                                "modus-themes-subtle-blue"
-                                "modus-themes-subtle-yellow"))
+         modus-themes-preset-overrides-warmer))
   (custom-set-faces
    `(transient-key-stay ((t :inherit modus-themes-key-binding
                             :foreground "#008900"))))
@@ -1775,12 +1769,20 @@
 (elpaca (conn-expand-region :host github
                             :repo "mtll/conn"
                             :files ("extensions/conn-expand-region.el"))
-  (cl-pushnew 'conn-er-expansions conn-expansion-functions))
+  (with-eval-after-load 'conn
+    (cl-pushnew 'conn-er-expansions conn-expansion-functions)
+    (add-hook 'after-change-major-mode-hook
+              (lambda ()
+                (when (treesit-parser-list)
+                  (cl-callf2 delq
+                      'conn-er-expansions
+                      conn-expansion-functions))))))
 
 (elpaca (conn-expreg :host github
                      :repo "mtll/conn"
                      :files ("extensions/conn-expreg.el"))
-  (cl-pushnew 'conn-expreg-expansions conn-expansion-functions))
+  (with-eval-after-load 'conn
+    (cl-pushnew 'conn-expreg-expansions conn-expansion-functions)))
 
 
 ;;;; expand region
