@@ -1,15 +1,14 @@
 ;;; -*- lexical-binding: t; eval: (outline-minor-mode 1); -*-
 
-;;; Elpaca
-(defvar elpaca-installer-version 0.11)
+(defvar elpaca-installer-version 0.12)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
                               :ref nil :depth 1 :inherit ignore
                               :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                              :build (:not elpaca--activate-package)))
-(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+                              :build (:not elpaca-activate)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-sources-directory))
        (build (expand-file-name "elpaca/" elpaca-builds-directory))
        (order (cdr elpaca-order))
        (default-directory repo))
@@ -524,9 +523,10 @@
 
 (elpaca (org :repo ("https://https.git.savannah.nongnu.org/git/org-mode.git" . "org")
              :tag "release_9.8"
-             :pre-build (progn (require 'elpaca-menu-org) (elpaca-menu-org--build))
+             :build ((:before
+                      (progn (require 'elpaca-menu-org) (elpaca-menu-org--build)))
+                     (:not elpaca--generate-autoloads-async))
              :autoloads "org-loaddefs.el"
-             :build (:not elpaca--generate-autoloads-async)
              :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
   (my-incremental-load (lambda () (require 'org)))
   (setq org-highlight-latex-and-related '(native script entities)
@@ -1118,7 +1118,53 @@
 
 ;;;; expreg
 
-(elpaca (expreg :host github :repo "casouri/expreg"))
+(elpaca (expreg :host github :repo "casouri/expreg")
+  (defun my/expreg-list (&optional inhibit-recurse)
+    (condition-case nil
+        (let (inside-results inside-string)
+          (when (and (not inhibit-recurse)
+                     (or (setq inside-string (expreg--inside-string-p))
+                         (expreg--inside-comment-p)))
+            ;; If point is inside a string, we narrow to the inside of
+            ;; that string and compute again.
+            (save-restriction
+              (let ((orig (point))
+                    (string-start (expreg--start-of-comment-or-string)))
+
+                ;; Narrow to inside list.
+                (goto-char string-start)
+                ;; (forward-sexp)
+                (if inside-string
+                    ;; We could use ‘forward-sexp’, but narrowing plus
+                    ;; ‘forward-sexp’ with a treesit backend would cause
+                    ;; tree-sitter re-parse on the narrowed region and
+                    ;; then re-parse on the widened region.
+                    (goto-char (or (scan-sexps (point) 1)
+                                   (buffer-end 1)))
+                  (forward-comment (buffer-size)))
+                (if inside-string
+                    (narrow-to-region (1+ string-start) (1- (point)))
+                  (narrow-to-region string-start (point)))
+                (goto-char orig)
+                (setq inside-results (expreg--list t)))))
+
+          ;; Normal computation.
+          (let ((inside-list (expreg--inside-list))
+                (list-at-point (expreg--list-at-point))
+                outside-list lst)
+
+            ;; Compute outer-list.
+            (while (setq lst (expreg--outside-list))
+              (setq inside-list
+                    (nconc (expreg--inside-list) inside-list))
+              (setq outside-list
+                    (nconc lst outside-list)))
+
+            (nconc inside-results inside-list list-at-point outside-list)))
+      (scan-error nil)))
+  (setq-default expreg-functions
+                '( expreg--subword expreg--word expreg--string my/expreg-list
+                   expreg--treesit expreg--comment expreg--paragraph-defun)))
 
 
 ;;;; helpful
@@ -1266,10 +1312,11 @@
 
 ;;;; tex
 
-(elpaca (auctex :pre-build (("./autogen.sh")
-                            ("./configure"
-                             "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
-                            ("make")))
+(elpaca (auctex :build
+                (:before (("./autogen.sh")
+                          ("./configure"
+                           "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
+                          ("make"))))
   (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex))
 
 
@@ -1459,21 +1506,7 @@
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-edit-mode)
-                  "C-c e" 'occur-cease-edit))
-
-    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-    ;;             "M-L" "S ( m e")
-    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-    ;;             "M-J" "S ( z n e")
-    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-    ;;             "M-s" "d g (")
-    ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'lisp-data-mode)
-    ;;             "M-r" "C , x (")
-    ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
-    ;;             "M-L" "<escape> S ( m e e")
-    ;; (keymap-set (conn-get-major-mode-map 'conn-emacs-state 'lisp-data-mode)
-    ;;             "M-J" "<escape> S ( z n e e")
-    )
+                  "C-c e" 'occur-cease-edit)))
 
   (setq conn-read-string-timeout 0.35)
 
@@ -1494,9 +1527,19 @@
         (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
               "i" "q" "p" "c" "b" "n" "m" "e" "d" "k"))
 
-  (keymap-set (conn-get-state-map 'conn-command-state) "<up>" 'conn-backward-line)
-  (keymap-set (conn-get-state-map 'conn-command-state) "<down>" 'forward-line)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-w" 'conn-kill-thing)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-w" 'conn-copy-thing)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-t" 'conn-transpose-things)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-t" 'conn-duplicate-thing)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-z" 'conn-yank-replace)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-," 'conn-dispatch)
+
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-w" 'conn-kill-thing)
+  (keymap-set (conn-get-state-map 'conn-command-state) "M-w" 'conn-copy-thing)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-t" 'conn-transpose-things)
+  (keymap-set (conn-get-state-map 'conn-command-state) "M-t" 'conn-duplicate-thing)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-z" 'conn-yank-replace)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-," 'conn-dispatch)
 
   (defun my-org-capture-buffer-p (buffer &rest _alist)
     (bound-and-true-p org-capture-mode))
