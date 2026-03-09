@@ -1097,11 +1097,11 @@
 
 ;;;; treesit-auto
 
-(elpaca treesit-auto
-  (with-eval-after-load 'treesit
-    (require 'treesit-auto)
-    (setq treesit-auto-install 'prompt)
-    (global-treesit-auto-mode 1)))
+;; (elpaca treesit-auto
+;;   (with-eval-after-load 'treesit
+;;     (require 'treesit-auto)
+;;     (setq treesit-auto-install 'prompt)
+;;     (global-treesit-auto-mode 1)))
 
 
 ;;;; Compat
@@ -1369,10 +1369,10 @@
 
 ;;;; exec-path-from-shell
 
-(elpaca exec-path-from-shell
-  (when (memq window-system '(mac ns x))
-    (require 'exec-path-from-shell)
-    (exec-path-from-shell-initialize)))
+;; (elpaca exec-path-from-shell
+;;   (when (memq window-system '(mac ns x))
+;;     (require 'exec-path-from-shell)
+;;     (exec-path-from-shell-initialize)))
 
 
 ;;;; modus-themes
@@ -2385,7 +2385,7 @@
 
 ;;;; keycast
 
-(elpaca keycast)
+;; (elpaca keycast)
 
 
 ;;;; wgrep
@@ -2404,7 +2404,7 @@
 
 ;;;; package-link-flymake
 
-(elpaca package-lint)
+;; (elpaca package-lint)
 
 
 ;;;; orderless
@@ -2954,7 +2954,7 @@
 
 ;;;; htmlize
 
-(elpaca htmlize)
+;; (elpaca htmlize)
 
 
 ;;;; page-break-lines
@@ -2973,12 +2973,12 @@
 
 ;;;; rfc-mode
 
-(elpaca rfc-mode)
+;; (elpaca rfc-mode)
 
 
 ;;;; heex-ts-mode
 
-(elpaca heex-ts-mode)
+;; (elpaca heex-ts-mode)
 
 
 ;;;; denote
@@ -3289,7 +3289,7 @@
 
 ;;;; hide mode line
 
-(elpaca hide-mode-line)
+;; (elpaca hide-mode-line)
 
 
 ;;;; aggressive indent mode
@@ -3577,10 +3577,10 @@
 
 ;;;; geiser
 
-(elpaca geiser)
-
-(elpaca geiser-guile
-  (setq geiser-guile-binary "guile3.0"))
+;; (elpaca geiser)
+;; 
+;; (elpaca geiser-guile
+;;   (setq geiser-guile-binary "guile3.0"))
 
 ;;;; Racket
 
