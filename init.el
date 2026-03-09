@@ -1097,11 +1097,12 @@
 
 ;;;; treesit-auto
 
-;; (elpaca treesit-auto
-;;   (with-eval-after-load 'treesit
-;;     (require 'treesit-auto)
-;;     (setq treesit-auto-install 'prompt)
-;;     (global-treesit-auto-mode 1)))
+(when (< emacs-major-version 31)
+  (elpaca treesit-auto
+    (with-eval-after-load 'treesit
+      (require 'treesit-auto)
+      (setq treesit-auto-install 'prompt)
+      (global-treesit-auto-mode 1))))
 
 
 ;;;; Compat
