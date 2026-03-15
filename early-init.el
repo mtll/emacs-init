@@ -29,8 +29,8 @@
               inhibit-message t
               inhibit-redisplay t)
 
-;; (load (expand-file-name "elpaca/repos/benchmark-init-el/benchmark-init.el" user-emacs-directory) t  t)
-;; (load (expand-file-name "elpaca/repos/benchmark-init-el/benchmark-init-modes.el" user-emacs-directory) t  t)
+;; (load (expand-file-name "elpaca/sources/benchmark-init-el/benchmark-init.el" user-emacs-directory) t  t)
+;; (load (expand-file-name "elpaca/sources/benchmark-init-el/benchmark-init-modes.el" user-emacs-directory) t  t)
 ;; (require 'benchmark-init)
 ;; (benchmark-init/activate)
 ;; (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate)
@@ -59,9 +59,6 @@
 
 (setq use-file-dialog nil)
 (setq use-dialog-box nil)
-
-(set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
-(set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
 
 (setq window-resize-pixelwise t
       custom-file (make-temp-file "emacs-custom-")

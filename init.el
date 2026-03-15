@@ -75,7 +75,9 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq exchange-point-and-mark-highlight-region nil
+(setq completions-format 'one-column
+      igc-step-interval 0.1
+      exchange-point-and-mark-highlight-region nil
       edmacro-reverse-macro-lines t
       git-commit-major-mode 'log-edit-mode
       scroll-conservatively 0
@@ -187,7 +189,7 @@
 
 (keymap-global-set "C-z" #'pop-to-mark-command)
 (keymap-global-set "C-M-<backspace>" #'backward-kill-sexp)
-(keymap-global-set "C-M-<return>"#'default-indent-new-line)
+(keymap-global-set "C-M-<return>" #'default-indent-new-line)
 (keymap-global-set "S-<backspace>" #'cycle-spacing)
 (keymap-global-set "C-j" #'join-line)
 (keymap-global-set "C-:" #'read-only-mode)
@@ -503,7 +505,8 @@
   (save-excursion (hs-toggle-hiding)))
 
 (setq hs-indicator-type 'fringe
-      hs-show-indicators nil)
+      hs-show-indicators nil
+      hs-allow-nesting t)
 
 (with-eval-after-load 'hideshow
   (with-eval-after-load 'diminish
@@ -723,9 +726,6 @@
 (with-eval-after-load 'outline
   (setq outline-minor-mode-prefix (kbd "C-c u"))
 
-  (with-eval-after-load 'conn
-    (keymap-set (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
-                "<conn-thing-map> h" 'outline-previous-visible-heading))
   (define-keymap
     :keymap outline-mode-prefix-map
     "@" 'outline-mark-subtree
@@ -1293,7 +1293,9 @@
     (keymap-set pdf-links-minor-mode-map "F" #'pdf-links-isearch-link))
 
   (with-eval-after-load 'pdf-tools
-    (setq pdf-annot-latex-header "")
+    (setq pdf-annot-latex-header ""
+          pdf-tools-enabled-modes (delq 'pdf-misc-context-menu-minor-mode
+                                        pdf-tools-enabled-modes))
     (keymap-set pdf-view-mode-map "s a" #'pdf-view-auto-slice-minor-mode)
     (keymap-set pdf-view-mode-map "c" #'pdf-view-center-in-window))
 
@@ -1570,9 +1572,13 @@
     ('generic
      (keymap-set (conn-get-state-map 'conn-command-state) "I" 'my-ibuffer-maybe-project)))
   (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command-mode)
-  (keymap-set (conn-get-state-map 'conn-command-state) "*" 'calc-dispatch)
-  (keymap-set (conn-get-state-map 'conn-command-state) "!" 'my-add-mode-abbrev)
-  (keymap-set (conn-get-state-map 'conn-command-state) "@" 'inverse-add-mode-abbrev)
+  (define-keymap
+    :keymap (conn-get-state-map 'conn-command-state)
+    "*" 'calc-dispatch
+    "!" 'my-add-mode-abbrev
+    "%" 'inverse-add-mode-abbrev
+    "$" 'project-eshell
+    "Q" 'eshell)
   (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
   (with-eval-after-load 'outline
     (keymap-set
