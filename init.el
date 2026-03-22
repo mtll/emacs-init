@@ -91,7 +91,6 @@
       find-file-visit-truename t
       ffap-machine-p-known 'reject
       word-wrap t
-      ;; truncate-string-ellipsis "…"
       comment-multi-line t
       help-enable-symbol-autoload t
       mac-option-modifier 'meta
@@ -180,7 +179,7 @@
 (line-number-mode 1)
 (undelete-frame-mode 1)
 (context-menu-mode -1)
-(save-place-mode 1)
+;; (save-place-mode 1)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-x C-z")
@@ -320,7 +319,7 @@
       'split-window-horizontally
     'split-window-vertically))
 
-(find-function-setup-keys)
+;; (find-function-setup-keys)
 
 (defun my-forward-page ()
   (interactive)
@@ -363,14 +362,32 @@
                      t nil nil def)))
 (advice-add 'customize-read-group :override 'customize-read-group-ad)
 
-(defun my-recenter-pulse-ad (&rest _)
-  (unless (or (region-active-p)
-              executing-kbd-macro)
-    (pulse-momentary-highlight-one-line)))
-(advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
+;; (defun my-recenter-pulse-ad (&rest _)
+;;   (unless (or (region-active-p)
+;;               executing-kbd-macro)
+;;     (pulse-momentary-highlight-one-line)))
+;; (advice-add 'recenter-top-bottom :after 'my-recenter-pulse-ad)
 
 (with-eval-after-load 'c-ts-mode
   (setq c-ts-mode-indent-offset 4))
+
+;;;; Project
+
+(with-eval-after-load 'ibuf-ext
+  (define-ibuffer-filter my-project-files
+      "Show Ibuffer with all buffers in the current project."
+    ( :reader (project-read-project)
+      :description "Project")
+    (memq buf (project-buffers qualifier))))
+
+(defun my-ibuffer-maybe-project (&optional all)
+  (interactive "P")
+  (require 'ibuf-ext)
+  (if (or all (not (cdr (project-current))))
+      (ibuffer)
+    (let ((project (project-current)))
+      (ibuffer nil (format "*%s Buffers*" (project-name project))
+               (list (cons 'my-project-files project))))))
 
 ;;;; Eshell
 
@@ -391,8 +408,6 @@
 (my-incremental-load
  (lambda ()
    (setq initial-major-mode 'emacs-lisp-mode)))
-
-(defmacro my-comment (&rest _))
 
 (defun lexical-in-temp ()
   (unless (buffer-file-name)
@@ -656,7 +671,7 @@
                                          try-expand-dabbrev-all-buffers
                                          try-expand-dabbrev-from-kill))
 
-(keymap-global-set "M-h" 'hippie-expand)
+;; (keymap-global-set "M-h" 'hippie-expand)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
@@ -673,7 +688,12 @@
   :predicate '(prog-mode)
   :group 'electricity)
 
-(my-electric-pair-mode 1)
+(add-hook 'prog-mode-hook
+          (let ((sym (gensym "hook")))
+            (fset sym (lambda ()
+                        (my-electric-pair-mode 1)
+                        (remove-hook 'prog-mode-hook sym)))
+            sym))
 
 
 ;;;; misearch
@@ -1206,25 +1226,25 @@
 
 ;;;; bqn-mode
 
-(elpaca (bqn-mode :host github :repo "museoa/bqn-mode")
-  (with-eval-after-load 'bqn-mode
-    (require 'bqn-keymap-mode)
-    (require 'bqn-glyph-mode)))
+;; (elpaca (bqn-mode :host github :repo "museoa/bqn-mode")
+;;   (with-eval-after-load 'bqn-mode
+;;     (require 'bqn-keymap-mode)
+;;     (require 'bqn-glyph-mode)))
 
 
 ;;;; cider
 
-(elpaca cider)
+;; (elpaca cider)
 
 
 ;;;; lua-mode
 
-(elpaca lua-mode)
+;; (elpaca lua-mode)
 
 
 ;;;; go-mode
 
-(elpaca go-mode)
+;; (elpaca go-mode)
 
 
 ;;;; rustic
@@ -1237,18 +1257,18 @@
 
 ;;;; erlang
 
-(elpaca erlang)
+;; (elpaca erlang)
 
 
 ;;;; elixir-mode
 
-(elpaca elixir-mode)
+;; (elpaca elixir-mode)
 
 ;;;;; inf-elixir
 
-(elpaca (inf-elixir :host github :repo "J3RN/inf-elixir")
-  (with-eval-after-load 'elixir-mode
-    (require 'inf-elixir)))
+;; (elpaca (inf-elixir :host github :repo "J3RN/inf-elixir")
+;;   (with-eval-after-load 'elixir-mode
+;;     (require 'inf-elixir)))
 
 
 ;;;; dape
@@ -1271,8 +1291,8 @@
 
 ;;;; zig-mode
 
-(elpaca zig-mode
-  (setq zig-format-on-save nil))
+;; (elpaca zig-mode
+;;   (setq zig-format-on-save nil))
 
 
 ;;;; ess
@@ -1302,7 +1322,8 @@
   (pdf-loader-install))
 
 (elpaca saveplace-pdf-view
-  (require 'saveplace-pdf-view))
+  (with-eval-after-load 'pdf-tools
+    (require 'saveplace-pdf-view)))
 
 ;;;;; org-pdf-tools
 
@@ -1466,14 +1487,14 @@
 
 ;;;; elixir-ts
 
-(elpaca elixir-ts-mode
-  (defun my-ex-setup-ts-sexp ()
-    (make-variable-buffer-local 'treesit-thing-settings)
-    (setf (alist-get 'sexp (alist-get 'elixir treesit-thing-settings))
-          (list elixir-ts--sexp-regexp))
-    (setf (alist-get 'sexp (alist-get 'heex treesit-thing-settings))
-          (list heex-ts--sexp-regexp)))
-  (add-hook 'elixir-ts-mode-hook 'my-ex-setup-ts-sexp))
+;; (elpaca elixir-ts-mode
+;;   (defun my-ex-setup-ts-sexp ()
+;;     (make-variable-buffer-local 'treesit-thing-settings)
+;;     (setf (alist-get 'sexp (alist-get 'elixir treesit-thing-settings))
+;;           (list elixir-ts--sexp-regexp))
+;;     (setf (alist-get 'sexp (alist-get 'heex treesit-thing-settings))
+;;           (list heex-ts--sexp-regexp)))
+;;   (add-hook 'elixir-ts-mode-hook 'my-ex-setup-ts-sexp))
 
 
 ;;;; conn
@@ -1518,7 +1539,8 @@
     (add-mode-abbrev (or arg 0)))
 
   (require 'conn-keymaps-qwerty)
-  (require 'conn-extras-qwerty)
+  (with-eval-after-load 'conn-extras
+    (require 'conn-extras-qwerty))
   ;; (require 'conn-extras-generic)
 
   (conn-special-state-mode 1)
@@ -1531,6 +1553,9 @@
               "i" "q" "p" "c" "b" "n" "m" "e" "d" "k"))
 
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-w" 'conn-kill-thing)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-h" conn-edit-remap)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-s" conn-search-remap)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-g" conn-goto-remap)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "M-w" 'conn-copy-thing)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-t" 'conn-transpose-things)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "M-t" 'conn-duplicate-thing)
@@ -1591,8 +1616,7 @@
          :host github
          :repo "mtll/conn"
          :files ("extensions/tree-sitter/conn-tree-sitter.el"
-                 "extensions/tree-sitter/queries"))
-  (require 'treesit))
+                 "extensions/tree-sitter/queries")))
 
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
@@ -2345,7 +2369,8 @@
     (with-eval-after-load 'conn
       (defun my/cancel-completion ()
         (when conn-local-mode
-          (conn-state-on-exit-once cancel-completion _type
+          (conn-state-on-exit _type
+            :label 'cancel-completion
             (completion-in-region-mode -1))))
       (add-hook 'completion-in-region-mode-hook #'my/cancel-completion))))
 
@@ -2742,14 +2767,19 @@
   (keymap-set search-map "u" 'consult-eglot-symbols))
 (elpaca consult-eglot-embark)
 
+;;;;; consult project extra
+
+(elpaca consult-project-extra
+  (keymap-global-set "C-c j" 'consult-project-extra-find))
+
 ;;;;; consult-projectile
 
-(elpaca consult-projectile
-  (keymap-global-set "C-c j" 'consult-projectile)
-  (keymap-global-set "C-c J" 'consult-projectile-switch-project)
-  (with-eval-after-load 'projectile
-    (with-eval-after-load 'consult
-      (consult-customize consult-projectile :preview-key "C-o"))))
+;; (elpaca consult-projectile
+;;   (keymap-global-set "C-c j" 'consult-projectile)
+;;   (keymap-global-set "C-c J" 'consult-projectile-switch-project)
+;;   (with-eval-after-load 'projectile
+;;     (with-eval-after-load 'consult
+;;       (consult-customize consult-projectile :preview-key "C-o"))))
 
 
 ;;;; vertico
@@ -3150,29 +3180,29 @@
 
 ;;;; projectile
 
-(elpaca projectile
-  (setq projectile-mode-line-prefix ""
-        projectile-dynamic-mode-line nil)
-  (my-incremental-load (lambda () (projectile-mode 1)))
-
-  (defun my-ibuffer-maybe-project (&optional all)
-    (interactive "P")
-    (require 'projectile)
-    (if (or all (not (cdr (project-current))))
-        (ibuffer)
-      (projectile-ibuffer nil)))
-
-  (with-eval-after-load 'projectile
-    (keymap-global-unset "C-x p")
-    (keymap-global-set "C-x p" 'projectile-command-map)
-    (keymap-set goto-map "R" 'projectile-find-references)
-
-    (define-keymap
-      :keymap projectile-command-map
-      "e" 'projectile-run-eshell
-      "d" 'projectile-dired
-      "D" 'projectile-find-dir
-      "j" 'projectile-run-gdb)))
+;; (elpaca projectile
+;;   (setq projectile-mode-line-prefix ""
+;;         projectile-dynamic-mode-line nil)
+;;   (my-incremental-load (lambda () (projectile-mode 1)))
+;; 
+;;   (defun my-ibuffer-maybe-project (&optional all)
+;;     (interactive "P")
+;;     (require 'projectile)
+;;     (if (or all (not (cdr (project-current))))
+;;         (ibuffer)
+;;       (projectile-ibuffer nil)))
+;; 
+;;   (with-eval-after-load 'projectile
+;;     (keymap-global-unset "C-x p")
+;;     (keymap-global-set "C-x p" 'projectile-command-map)
+;;     (keymap-set goto-map "R" 'projectile-find-references)
+;; 
+;;     (define-keymap
+;;       :keymap projectile-command-map
+;;       "e" 'projectile-run-eshell
+;;       "d" 'projectile-dired
+;;       "D" 'projectile-find-dir
+;;       "j" 'projectile-run-gdb)))
 
 ;;;; puni
 
@@ -3291,7 +3321,7 @@
 
 ;;;; djvu
 
-(elpaca djvu)
+;; (elpaca djvu)
 
 
 ;;;; hide mode line
@@ -3353,6 +3383,7 @@
 
   (with-eval-after-load 'org
     (global-org-modern-mode 1)))
+
 
 ;;;; org-ql
 
@@ -3591,19 +3622,19 @@
 
 ;;;; Racket
 
-(elpaca racket-mode
-  (add-hook 'racket-mode-hook #'racket-xp-mode)
-  (add-hook 'racket-xp-mode-hook
-            (lambda ()
-              (add-hook 'my-embark-doc-hook
-                        (lambda (_sym)
-                          (racket-xp-documentation nil)
-                          t)
-                        -20 t))))
+;; (elpaca racket-mode
+;;   (add-hook 'racket-mode-hook #'racket-xp-mode)
+;;   (add-hook 'racket-xp-mode-hook
+;;             (lambda ()
+;;               (add-hook 'my-embark-doc-hook
+;;                         (lambda (_sym)
+;;                           (racket-xp-documentation nil)
+;;                           t)
+;;                         -20 t))))
 
 ;;;; vterm
 
-(elpaca vterm)
+;; (elpaca vterm)
 
 ;;;; macrostep
 
@@ -3692,7 +3723,7 @@
 
     (with-eval-after-load 'conn
       (conn-register-thing-commands
-       '(sexp) 'conn-nestable-thing-handler
+       '(sexp) 'conn-nestable-thing-other-end-handler
        'paredit-forward
        'paredit-backward)
 
