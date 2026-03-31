@@ -576,8 +576,6 @@
       (keymap-set org-mode-map "C-c x" (conn-remap-key "C-c C-x"))
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
-      ;; (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode)
-      ;;             "TAB" 'org-cycle)
       (keymap-set org-mode-map "C-c t" 'org-todo))
 
     ;; Increase preview width
@@ -1642,7 +1640,8 @@
 
 (with-eval-after-load 'conn
   (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
-  (keymap-set (conn-get-state-map 'conn-org-state) "TAB" 'conn-embark-dwim-either)
+  (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "M-TAB" 'org-cycle)
+  (keymap-set (conn-get-state-map 'conn-org-state) "M-TAB" 'org-cycle)
 
   (defun conn-embark-dwim-either (&optional arg)
     (interactive "P")
@@ -1944,7 +1943,8 @@
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
 
   (defun embark-start-of-defun-target-finder ()
-    (when-let* ((bounds (bounds-of-thing-at-point 'defun))
+    (when-let* ((_ (derived-mode-p 'prog-mode))
+                (bounds (bounds-of-thing-at-point 'defun))
                 ((= (point) (car bounds))))
       (cons 'defun (cons (buffer-substring (car bounds) (cdr bounds))
                          bounds))))
@@ -2806,8 +2806,8 @@
   (vertico-multiform-mode 1)
   (vertico-mouse-mode 1)
 
-  (keymap-set vertico-multiform-map "M-H" 'vertico-multiform-buffer)
-  (keymap-set vertico-multiform-map "M-h" 'vertico-multiform-flat)
+  (keymap-set vertico-multiform-map "C-." 'vertico-multiform-buffer)
+  (keymap-set vertico-multiform-map "M-." 'vertico-multiform-flat)
 
   (defun vertico-buffer-setup-ad ()
     (with-selected-window (active-minibuffer-window)
@@ -3357,28 +3357,23 @@
         org-catch-invisible-edits 'show-and-error
         org-special-ctrl-a/e t
         org-insert-heading-respect-content t
-        org-hide-emphasis-markers t
         org-pretty-entities t
         org-agenda-tags-column 0
         org-ellipsis "…")
 
-  (setq org-modern-block-indent t  ; to enable org-modern-indent when org-indent is active
-        org-modern-hide-stars nil
+  (setq org-modern-hide-stars nil
         org-modern-todo-faces
         '(("STARTED" :foreground "yellow")
           ("CANCELED" org-special-keyword :inverse-video t :weight bold))
-        org-modern-list
-        '((?* . "•")
-          (?+ . "‣"))
-        org-modern-fold-stars
-        '(("▶" . "▼")
-          ("▷" . "▽")
-          ("▸" . "▾")
-          ("▹" . "▿"))
-        org-modern-checkbox
-        '((?X . "✔")
-          (?- . "┅")
-          (?\s . " "))
+        org-modern-list '((?* . "•")
+                          (?+ . "‣"))
+        org-modern-fold-stars '(("▶" . "▼")
+                                ("▷" . "▽")
+                                ("▸" . "▾")
+                                ("▹" . "▿"))
+        org-modern-checkbox '((?X . "✔")
+                              (?- . "┅")
+                              (?\s . " "))
         org-modern-label-border 1)
 
   (with-eval-after-load 'org
@@ -3651,6 +3646,14 @@
       "j" #'macrostep-prev-macro
       "q" #'macrostep-collapse-all)
     (conn-set-mode-map-depth 'macrostep-mode -50 'conn-command-state)))
+
+;;;; let completion
+
+;; (elpaca (let-completion
+;;          :host github
+;;          :repo "mtll/let-completion.el")
+;;   (with-eval-after-load 'elisp-mode
+;;     (let-completion-mode 1)))
 
 ;;;; paredit
 
