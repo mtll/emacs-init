@@ -731,6 +731,9 @@
 
 (setq bookmark-save-flag 1)
 
+(with-eval-after-load 'conn
+  (keymap-global-set "<conn-edit-map> m" 'bookmark-bmenu-list))
+
 
 ;;;; view-mode
 
@@ -1504,7 +1507,7 @@
     (when (buffer-match-p "\\*scratch\\*.*" (current-buffer))
       (conn-push-state 'conn-command-state)
       t))
-  (add-hook 'conn-setup-state-hook 'my-scratch-buffer-state)
+  (add-hook 'conn-setup-state-functions 'my-scratch-buffer-state)
   (keymap-global-set "C-c r" 'conn-register-prefix)
   (keymap-global-set "C-`" 'conn-wincontrol-mru-window)
   (put 'conn-recenter-on-region 'repeat-continue t)
@@ -1543,6 +1546,7 @@
 
   (conn-special-state-mode 1)
   (conn-mode 1)
+  (conn-wincontrol-label-mode-line-mode 1)
   (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
 
@@ -1614,7 +1618,9 @@
          :host github
          :repo "mtll/conn"
          :files ("extensions/tree-sitter/conn-tree-sitter.el"
-                 "extensions/tree-sitter/queries")))
+                 "extensions/tree-sitter/queries"))
+  (with-eval-after-load 'conn
+    (global-conn-ts-things-mode 1)))
 
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
