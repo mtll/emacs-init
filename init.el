@@ -179,7 +179,7 @@
 (line-number-mode 1)
 (undelete-frame-mode 1)
 (context-menu-mode -1)
-;; (save-place-mode 1)
+(save-place-mode 1)
 
 (keymap-global-unset "C-x C-c")
 (keymap-global-unset "C-x C-z")
@@ -539,13 +539,14 @@
 
 ;;;; org
 
-(elpaca (org :repo ("https://https.git.savannah.nongnu.org/git/org-mode.git" . "org")
-             :tag "release_9.8"
-             :build ((:before
-                      (progn (require 'elpaca-menu-org) (elpaca-menu-org--build)))
-                     (:not elpaca--generate-autoloads-async))
-             :autoloads "org-loaddefs.el"
-             :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
+(elpaca org
+  ;; (org :repo ("https://https.git.savannah.nongnu.org/git/org-mode.git" . "org")
+  ;;      :tag "release_9.8"
+  ;;      :build ((:before
+  ;;               (progn (require 'elpaca-menu-org) (elpaca-menu-org--build)))
+  ;;              (:not elpaca--generate-autoloads-async))
+  ;;      :autoloads "org-loaddefs.el"
+  ;;      :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
   (my-incremental-load (lambda () (require 'org)))
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
@@ -577,6 +578,19 @@
       (keymap-set org-mode-map "M-j" 'org-return-and-maybe-indent)
       (keymap-unset org-mode-map "C-j")
       (keymap-set org-mode-map "C-c t" 'org-todo))
+
+    (with-eval-after-load 'org-refile
+      (defun my/archive-file-targets ()
+        (require 'denote)
+        (let ((dirs (denote-directories))
+              (archive-files nil))
+          (dolist (dir dirs archive-files)
+            (cl-callf2 nconc
+                (directory-files
+                 dir t "\\`[^.].*_archive\\(_.*\\.\\|\\.\\)\\org\\'")
+                archive-files))))
+      (setf (alist-get 'my/archive-file-targets org-refile-targets)
+            (cons :maxlevel 1)))
 
     ;; Increase preview width
     ;; (plist-put org-latex-preview-appearance-options
@@ -1453,6 +1467,8 @@
 
 ;;;; crux
 
+(keymap-global-set "C-c s" 'scratch-buffer)
+
 (elpaca crux
   ;; (keymap-global-set "C-<return>"   'crux-smart-open-line)
   ;; (keymap-global-set "C-S-h" #'crux-other-window-or-switch-buffer)
@@ -1460,7 +1476,7 @@
   (keymap-global-set "C-x F"         'crux-sudo-edit)
   (keymap-global-set "C-x W"         'crux-open-with)
   (keymap-global-set "C-<backspace>" 'crux-kill-whole-line)
-  (keymap-global-set "C-c s" 'crux-create-scratch-buffer)
+  (keymap-global-set "C-c S" 'crux-create-scratch-buffer)
   (define-key global-map [remap kill-whole-line] 'crux-kill-whole-line)
   (define-key global-map [remap open-line] 'crux-smart-open-line)
   (keymap-global-set "<remap> <whitespace-cleanup>" 'crux-cleanup-buffer-or-region)
@@ -3636,6 +3652,48 @@
 ;;;; vterm
 
 ;; (elpaca vterm)
+
+;;;; dashboard
+
+;; (elpaca dashboard
+;;   (setq initial-buffer-choice 'dashboard-open)
+;;   (setq dashboard-display-icons-p t)
+;;   (setq dashboard-icon-type 'nerd-icons)
+;;   (setq dashboard-set-heading-icons t)
+;;   (setq dashboard-set-file-icons t)
+;;   (setq dashboard-items '((recents   . 5)
+;;                           (bookmarks . 3)
+;;                           (agenda    . 5)))
+;;   (setq dashboard-item-shortcuts '((recents   . "r")
+;;                                    (bookmarks . "b")
+;;                                    (projects  . "p")
+;;                                    (agenda    . "s")))
+;;   (with-eval-after-load 'conn-extras
+;;     (define-keymap
+;;       :keymap (conn-get-major-mode-map 'conn-special-state 'dashboard-mode)
+;;       "a" 'execute-extended-command
+;;       "x" (conn-remap-key "C-x")
+;;       "i" 'dashboard-previous-line
+;;       "I" 'dashboard-previous-section
+;;       "k" 'dashboard-next-line
+;;       "K" 'dashboard-next-section
+;;       "f" 'conn-dispatch-on-buttons)
+;; 
+;;     (conn-add-update-handler
+;;      conn-dispatch-button-targets
+;;      (lambda (try-next)
+;;        (if (eq major-mode 'dashboard-mode)
+;;            (lambda (_state)
+;;              (conn-for-each-visible (window-start) (window-end)
+;;                (goto-char (point-max))
+;;                (while (not (bobp))
+;;                  (goto-char (previous-single-char-property-change (point) 'button))
+;;                  (when (get-char-property (point) 'button)
+;;                    (conn-make-target-overlay
+;;                     (1- (point)) 0
+;;                     :properties `(label-before t)
+;;                     :point (point))))))
+;;          (funcall try-next))))))
 
 ;;;; macrostep
 
