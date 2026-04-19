@@ -94,6 +94,16 @@ c-mode :when (re-search-backward "^\\S-*$" (line-beginning-position) 'noerror)
 (inc "#include <" (p (concat (file-name-base (or (buffer-file-name) (buffer-name))) ".h")) ">")
 (incc "#include \"" (p (concat (file-name-base (or (buffer-file-name) (buffer-name))) ".h")) "\"")
 
+emacs-lisp-mode
+
+(dfn "(defun " (p "name") " (" p ")" n> q ")")
+(dfm "(defmacro " (p "name") " (" p ")" n> q ")")
+(meth "(cl-defmethod " (p "name") " (" p ")" n> q ")")
+(generic "(cl-defgeneric " (p "name") " (" p ")" n> q ")")
+(var "(defvar " q ")")
+(dfk "(define-keymap" n> q ")")
+(vark "(defvar-keymap " q ")")
+
 ;; Local Variables:
 ;; mode: lisp-data
 ;; outline-regexp: "[a-z]"

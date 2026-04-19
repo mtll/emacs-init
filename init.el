@@ -75,7 +75,9 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq completions-format 'one-column
+(setq kill-do-not-save-duplicates t
+      window-combination-resize t
+      completions-format 'one-column
       igc-step-interval 0.1
       exchange-point-and-mark-highlight-region nil
       edmacro-reverse-macro-lines t
@@ -397,6 +399,10 @@
 ;;;; lisp
 
 (with-eval-after-load 'elisp-mode
+  (when-let* ((buf (get-buffer "*scratch*")))
+    (with-current-buffer buf
+      (lisp-interaction-mode)
+      (setq-local trusted-content :all)))
   (define-keymap
     :keymap emacs-lisp-mode-map
     "C-c x" 'eval-defun)
@@ -405,109 +411,10 @@
     :keymap lisp-interaction-mode-map
     "C-c x" 'eval-defun))
 
-(my-incremental-load
- (lambda ()
-   (setq initial-major-mode 'emacs-lisp-mode)))
-
 (defun lexical-in-temp ()
   (unless (buffer-file-name)
     (setq-local lexical-binding t)))
 (add-hook 'emacs-lisp-mode-hook 'lexical-in-temp)
-
-;; (with-eval-after-load 'conn
-;;   (defun my-forward-sexp-or-up (arg)
-;;     (interactive "p")
-;;     (let ((beg (save-excursion
-;;                  (ignore-error scan-error
-;;                    (forward-sexp))
-;;                  (backward-sexp)
-;;                  (point))))
-;;       (cond ((= arg 0))
-;;             ((< arg 0)
-;;              (my-backward-sexp-or-up (abs arg)))
-;;             (t
-;;              (while (/= arg 0)
-;;                (condition-case _
-;;                    (while (/= arg 0)
-;;                      (forward-sexp 1)
-;;                      (cl-decf arg))
-;;                  (scan-error
-;;                   (up-list 1)
-;;                   (cl-decf arg)
-;;                   (save-excursion
-;;                     (backward-sexp 1)
-;;                     (setq beg (point))))))))
-;;       (conn--push-ephemeral-mark beg)))
-;; 
-;;   (defun my-backward-sexp-or-up (arg)
-;;     (interactive "p")
-;;     (let ((beg (save-excursion
-;;                  (ignore-error scan-error
-;;                    (backward-sexp))
-;;                  (forward-sexp)
-;;                  (point))))
-;;       (cond ((= arg 0))
-;;             ((< arg 0)
-;;              (my-forward-sexp-or-up (abs arg)))
-;;             (t
-;;              (while (/= arg 0)
-;;                (condition-case _
-;;                    (while (/= arg 0)
-;;                      (forward-sexp -1)
-;;                      (cl-decf arg))
-;;                  (scan-error
-;;                   (up-list -1)
-;;                   (cl-decf arg)
-;;                   (save-excursion
-;;                     (forward-sexp 1)
-;;                     (setq beg (point))))))))
-;;       (conn--push-ephemeral-mark beg)))
-;; 
-;;   (conn-register-thing-commands
-;;    'sexp 'ignore
-;;    'my-backward-sexp-or-up
-;;    'my-forward-sexp-or-up)
-;; 
-;;   (define-minor-mode my-lisp-movement-mode
-;;     "Minor mode for my lisp movement commands."
-;;     :keymap (define-keymap
-;;               "C-M-f" 'my-forward-sexp-or-up
-;;               "C-M-b" 'my-backward-sexp-or-up))
-;;   (add-hook 'lisp-data-mode-hook 'my-lisp-movement-mode))
-
-;;;; paren context
-
-;; Fix bug causing indent commands to delete text when
-;; show-paren-context-when-offscreen is set to 'overlay
-
-;; (with-eval-after-load 'paren
-;;   (defun show-paren--delete-context-overlay ()
-;;     (when show-paren--context-overlay
-;;       (delete-overlay show-paren--context-overlay)
-;;       (setq show-paren--context-overlay nil))
-;;     (remove-hook 'pre-command-hook #'show-paren--delete-overlays
-;;                  'local))
-;; 
-;;   (defun show-paren--show-context-in-overlay (text)
-;;     "Show TEXT in an overlay at the top-left of the current window."
-;;     (setq text (replace-regexp-in-string "\n" " " text))
-;;     (show-paren--delete-context-overlay)
-;;     (let* ((beg (window-start))
-;;            (end (save-excursion
-;;                   (goto-char beg)
-;;                   (line-end-position))))
-;;       (setq show-paren--context-overlay (make-overlay beg end)))
-;;     (overlay-put show-paren--context-overlay 'display text)
-;;     ;; Use the (default very high) `show-paren-priority' ensuring that
-;;     ;; not other overlays shine through (bug#59527).
-;;     (overlay-put show-paren--context-overlay 'priority
-;;                  show-paren-priority)
-;;     (overlay-put show-paren--context-overlay
-;;                  'face `(:box
-;;                          ( :line-width (1 . -1)
-;;                            :color ,(face-attribute 'shadow :foreground))))
-;;     (add-hook 'pre-command-hook #'show-paren--delete-context-overlay
-;;               nil 'local)))
 
 
 ;;;; hideshow
@@ -540,13 +447,6 @@
 ;;;; org
 
 (elpaca org
-  ;; (org :repo ("https://https.git.savannah.nongnu.org/git/org-mode.git" . "org")
-  ;;      :tag "release_9.8"
-  ;;      :build ((:before
-  ;;               (progn (require 'elpaca-menu-org) (elpaca-menu-org--build)))
-  ;;              (:not elpaca--generate-autoloads-async))
-  ;;      :autoloads "org-loaddefs.el"
-  ;;      :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi")))
   (my-incremental-load (lambda () (require 'org)))
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
@@ -567,7 +467,6 @@
   (keymap-global-set "C-c h" 'org-agenda)
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
-  ;; (add-hook 'org-mode-hook 'abbrev-mode)
 
   (with-eval-after-load 'org
     (keymap-set org-mode-map "C-c t" 'org-todo)
@@ -683,7 +582,10 @@
                                          try-expand-dabbrev-all-buffers
                                          try-expand-dabbrev-from-kill))
 
-;; (keymap-global-set "M-h" 'hippie-expand)
+(keymap-global-set "M-j" 'hippie-expand)
+
+(add-hook 'prog-mode-hook 'abbrev-mode)
+(add-hook 'text-mode-hook 'abbrev-mode)
 
 (with-eval-after-load 'abbrev
   (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
@@ -795,11 +697,10 @@
 (with-eval-after-load 'display-line-numbers
   (face-spec-set 'line-number-current-line '((t :background "#ccdee3")))
 
-  (setq-default display-line-numbers-width 2)
   (setq display-line-numbers-width-start nil
         display-line-numbers-grow-only nil
-        display-line-numbers-type 'visual
-        display-line-numbers-current-absolute nil
+        display-line-numbers-type t
+        display-line-numbers-current-absolute t
         display-line-numbers-major-tick 0))
 
 
@@ -1213,7 +1114,18 @@
   (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
   (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
 
-  (push '(help-mode . helpful-mode) major-mode-remap-alist))
+  (push '(help-mode . helpful-mode) major-mode-remap-alist)
+  (with-eval-after-load 'conn
+    (defun conn-dwim-helpful-symbol ()
+      (when (and (derived-mode-p '(emacs-lisp-mode
+                                   lisp-interaction-mode))
+                 (bounds-of-thing-at-point 'symbol))
+        (when-let* ((sym (intern-soft (thing-at-point 'symbol))))
+          (lambda ()
+            (interactive)
+            (helpful-symbol sym)))))
+    (remove-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-describe-symbol)
+    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-helpful-symbol 0)))
 
 
 ;;;; sly
@@ -1539,7 +1451,7 @@
     (keymap-set org-mode-map "<conn-thing-map> m" 'conn-mark-org-inner-math))
 
   (with-eval-after-load 'conn
-    (keymap-set (conn-get-state-map 'conn-emacs-state) "M-j" 'conn-one-command)
+    (keymap-set (conn-get-state-map 'conn-emacs-state) "M-i" 'conn-one-command)
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-mode)
@@ -1587,16 +1499,13 @@
   (keymap-set (conn-get-state-map 'conn-command-state) "C-z" 'conn-yank-replace)
   (keymap-set (conn-get-state-map 'conn-command-state) "C-," 'conn-dispatch)
 
-  (defun my-org-capture-buffer-p (buffer &rest _alist)
-    (bound-and-true-p org-capture-mode))
-
   (define-keymap
     :keymap global-map
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
     "C-;" 'conn-wincontrol-mode
-    "C-S-w" 'conn-wincontrol-one-command-mode
+    "C-S-w" 'conn-wincontrol-one-command
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
     "C-," 'conn-dispatch
@@ -1608,13 +1517,13 @@
     "C-SPC" 'set-mark-command
     "C-x n" 'set-goal-column)
 
-  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command-mode)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-M-;" 'conn-wincontrol-one-command)
   (pcase conn-keymaps-defined
     ('qwerty
      (keymap-set (conn-get-state-map 'conn-command-state) "B" 'my-ibuffer-maybe-project))
     ('generic
      (keymap-set (conn-get-state-map 'conn-command-state) "I" 'my-ibuffer-maybe-project)))
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command-mode)
+  (keymap-set (conn-get-state-map 'conn-command-state) "C-M-;" 'conn-wincontrol-one-command)
   (define-keymap
     :keymap (conn-get-state-map 'conn-command-state)
     "*" 'calc-dispatch
@@ -1659,207 +1568,6 @@
     (keymap-global-set "<conn-edit-map> F" 'conn-consult-line-multi-thing)
     (keymap-global-set "<conn-edit-map> g" 'conn-consult-ripgrep-thing)
     (keymap-global-set "<conn-edit-map> G" 'conn-consult-git-grep-thing)))
-
-(with-eval-after-load 'conn
-  (keymap-set (conn-get-state-map 'conn-command-state) "TAB" 'conn-embark-dwim-either)
-  (keymap-set (conn-get-major-mode-map 'conn-command-state 'org-mode) "M-TAB" 'org-cycle)
-  (keymap-set (conn-get-state-map 'conn-org-state) "M-TAB" 'org-cycle)
-
-  (defun conn-embark-dwim-either (&optional arg)
-    (interactive "P")
-    (require 'embark)
-    (if arg (conn-embark-alt-dwim) (embark-dwim)))
-
-  (defvar my-embark-smart-tab-target-finders
-    '(;; embark-target-active-region
-      my-embark-abbrev-target-finder
-      my-embark-commit-target-finder
-      my/embark-cycling-target-finder
-      my-embark-button-target
-      my-embark-cve-target-finder
-      my-embark-gnu-bug-finder
-      my-embark-gh-issue-finder
-      my-embark-abbrev-target-finder
-      embark-org-target-link
-      embark-org-target-agenda-item
-      embark-target-collect-candidate
-      embark-target-text-heading-at-point
-      embark-start-of-defun-target-finder
-      ;; embark-target-flymake-at-point
-      ;; embark-target-package-at-point
-      embark-target-url-at-point
-      embark-target-file-at-point
-      ;; embark-target-custom-variable-at-point
-      ;; embark-target-identifier-at-point
-      ;; embark-target-prog-heading-at-point
-      ))
-
-  (defun my-embark-smart-tab (arg)
-    (interactive "P")
-    (require 'embark)
-    (pcase indent-line-function
-      ('indent-relative
-       (or (indent-relative nil t)
-           (condition-case _
-               (conn-embark-dwim-either arg)
-             (user-error (completion-at-point)))))
-      ((or 'indent-relative-first-indent-point
-           'indent-relative-maybe)
-       (or (marker-position (indent-relative nil t))
-           (condition-case _
-               (conn-embark-dwim-either arg)
-             (user-error (completion-at-point)))))
-      (_
-       (condition-case _
-           (cl-letf (((symbol-function 'completion-at-point)))
-             (advice-add 'completion-at-point :override
-                         (lambda ()
-                           (let ((embark-target-finders
-                                  (seq-intersection my-embark-smart-tab-target-finders
-                                                    embark-target-finders
-                                                    #'eq)))
-                             (conn-embark-dwim-either arg))))
-             (indent-for-tab-command))
-         (user-error (completion-at-point))))))
-
-  (defvar my/elisp-cycling-forms
-    (cl-loop for list in `((let let*)
-                           (cl-flet cl-labels)
-                           (defvar defconst)
-                           (eq eql equal)
-                           (consp listp)
-                           (when if cond)
-                           (when-let* if-let* cond*))
-             collect (mapcar #'symbol-name list)))
-
-  (defun my/embark-cycling-target-finder ()
-    (save-match-data
-      (and (looking-at
-            (concat
-             "\\("
-             (regexp-opt (flatten-list my/elisp-cycling-forms))
-             "\\)"))
-           (eql ?\( (char-before))
-           `(my/cycle ,(match-string 1) ,(match-beginning 1) . ,(match-end 1)))))
-
-  (defun my/cycle-form (str)
-    (save-excursion
-      (and (search-forward str)
-           (cl-loop with beg = (match-beginning 0)
-                    with end = (match-end 0)
-                    for list in my/elisp-cycling-forms
-                    for cons = (member str list)
-                    when cons
-                    return (progn
-                             (delete-region beg end)
-                             (goto-char beg)
-                             (insert (or (cadr cons) (car list))))))))
-
-  (keymap-global-set "TAB" 'my-embark-smart-tab)
-
-  (with-eval-after-load 'embark
-    (defcustom conn-embark-alt-default-action-overrides
-      ;; '((identifier . xref-find-references))
-      nil
-      "`embark-default-action-overrides' for alternate actions."
-      :type '(alist :key-type (choice (symbol :tag "Type")
-                                      (cons (symbol :tag "Type")
-                                            (symbol :tag "Command")))
-                    :value-type (function :tag "Default action"))
-      :group 'conn-embark)
-
-    (defun my/cycle-elisp-setup ()
-      (setf (alist-get 'my/cycle (buffer-local-value 'embark-default-action-overrides
-                                                     (current-buffer)))
-            'my/cycle-form)
-      (cl-pushnew 'my/embark-cycling-target-finder
-                  (buffer-local-value 'embark-target-finders (current-buffer))))
-    (add-hook 'emacs-lisp-mode-hook #'my/cycle-elisp-setup)
-
-    (defcustom conn-embark-alt-key "M-RET"
-      "Key for embark-alt-dwim."
-      :type 'string
-      :group 'conn-embark)
-
-    (defvar my-embark-doc-hook nil)
-    (add-hook 'emacs-lisp-mode-hook
-              (lambda ()
-                (add-hook 'my-embark-doc-hook
-                          (lambda (sym)
-                            (when-let* ((sym (intern-soft sym)))
-                              (helpful-symbol sym)
-                              t))
-                          0 t)))
-
-    (defun my-embark-doc (symbol)
-      (interactive "sSymbol: ")
-      (run-hook-with-args-until-success 'my-embark-doc-hook symbol))
-
-    (keymap-set embark-identifier-map "M-RET" 'my-embark-doc)
-
-    (defun conn-embark-alt--default-action (type)
-      "`embark--default-action' for alt actions"
-      (or (alist-get (cons type embark--command) conn-embark-alt-default-action-overrides
-                     nil nil #'equal)
-          (alist-get type conn-embark-alt-default-action-overrides)
-          (alist-get t conn-embark-alt-default-action-overrides)
-          (keymap-lookup (embark--raw-action-keymap type) conn-embark-alt-key)))
-
-    (defun conn-embark-alt-dwim (&optional arg)
-      "alternate `embark-dwim'."
-      (interactive "P")
-      (if-let* ((targets (embark--targets)))
-          (let* ((target
-                  (or (nth
-                       (if (or (null arg) (minibufferp))
-                           0
-                         (mod (prefix-numeric-value arg) (length targets)))
-                       targets)))
-                 (type (plist-get target :type))
-                 (default-action (conn-embark-alt--default-action type))
-                 (action (or (command-remapping default-action) default-action)))
-            (unless action
-              (user-error "No alt action for %s targets" type))
-            (when (and arg (minibufferp)) (setq embark--toggle-quit t))
-            (embark--act action
-                         (if (and (eq default-action embark--command)
-                                  (not (memq default-action
-                                             embark-multitarget-actions)))
-                             (embark--orig-target target)
-                           target)
-                         (embark--quit-p action)))
-        (user-error "No target found.")))
-
-    (keymap-global-unset "S-<down-mouse-1>")
-
-    (defun my-embark-dwim-mouse (event)
-      (interactive "e")
-      (mouse-minibuffer-check event)
-      (let* ((start-posn (event-start event))
-             (start-point (posn-point start-posn))
-             (start-window (posn-window start-posn)))
-        (with-selected-window start-window
-          (goto-char start-point)
-          (embark-dwim))))
-    ;; (keymap-global-set "S-<mouse-1>" 'my-embark-dwim-mouse)
-
-    (defun my-embark-alt-dwim-mouse (event)
-      (interactive "e")
-      (mouse-minibuffer-check event)
-      (let* ((start-posn (event-start event))
-             (start-point (posn-point start-posn))
-             (start-window (posn-window start-posn)))
-        (with-selected-window start-window
-          (goto-char start-point)
-          (conn-embark-alt-dwim))))
-    (keymap-global-set "S-<mouse-3>" 'my-embark-alt-dwim-mouse)
-
-    (keymap-global-set "<mouse-2>" 'xref-go-back)
-
-    (keymap-set (conn-get-state-map 'conn-emacs-state) "C-TAB" 'embark-act)
-
-    (keymap-unset embark-expression-map "D")
-    (keymap-unset embark-defun-map "D")))
 
 (elpaca (conn-expand-region :host github
                             :repo "mtll/conn"
@@ -1960,16 +1668,8 @@
         embark-confirm-act-all nil
         prefix-help-command 'embark-prefix-help-command)
 
-  (keymap-global-set "C-<tab>" 'embark-act)
-  (keymap-global-set "M-S-<iso-lefttab>" 'embark-bindings)
+  (keymap-global-set "C-M-S-<iso-lefttab>" 'embark-bindings)
   (keymap-set minibuffer-mode-map "C-M-," 'embark-export)
-
-  (defun embark-start-of-defun-target-finder ()
-    (when-let* ((_ (derived-mode-p 'prog-mode))
-                (bounds (bounds-of-thing-at-point 'defun))
-                ((= (point) (car bounds))))
-      (cons 'defun (cons (buffer-substring (car bounds) (cdr bounds))
-                         bounds))))
 
   (defun embark-act-persist ()
     (interactive)
@@ -1995,11 +1695,6 @@
     "u" 'narrow-to-page
     "m" 'mark-page)
 
-  (defvar-keymap my-embark-tab-map
-    "d" 'embark-tab-delete
-    "r" 'embark-tab-rename
-    "t" 'embark-tab-detach)
-
   (with-eval-after-load 'embark
     (keymap-set embark-file-map "C-s" 'multi-isearch-files)
     (cl-pushnew 'multi-isearch-files embark-multitarget-actions)
@@ -2019,7 +1714,6 @@
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
     (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
-    ;; (keymap-set embark-identifier-map "M-RET" 'xref-find-references)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
 
@@ -2037,42 +1731,6 @@
                        (define-keymap "TAB" 'org-cycle)
                        t)))))
 
-    ;; (keymap-set embark-heading-map "RET" #'conn-outline-state)
-    ;; (with-eval-after-load 'org
-    ;;   (with-eval-after-load 'embark
-    ;;     (keymap-set embark-org-heading-map "RET" #'conn-org-edit-state)))
-
-    (defun my-embark-abbrev-target-finder ()
-      (pcase-let ((`(,sym ,name ,wordstart ,wordend) (abbrev--before-point)))
-        (when sym `(abbrev ,name ,wordstart . ,wordend))))
-    (cl-pushnew 'my-embark-abbrev-target-finder embark-target-finders)
-
-    (defvar-keymap my-embark-abbrev-map
-      "RET" 'expand-abbrev
-      "M-RET" 'edit-abbrevs)
-    (setf (alist-get 'abbrev embark-keymap-alist)
-          (list 'my-embark-abbrev-map))
-
-    (defun embark-tab-delete (name)
-      (tab-bar-close-tab
-       (1+ (tab-bar--tab-index-by-name name))))
-
-    (defun embark-tab-rename (tab-name)
-      (tab-bar-rename-tab
-       (read-from-minibuffer
-        "New name for tab (leave blank for automatic naming): "
-        nil nil nil nil tab-name)))
-
-    (defun embark-tab-detach (tab-name)
-      (let* ((tabs (funcall tab-bar-tabs-function))
-             (tab-index (tab-bar--tab-index-by-name tab-name))
-             (from-frame (selected-frame))
-             (new-frame (make-frame `((name . ,tab-name)))))
-        (tab-bar-move-tab-to-frame
-         nil from-frame from-number new-frame nil)
-        (with-selected-frame new-frame
-          (tab-bar-close-tab))))
-
     (defun embark-looking-at-page-target-finder ()
       (when (and (save-excursion
                    (beginning-of-line)
@@ -2089,153 +1747,7 @@
         (cons 'page (cons
                      (buffer-substring (car bounds) (cdr bounds))
                      bounds))))
-    (add-hook 'embark-target-finders #'embark-page-target-finder 90)
-
-    (defun embark-consult-kill-lines (cands)
-      (let (strs)
-        (pcase-dolist (`(,marker . ,line) (mapcar #'consult--get-location cands))
-          (with-current-buffer (marker-buffer marker)
-            (goto-char marker)
-            (let ((bol (line-beginning-position))
-                  (eol (line-end-position)))
-              (push (filter-buffer-substring bol eol) strs)
-              (delete-region bol (min (1+ eol) (point-max))))
-            ;; Does consult already do this?
-            (set-marker marker nil)))
-        (kill-new (string-join strs "\n"))))
-    (keymap-set embark-consult-location-map "C-k" 'embark-consult-kill-lines)
-    (cl-pushnew 'embark-consult-kill-lines embark-multitarget-actions)
-
-    (with-eval-after-load 'org
-      (defun embark-bookmark-link (cand)
-        (when cand
-          (let* ((desc (read-string "Description: "))
-                 (fmt (if (string= desc "")
-                          "[[bmk:%s]]"
-                        "[[bmk:%s][%s]]")))
-            (insert (format fmt cand desc)))))
-
-      (define-keymap
-        :keymap embark-bookmark-map
-        "M-RET" 'embark-bookmark-link)
-
-      (add-hook 'embark-target-finders 'embark-org-target-link -85)
-
-      (defun embark-refile-buffers-targets ()
-        (cl-loop for buf in (buffer-list)
-                 when (and (eq 'org-mode (buffer-local-value 'major-mode buf))
-                           (buffer-file-name buf))
-                 collect buf))
-      (add-to-list 'org-refile-targets '(embark-refile-buffers-targets :maxlevel . 1))
-
-      (defun embark-refile-grep-candidates (cands)
-        (let* ((rfloc)
-               (headings
-                (thread-first
-                  (cl-loop for cand in cands
-                           for marker = (car (consult--grep-position cand))
-                           for heading = (with-current-buffer (marker-buffer marker)
-                                           (when (and (eq major-mode 'org-mode)
-                                                      (goto-char marker)
-                                                      (ignore-errors (org-back-to-heading))
-                                                      (org-at-heading-p))
-                                             (unless rfloc
-                                               (setq rfloc (org-refile-get-location
-                                                            "Refile"
-                                                            nil
-                                                            org-refile-allow-creating-parent-nodes)))
-                                             (point-marker)))
-                           when heading collect heading)
-                  (delete-dups))))
-          (dolist (heading headings)
-            (with-current-buffer (marker-buffer heading)
-              (goto-char heading)
-              (org-refile nil nil rfloc)))
-          (find-file (nth 1 rfloc))))
-      (cl-pushnew 'embark-refile-grep-candidates embark-multitarget-actions)
-
-      (defun embark-refile-copy-grep-candidates (cands)
-        (let* ((rfloc)
-               (org-refile-keep t)
-               (headings
-                (thread-first
-                  (cl-loop for cand in cands
-                           for marker = (car (consult--grep-position cand))
-                           for heading = (with-current-buffer (marker-buffer marker)
-                                           (when (and (eq major-mode 'org-mode)
-                                                      (goto-char marker)
-                                                      (ignore-errors (org-back-to-heading))
-                                                      (org-at-heading-p))
-                                             (unless rfloc
-                                               (setq rfloc (org-refile-get-location
-                                                            "Copy"
-                                                            nil
-                                                            org-refile-allow-creating-parent-nodes)))
-                                             (point-marker)))
-                           when heading collect heading)
-                  (delete-dups))))
-          (dolist (heading headings)
-            (with-current-buffer (marker-buffer heading)
-              (goto-char heading)
-              (org-refile nil nil rfloc)))
-          (find-file (nth 1 rfloc))))
-      (cl-pushnew 'embark-refile-copy-grep-candidates embark-multitarget-actions)
-
-      (defvar-keymap embark-refile-grep-map
-        "C-w" 'embark-refile-grep-candidates
-        "M-w" 'embark-refile-copy-grep-candidates)
-      (cl-pushnew 'embark-refile-grep-map (alist-get 'consult-grep embark-keymap-alist))
-
-      (defun embark-refile-copy-location-candidates (cands)
-        (when (eq major-mode 'org-mode)
-          (let* ((rfloc (org-refile-get-location
-                         "Copy"
-                         nil
-                         org-refile-allow-creating-parent-nodes))
-                 (org-refile-keep t)
-                 (headings
-                  (thread-first
-                    (cl-loop for cand in cands
-                             for loc = (car (consult--get-location cand))
-                             for heading = (when (and (goto-char loc)
-                                                      (ignore-errors (org-back-to-heading))
-                                                      (org-at-heading-p))
-                                             (point))
-                             when heading collect heading)
-                    (delete-dups))))
-            (dolist (heading headings)
-              (goto-char heading)
-              (org-refile nil nil rfloc))
-            (find-file (nth 1 rfloc)))))
-      (cl-pushnew 'embark-refile-copy-location-candidates embark-multitarget-actions)
-
-      (defun embark-refile-location-candidates (cands)
-        (when (eq major-mode 'org-mode)
-          (let* ((rfloc (org-refile-get-location
-                         "Refile"
-                         nil
-                         org-refile-allow-creating-parent-nodes))
-                 (headings
-                  (thread-first
-                    (cl-loop for cand in cands
-                             for loc = (car (consult--get-location cand))
-                             for heading = (when (and (goto-char loc)
-                                                      (ignore-errors (org-back-to-heading))
-                                                      (org-at-heading-p))
-                                             (point))
-                             when heading collect heading)
-                    (delete-dups))))
-            (dolist (heading headings)
-              (goto-char heading)
-              (org-refile nil nil rfloc))
-            (find-file (nth 1 rfloc)))))
-      (cl-pushnew 'embark-refile-location-candidates embark-multitarget-actions)
-
-      (defvar-keymap embark-refile-location-map
-        "C-w" 'embark-refile-location-candidates
-        "M-w" 'embark-refile-copy-location-candidates)
-      (cl-pushnew 'embark-refile-location-map
-                  (alist-get 'consult-location embark-keymap-alist))))
+    (add-hook 'embark-target-finders #'embark-page-target-finder 90))
 
   (with-eval-after-load 'vertico
     (define-keymap
@@ -2280,70 +1792,70 @@
 
 ;;;;; embark buttons
 
-(with-eval-after-load 'embark
-  (defun my-embark-gh-issue-finder ()
-    (when-let* ((button (and (not (minibufferp))
-                             (my-inside-regexp-in-line
-                              "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
-      `(url
-        ,(format "www.github.com/%s/issues/%s"
-                 (match-string-no-properties 1)
-                 (match-string-no-properties 2))
-        ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my-embark-gh-issue-finder)
-
-  (defun my-embark-gnu-bug-finder ()
-    (when-let* ((button (and (not (minibufferp))
-                             (my-inside-regexp-in-line
-                              "bug#\\([0-9]*\\)"))))
-      `(url
-        ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
-                 (match-string-no-properties 1))
-        ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
-
-  (defun my-embark-cve-target-finder ()
-    (when-let* ((button (and (not (minibufferp))
-                             (my-inside-regexp-in-line
-                              "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
-      `(url
-        ,(format "https://www.cve.org/CVERecord?id=%s"
-                 (match-string-no-properties 1))
-        ,(match-beginning 0) . ,(match-end 0))))
-  (add-hook 'embark-target-finders 'my-embark-cve-target-finder)
-
-  (with-eval-after-load 'magit
-    (defun my-embark-commit-target-finder ()
-      (require 'vc)
-      (when-let* ((_ (eq 'Git (vc-deduce-backend)))
-                  (commit (or (magit-thing-at-point 'git-revision t)
-                              (magit-branch-or-commit-at-point))))
-        `(git-commit ,commit)))
-    (add-hook 'embark-target-finders 'my-embark-commit-target-finder))
-
-  (setf (alist-get 'git-commit embark-default-action-overrides)
-        'magit-show-commit)
-
-  (defvar my-button-target-functions nil)
-
-  (defun my-embark-button-target ()
-    (when (my-inside-regexp-in-line "<\\[\\([^:]+\\):\\(.*\\)\\]>")
-      (when-let* ((tar (run-hook-with-args-until-success
-                        'my-button-target-functions
-                        (match-string 1) (match-string 2))))
-        (append tar (cons (match-beginning 1) (match-end 2))))))
-  (add-hook 'embark-target-finders 'my-embark-button-target)
-
-  (defun my-bookmark-button (type bookmark)
-    (require 'bookmark)
-    (when (and (equal type "bmk")
-               (bookmark-get-bookmark bookmark t))
-      `(bookmark ,bookmark)))
-  (add-hook 'my-button-target-functions 'my-bookmark-button)
-
-  (defun my-insert-bookmark-button (bmk)
-    (interactive (list (bookmark-completing-read "Bookmark: ")))
-    (insert "<[bmk:" bmk "]>")))
+;; (with-eval-after-load 'embark
+;;   (defun my-embark-gh-issue-finder ()
+;;     (when-let* ((button (and (not (minibufferp))
+;;                              (my-inside-regexp-in-line
+;;                               "gh:\\([a-zA-Z-]*/[a-zA-Z-]*\\)#\\([0-9]*\\)"))))
+;;       `(url
+;;         ,(format "www.github.com/%s/issues/%s"
+;;                  (match-string-no-properties 1)
+;;                  (match-string-no-properties 2))
+;;         ,(match-beginning 0) . ,(match-end 0))))
+;;   (add-hook 'embark-target-finders 'my-embark-gh-issue-finder)
+;; 
+;;   (defun my-embark-gnu-bug-finder ()
+;;     (when-let* ((button (and (not (minibufferp))
+;;                              (my-inside-regexp-in-line
+;;                               "bug#\\([0-9]*\\)"))))
+;;       `(url
+;;         ,(format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
+;;                  (match-string-no-properties 1))
+;;         ,(match-beginning 0) . ,(match-end 0))))
+;;   (add-hook 'embark-target-finders 'my-embark-gnu-bug-finder)
+;; 
+;;   (defun my-embark-cve-target-finder ()
+;;     (when-let* ((button (and (not (minibufferp))
+;;                              (my-inside-regexp-in-line
+;;                               "\\(CVE-[0-9]\\{4\\}-[0-9]+\\)"))))
+;;       `(url
+;;         ,(format "https://www.cve.org/CVERecord?id=%s"
+;;                  (match-string-no-properties 1))
+;;         ,(match-beginning 0) . ,(match-end 0))))
+;;   (add-hook 'embark-target-finders 'my-embark-cve-target-finder)
+;; 
+;;   (with-eval-after-load 'magit
+;;     (defun my-embark-commit-target-finder ()
+;;       (require 'vc)
+;;       (when-let* ((_ (eq 'Git (vc-deduce-backend)))
+;;                   (commit (or (magit-thing-at-point 'git-revision t)
+;;                               (magit-branch-or-commit-at-point))))
+;;         `(git-commit ,commit)))
+;;     (add-hook 'embark-target-finders 'my-embark-commit-target-finder))
+;; 
+;;   (setf (alist-get 'git-commit embark-default-action-overrides)
+;;         'magit-show-commit)
+;; 
+;;   (defvar my-button-target-functions nil)
+;; 
+;;   (defun my-embark-button-target ()
+;;     (when (my-inside-regexp-in-line "<\\[\\([^:]+\\):\\(.*\\)\\]>")
+;;       (when-let* ((tar (run-hook-with-args-until-success
+;;                         'my-button-target-functions
+;;                         (match-string 1) (match-string 2))))
+;;         (append tar (cons (match-beginning 1) (match-end 2))))))
+;;   (add-hook 'embark-target-finders 'my-embark-button-target)
+;; 
+;;   (defun my-bookmark-button (type bookmark)
+;;     (require 'bookmark)
+;;     (when (and (equal type "bmk")
+;;                (bookmark-get-bookmark bookmark t))
+;;       `(bookmark ,bookmark)))
+;;   (add-hook 'my-button-target-functions 'my-bookmark-button)
+;; 
+;;   (defun my-insert-bookmark-button (bmk)
+;;     (interactive (list (bookmark-completing-read "Bookmark: ")))
+;;     (insert "<[bmk:" bmk "]>")))
 
 
 ;;;; corfu
@@ -2615,16 +2127,6 @@
     ;; (consult-customize consult-ripgrep :preview-key "C-o")
     )
 
-  (defun conn-occur-keep-lines ()
-    (interactive)
-    (let ((inhibit-read-only t))
-      (call-interactively 'consult-keep-lines)))
-
-  (defun conn-occur-flush-lines ()
-    (interactive)
-    (let ((inhibit-read-only t))
-      (call-interactively 'consult-keep-lines)))
-
   (defun consult--orderless-regexp-compiler (input type &rest _config)
     (setq input (cdr (orderless-compile input)))
     (cons
@@ -2632,104 +2134,7 @@
      (lambda (str) (orderless--highlight input t str))))
   (setq consult--regexp-compiler #'consult--orderless-regexp-compiler)
 
-  (defun consult-async-pause (&optional arg)
-    (interactive "P")
-    (require 'consult)
-    (setq consult-async-min-input
-          (if (eq consult-async-min-input most-positive-fixnum)
-              (or (and arg (prefix-numeric-value arg)) 3)
-            most-positive-fixnum)))
-
-  (defun consult--page-candidates ()
-    "Return alist of outline headings and positions."
-    (consult--forbid-minibuffer)
-    (let* ((line (line-number-at-pos (point-min) consult-line-numbers-widen))
-           (page-regexp (concat "^\\(?:" page-delimiter "\\)"))
-           (buffer (current-buffer))
-           candidates)
-      (save-excursion
-        (goto-char (point-min))
-        (while (save-excursion
-                 (if-let* (fun (bound-and-true-p outline-search-function))
-                     (funcall fun)
-                   (re-search-forward page-regexp nil t)))
-          (cl-incf line (consult--count-lines (match-beginning 0)))
-          (push (consult--location-candidate
-                 (save-excursion
-                   (forward-line)
-                   (consult--buffer-substring (pos-bol) (pos-eol) 'fontify))
-                 (cons buffer (point)) (1- line) (1- line))
-                candidates)
-          (goto-char (1+ (pos-eol)))))
-      (unless candidates
-        (user-error "No pages"))
-      (nreverse candidates)))
-
-  (defun consult-page ()
-    "Jump to a page."
-    (interactive)
-    (let* ((candidates (consult--slow-operation
-                           "Collecting headings..."
-                         (consult--page-candidates))))
-      (consult--read
-       candidates
-       :prompt "Go to page: "
-       :annotate (consult--line-prefix)
-       :category 'consult-location
-       :sort nil
-       :require-match t
-       :lookup #'consult--line-match
-       :history '(:input consult--line-history)
-       :add-history (thing-at-point 'symbol)
-       :state (consult--location-state candidates))))
-
   (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
-  ;; (advice-add 'register-preview :override #'consult-register-window)
-
-  (defun my-consult-goto-edit ()
-    (interactive)
-    (let* ((curr-line (line-number-at-pos (point) consult-line-numbers-widen))
-           (candidates (consult--slow-operation "Collecting lines..."
-                         (let ((candidates nil))
-                           (save-excursion
-                             (dolist (undo buffer-undo-list)
-                               (pcase undo
-                                 ((and (pred integerp) pos)
-                                  (goto-char pos)
-                                  (push (line-number-at-pos) candidates))
-                                 ((and `(,beg . ,_end)
-                                       (guard (integerp beg)))
-                                  (goto-char beg)
-                                  (push (line-number-at-pos) candidates))
-                                 ((and `(,string . ,pos)
-                                       (guard (stringp string)))
-                                  (goto-char (abs pos))
-                                  (push (line-number-at-pos) candidates)))))
-                           (mapcar (lambda (line)
-                                     (goto-line line)
-                                     (let ((beg (line-beginning-position))
-                                           (end (line-end-position)))
-                                       (consult--location-candidate
-                                        (consult--buffer-substring beg end)
-                                        (cons (current-buffer) beg) line line)))
-                                   (nreverse (seq-uniq candidates
-                                                       (lambda (l1 l2)
-                                                         (< (abs (- l1 l2)) 5)))))))))
-      (consult--read
-       candidates
-       :prompt "Go to edit: "
-       :annotate (consult--line-prefix curr-line)
-       :category 'consult-location
-       :sort nil
-       :require-match t
-       ;; Always add last `isearch-string' to future history
-       :add-history (list (thing-at-point 'symbol) isearch-string)
-       :history '(:input consult--line-history)
-       :lookup #'consult--line-match
-       :default (car candidates)
-       ;; Add `isearch-string' as initial input if starting from Isearch
-       :state (consult--location-state candidates))))
-  (keymap-set goto-map "x" 'my-consult-goto-edit)
 
   (with-eval-after-load 'ibuffer
     (defun conn-consult-line-multi-ibuffer-marked ()
@@ -2748,40 +2153,7 @@
     (keymap-set dired-mode-map "M-s r" 'consult-ripgrep-dired-marked-files))
 
   (with-eval-after-load 'projectile
-    (setq consult-project-function (lambda (_) (projectile-project-root))))
-
-  (with-eval-after-load 'embark
-    (with-eval-after-load 'org
-      (defun embark-consult-grep-link (cand)
-        (when cand
-          (let* ((file-end (next-single-property-change 0 'face cand))
-                 (line-end (next-single-property-change (1+ file-end) 'face cand))
-                 (file (expand-file-name (substring-no-properties cand 0 file-end)))
-                 (line (substring-no-properties cand (1+ line-end)))
-                 (line (if (and (string-match-p ".*\\.org" file)
-                                (equal ?\* (aref line 0)))
-                           (substring line (1- (seq-position line ?\ )))
-                         line))
-                 (desc (read-string "Description: " line))
-                 (fmt (if (string= desc "")
-                          "[[file:%s::%s]]"
-                        "[[file:%s::%s][%s]]")))
-            (insert (format fmt file line desc)))))
-
-      (define-keymap
-        :keymap embark-consult-grep-map
-        "M-RET" 'embark-consult-grep-link)
-
-      (defun consult-org-link-location (cand)
-        (let* ((loc (car-safe (consult--get-location cand)))
-               (link (save-excursion
-                       (goto-char loc)
-                       (org-store-link nil))))
-          (insert link)))
-
-      (define-keymap
-        :keymap embark-consult-location-map
-        "M-RET" 'consult-org-link-location))))
+    (setq consult-project-function (lambda (_) (projectile-project-root)))))
 
 ;;;;; consult-eglot
 
@@ -2793,15 +2165,6 @@
 
 (elpaca consult-project-extra
   (keymap-global-set "C-c j" 'consult-project-extra-find))
-
-;;;;; consult-projectile
-
-;; (elpaca consult-projectile
-;;   (keymap-global-set "C-c j" 'consult-projectile)
-;;   (keymap-global-set "C-c J" 'consult-projectile-switch-project)
-;;   (with-eval-after-load 'projectile
-;;     (with-eval-after-load 'consult
-;;       (consult-customize consult-projectile :preview-key "C-o"))))
 
 
 ;;;; vertico
@@ -2867,11 +2230,6 @@
       t))
   (advice-add 'vertico-repeat :before-until #'vertico-repeat-ad)
 
-  (defun vertico-focus-selected-window ()
-    (interactive)
-    (select-window (minibuffer-selected-window))
-    (message "Focused other window"))
-
   (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
 
@@ -2895,16 +2253,7 @@
     "C-M-<return>" #'vertico-exit-input
     "M-j" #'vertico-quick-exit
     "C-j" #'vertico-exit-input
-    "C-M-j" #'vertico-quick-jump)
-
-  (defun my-vertico-copy-or-kill (beg end)
-    (interactive (list (region-beginning) (region-end)))
-    (if (or (use-region-p) (not transient-mark-mode))
-        (call-interactively #'kill-region)
-      (kill-new (let ((cand (vertico--candidate)))
-                  (if (consult--tofu-p (aref cand (1- (length cand))))
-                      (substring cand 0 -1)
-                    cand))))))
+    "C-M-j" #'vertico-quick-jump))
 
 
 ;;;; marginalia
@@ -2978,8 +2327,21 @@
 ;;;; tempel
 
 (elpaca tempel
-  (keymap-global-set "M-i" 'tempel-insert)
-  (global-tempel-abbrev-mode 1)
+  (require 'tempel)
+  (keymap-global-set "C-<tab>" 'tempel-insert)
+  (keymap-global-set "C-TAB" 'tempel-insert)
+
+  (with-eval-after-load 'conn
+    (defun conn-tab-tempel-expand ()
+      (and-let* ((templates (tempel--templates))
+                 (bounds (tempel--prefix-bounds templates))
+                 (name (buffer-substring-no-properties
+                        (car bounds) (cdr bounds)))
+                 (sym (intern-soft name))
+                 (_ (assq sym templates)))
+        #'tempel-expand))
+
+    (add-hook 'conn-emacs-state-tab-hook #'conn-tab-tempel-expand -5))
 
   (with-eval-after-load 'tempel
     (keymap-set tempel-map "M-n" 'tempel-next)
@@ -3164,23 +2526,7 @@
 
     (define-keymap
       :keymap (conn-get-minor-mode-map 'conn-command-state 'jinx-mode)
-      "<remap> <ispell-word>" 'jinx-correct-nearest
       "^" 'jinx-correct-nearest)
-
-    (defun my-jinx-dispatch-check (window pt _thing)
-      (interactive)
-      (with-selected-window window
-        (save-excursion
-          (goto-char pt)
-          (jinx-correct-nearest))))
-
-    (defun my--conn-dispatch-jinx (&optional in-windows)
-      (cl-loop for win in (conn--preview-get-windows in-windows)
-               nconc (with-selected-window win
-                       (cl-loop for ov in (jinx--get-overlays (window-start) (window-end))
-                                collect (conn--make-preview-overlay
-                                         (overlay-start ov)
-                                         (- (overlay-end ov) (overlay-start ov)))))))
 
     (conn-register-thing-commands
      '(word) nil
@@ -3198,147 +2544,6 @@
 
 ;; (elpaca (pgmacs :host github
 ;;                 :repo "emarsden/pgmacs"))
-
-
-;;;; projectile
-
-;; (elpaca projectile
-;;   (setq projectile-mode-line-prefix ""
-;;         projectile-dynamic-mode-line nil)
-;;   (my-incremental-load (lambda () (projectile-mode 1)))
-;; 
-;;   (defun my-ibuffer-maybe-project (&optional all)
-;;     (interactive "P")
-;;     (require 'projectile)
-;;     (if (or all (not (cdr (project-current))))
-;;         (ibuffer)
-;;       (projectile-ibuffer nil)))
-;; 
-;;   (with-eval-after-load 'projectile
-;;     (keymap-global-unset "C-x p")
-;;     (keymap-global-set "C-x p" 'projectile-command-map)
-;;     (keymap-set goto-map "R" 'projectile-find-references)
-;; 
-;;     (define-keymap
-;;       :keymap projectile-command-map
-;;       "e" 'projectile-run-eshell
-;;       "d" 'projectile-dired
-;;       "D" 'projectile-find-dir
-;;       "j" 'projectile-run-gdb)))
-
-;;;; puni
-
-;; (elpaca puni
-;;   (with-eval-after-load 'conn
-;;     (add-hook 'lisp-data-mode-hook 'conn-sp-mode)
-;;     (add-hook 'conn-sp-mode-hook 'conn-sp-sexp-include-prefix-chars-mode)
-;;     (define-keymap
-;;       :keymap (conn-get-minor-mode-map 'conn-command-state 'conn-sp-mode)
-;;       "M-s" 'sp-splice-sexp
-;;       "M-r" 'sp-splice-sexp-killing-around)
-;; 
-;;     (with-eval-after-load 'conn-smartparens
-;;       (define-keymap
-;;         :keymap conn-sp-mode-map
-;;         "C-M-f" `(menu-item
-;;                   "forward-sexp"
-;;                   sp-forward-sexp
-;;                   :filter ,(lambda (&rest _)
-;;                              (if (bound-and-true-p treesit-primary-parser)
-;;                                  'forward-sexp
-;;                                'sp-forward-sexp)))
-;;         "C-M-b" `(menu-item
-;;                   "forward-sexp"
-;;                   sp-backward-sexp
-;;                   :filter ,(lambda (&rest _)
-;;                              (if (bound-and-true-p treesit-primary-parser)
-;;                                  'backward-sexp
-;;                                'sp-backward-sexp)))
-;;         "C-M-u" 'sp-backward-up-sexp
-;;         "C-M-d" 'sp-down-sexp
-;;         "C-M-p" 'sp-backward-down-sexp
-;;         "C-M-n" 'sp-up-sexp
-;;         "M-C" 'sp-copy-sexp
-;;         "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-;;         "M-)" 'sp-splice-sexp-killing-forward
-;;         "M-K" 'sp-raise-sexp
-;;         "M-I" 'sp-splice-sexp
-;;         "M-J" 'sp-backward-slurp-sexp
-;;         "M-L" 'sp-forward-slurp-sexp
-;;         "M-O" 'sp-forward-barf-sexp
-;;         "M-U" 'sp-backward-barf-sexp
-;;         "M-B" 'sp-convolute-sexp
-;;         "M-H" 'sp-join-sexp
-;;         "M-N" 'sp-beginning-of-sexp
-;;         "M-M" 'sp-end-of-sexp
-;;         "<conn-thing-map> n" 'sp-beginning-of-sexp
-;;         "<conn-thing-map> m" 'sp-end-of-sexp))))
-
-;;;; smart parens
-
-;; (elpaca (smartparens :host github
-;;                      :repo "Fuco1/smartparens")
-;;   (with-eval-after-load 'smartparens
-;;     (with-eval-after-load 'diminish
-;;       (diminish 'smartparens-mode)))
-;; 
-;;   (add-hook 'lisp-data-mode-hook 'smartparens-strict-mode)
-;;   (add-hook 'racket-mode-hook 'smartparens-mode)
-;;   (add-hook 'racket-mode-hook 'smartparens-strict-mode)
-;; 
-;;   (with-eval-after-load 'smartparens
-;;     (require 'smartparens-config)
-;;     (setq sp-highlight-pair-overlay t
-;;           sp-highlight-wrap-overlay t
-;;           sp-echo-match-when-invisible nil)
-;; 
-;;     (with-eval-after-load 'conn
-;;       (conn-sp-sexp-include-prefix-chars-mode 1)
-;;       (define-keymap
-;;         :keymap (conn-get-minor-mode-map 'conn-command-state 'smartparens-mode)
-;;         "M-s" 'sp-splice-sexp
-;;         "M-r" 'sp-splice-sexp-killing-around
-;;         "<left>" 'sp-backward-symbol
-;;         "<right>" 'sp-forward-symbol))
-;; 
-;;     (define-keymap
-;;       :keymap smartparens-mode-map
-;;       "C-M-f" `(menu-item
-;;                 "forward-sexp"
-;;                 sp-forward-sexp
-;;                 :filter ,(lambda (&rest _)
-;;                            (if (bound-and-true-p treesit-primary-parser)
-;;                                'forward-sexp
-;;                              'sp-forward-sexp)))
-;;       "C-M-b" `(menu-item
-;;                 "forward-sexp"
-;;                 sp-backward-sexp
-;;                 :filter ,(lambda (&rest _)
-;;                            (if (bound-and-true-p treesit-primary-parser)
-;;                                'backward-sexp
-;;                              'sp-backward-sexp)))
-;;       "C-M-u" 'sp-backward-up-sexp
-;;       "C-M-d" 'sp-down-sexp
-;;       "C-M-p" 'sp-backward-down-sexp
-;;       "C-M-n" 'sp-up-sexp
-;;       "M-C" 'sp-copy-sexp
-;;       "M-(" 'sp-splice-sexp-killing-backward ;; depth-changing commands
-;;       "M-)" 'sp-splice-sexp-killing-forward
-;;       "M-K" 'sp-raise-sexp
-;;       "M-I" 'sp-splice-sexp
-;;       "M-J" 'sp-backward-slurp-sexp
-;;       "M-L" 'sp-forward-slurp-sexp
-;;       "M-O" 'sp-forward-barf-sexp
-;;       "M-U" 'sp-backward-barf-sexp
-;;       "M-B" 'sp-convolute-sexp
-;;       "M-H" 'sp-join-sexp
-;;       "M-N" 'sp-beginning-of-sexp
-;;       "M-M" 'sp-end-of-sexp)
-;; 
-;;     (define-keymap
-;;       :keymap smartparens-mode-map
-;;       "<conn-thing-map> n" 'sp-beginning-of-sexp
-;;       "<conn-thing-map> m" 'sp-end-of-sexp)))
 
 
 ;;;; djvu
@@ -3420,22 +2625,6 @@
         :sort (org-ql-view--complete-sort))))
   (keymap-global-set "C-c n q" 'my-org-ql-search-denote-files)
 
-  (with-eval-after-load 'embark
-    (defun my-embark-org-ql-files (files)
-      (require 'denote)
-      (require 'org)
-      (require 'org-ql)
-      (let ((org-directory files))
-        (org-ql-search
-          files
-          (read-string "Query: " (when org-ql-view-query
-                                   (format "%S" org-ql-view-query)))
-          :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
-          :super-groups (org-ql-view--complete-super-groups)
-          :sort (org-ql-view--complete-sort))))
-    (cl-pushnew 'my-embark-org-ql-files embark-multitarget-actions)
-    (keymap-set embark-file-map "q" 'my-embark-org-ql-files))
-
   (with-eval-after-load 'org
     (require 'org-ql)))
 
@@ -3443,53 +2632,6 @@
 ;;;; org-super-agenda
 
 ;; (elpaca (org-super-agenda :host github :repo "alphapapa/org-super-agenda"))
-
-
-;;;; yasnippet
-
-;; (elpaca yasnippet
-;;   (my-incremental-load (lambda () (yas-global-mode 1)))
-;; 
-;;   (with-eval-after-load 'yasnippet
-;;     ;; Can't do this through diminish since it wants to append a
-;;     ;; space.
-;;     (with-eval-after-load 'nerd-icons
-;;       (setf (alist-get 'yas-minor-mode minor-mode-alist)
-;;             (list (concat (nerd-icons-codicon "nf-cod-blank")
-;;                           (nerd-icons-codicon "nf-cod-symbol_snippet")))))
-;; 
-;;     (setq yas-wrap-around-region t
-;;           yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
-;; 
-;;     (define-keymap
-;;       :keymap yas-minor-mode-map
-;;       "C-c y" 'yas-new-snippet
-;;       "C-c Y" 'yas-visit-snippet-file)
-;; 
-;;     (define-keymap
-;;       :keymap yas-keymap
-;;       "TAB" nil
-;;       "M-n" 'yas-next-field
-;;       "M-p" 'yas-prev-field)))
-
-;; (elpaca consult-yasnippet
-;;   (with-eval-after-load 'consult-yasnippet
-;;     (consult-customize consult-yasnippet :preview-key nil))
-;; 
-;;   (with-eval-after-load 'yasnippet
-;;     (define-keymap
-;;       :keymap yas-minor-mode-map
-;;       "M-P" 'consult-yasnippet)))
-;; 
-;; (elpaca yasnippet-capf
-;;   (setq yasnippet-capf-lookup-by 'name)
-;;   (add-hook 'emacs-lisp-mode-hook
-;;             (lambda ()
-;;               (add-to-list 'completion-at-point-functions
-;;                            (cape-capf-super #'elisp-completion-at-point
-;;                                             #'yasnippet-capf)))))
-
-;; (elpaca yasnippet-snippets)
 
 
 ;;;; spacious padding
@@ -3600,26 +2742,6 @@
       :dir project)))
 
 
-;;;; treemacs
-
-;; (elpaca treemacs
-;;   (keymap-global-set "C-c h" 'treemacs-select-window)
-;;   (keymap-global-set "C-c H" 'treemacs))
-
-;;;; dirvish
-
-;; (elpaca dirvish
-;;   (custom-set-faces
-;;    '(dirvish-hl-line ((t :inherit region :extend t)))
-;;    '(dirvish-hl-line-inactive ((t :inherit region :extend t))))
-;; 
-;;   (setq dirvish-hide-cursor t)
-;; 
-;;   (with-eval-after-load 'dired
-;;     (dirvish-override-dired-mode 1))
-;; 
-;;   (advice-add 'dirvish--maybe-toggle-cursor :override 'ignore))
-
 ;;;; goto-chg
 
 (elpaca goto-chg
@@ -3653,48 +2775,6 @@
 
 ;; (elpaca vterm)
 
-;;;; dashboard
-
-;; (elpaca dashboard
-;;   (setq initial-buffer-choice 'dashboard-open)
-;;   (setq dashboard-display-icons-p t)
-;;   (setq dashboard-icon-type 'nerd-icons)
-;;   (setq dashboard-set-heading-icons t)
-;;   (setq dashboard-set-file-icons t)
-;;   (setq dashboard-items '((recents   . 5)
-;;                           (bookmarks . 3)
-;;                           (agenda    . 5)))
-;;   (setq dashboard-item-shortcuts '((recents   . "r")
-;;                                    (bookmarks . "b")
-;;                                    (projects  . "p")
-;;                                    (agenda    . "s")))
-;;   (with-eval-after-load 'conn-extras
-;;     (define-keymap
-;;       :keymap (conn-get-major-mode-map 'conn-special-state 'dashboard-mode)
-;;       "a" 'execute-extended-command
-;;       "x" (conn-remap-key "C-x")
-;;       "i" 'dashboard-previous-line
-;;       "I" 'dashboard-previous-section
-;;       "k" 'dashboard-next-line
-;;       "K" 'dashboard-next-section
-;;       "f" 'conn-dispatch-on-buttons)
-;; 
-;;     (conn-add-update-handler
-;;      conn-dispatch-button-targets
-;;      (lambda (try-next)
-;;        (if (eq major-mode 'dashboard-mode)
-;;            (lambda (_state)
-;;              (conn-for-each-visible (window-start) (window-end)
-;;                (goto-char (point-max))
-;;                (while (not (bobp))
-;;                  (goto-char (previous-single-char-property-change (point) 'button))
-;;                  (when (get-char-property (point) 'button)
-;;                    (conn-make-target-overlay
-;;                     (1- (point)) 0
-;;                     :properties `(label-before t)
-;;                     :point (point))))))
-;;          (funcall try-next))))))
-
 ;;;; macrostep
 
 (elpaca macrostep
@@ -3711,17 +2791,10 @@
       "q" #'macrostep-collapse-all)
     (conn-set-mode-map-depth 'macrostep-mode -50 'conn-command-state)))
 
-;;;; let completion
-
-;; (elpaca (let-completion
-;;          :host github
-;;          :repo "mtll/let-completion.el")
-;;   (with-eval-after-load 'elisp-mode
-;;     (let-completion-mode 1)))
-
 ;;;; paredit
 
 (elpaca paredit
+  (require 'paredit)
   (with-eval-after-load 'paredit
     (eldoc-add-command 'paredit-forward
                        'paredit-backward
@@ -3729,7 +2802,9 @@
                        'paredit-forward-up
                        'paredit-backward-down
                        'paredit-forward-down)
-
+    (when-let* ((buf (get-buffer "*scratch*")))
+      (with-current-buffer buf
+        (paredit-mode)))
     (with-eval-after-load 'diminish
       (diminish 'paredit-mode)))
 
@@ -3783,10 +2858,10 @@
       "C-k" 'paredit-kill
       "M-d" 'paredit-forward-kill-word
       "M-DEL" 'paredit-backward-kill-word
-      "M-I" 'paredit-split-sexp
-      "M-K" 'paredit-join-sexps
-      "M-M" 'paredit-splice-sexp-killing-backward
-      "M-N" 'paredit-splice-sexp-killing-forward)
+      "M-M" 'paredit-join-sexps
+      "M-N" 'paredit-split-sexp
+      "M-I" 'paredit-splice-sexp-killing-backward
+      "M-K" 'paredit-splice-sexp-killing-forward)
 
     (with-eval-after-load 'conn
       (conn-register-thing-commands

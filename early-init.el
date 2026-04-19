@@ -39,11 +39,13 @@
               ;; truncate-partial-width-windows nil
               window-resize-pixelwise nil)
 
+;; (setq-default bidi-paragraph-direction 'left-to-right)
+(setq bidi-inhibit-bpa t)
+
 ;; redisplay
 (setq redisplay-skip-fontification-on-input t
       fast-but-imprecise-scrolling t
       inhibit-compacting-font-caches t
-      bidi-inhibit-bpa t
       load-path-filter-function 'load-path-filter-cache-directory-files)
 
 (set-default-coding-systems 'utf-8)
@@ -75,7 +77,6 @@
       inhibit-x-resources t
       load-prefer-newer t
       read-process-output-max (ash 1 18)
-      initial-major-mode 'fundamental-mode
       initial-scratch-message nil
       auto-mode-case-fold nil
       process-adaptive-read-buffering nil)
