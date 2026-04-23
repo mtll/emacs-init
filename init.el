@@ -373,6 +373,10 @@
 (with-eval-after-load 'c-ts-mode
   (setq c-ts-mode-indent-offset 4))
 
+;;;; Gnus
+
+(setq gnus-select-method '(nntp "news.yhetil.org"))
+
 ;;;; Project
 
 (with-eval-after-load 'ibuf-ext
@@ -573,14 +577,15 @@
 ;;;; Abbrev
 
 (setq abbrev-all-caps t
-      hippie-expand-try-functions-list '(;; try-complete-file-name-partially
-                                         ;; try-complete-file-name
+      hippie-expand-try-functions-list '(try-expand-dabbrev
                                          try-expand-all-abbrevs
-                                         ;; try-expand-list
-                                         ;; try-expand-line
-                                         try-expand-dabbrev
                                          try-expand-dabbrev-all-buffers
-                                         try-expand-dabbrev-from-kill))
+                                         try-expand-list
+                                         try-expand-dabbrev-from-kill
+                                         try-expand-whole-kill
+                                         try-expand-line
+                                         try-complete-lisp-symbol-partially
+                                         try-complete-lisp-symbol))
 
 (keymap-global-set "M-j" 'hippie-expand)
 
@@ -1437,7 +1442,7 @@
       t))
   (add-hook 'conn-setup-state-functions 'my-scratch-buffer-state)
   (keymap-global-set "C-c r" 'conn-register-prefix)
-  (keymap-global-set "C-`" 'conn-wincontrol-mru-window)
+  (keymap-global-set "C-M-," 'conn-dispatch-on-buttons)
   (put 'conn-recenter-on-region 'repeat-continue t)
 
   (with-eval-after-load 'org
@@ -1504,7 +1509,7 @@
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
-    "C-;" 'conn-wincontrol-mode
+    "C-;" 'conn-wincontrol
     "C-S-w" 'conn-wincontrol-one-command
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
@@ -1512,6 +1517,7 @@
     "C-<backspace>" 'kill-whole-line
     "S-<return>" 'conn-open-line-and-indent
     "M-`" 'conn-wincontrol-quit-other-window-for-scrolling
+    "C-M-`" 'tmm-menubar
     "M-U" 'conn-wincontrol-maximize-vertically
     "M-z" 'conn-exchange-mark-command
     "C-SPC" 'set-mark-command
@@ -1974,7 +1980,6 @@
 
 
 ;;;; orderless
-
 (elpaca orderless
   (letrec ((loader (lambda ()
                      (require 'orderless)
@@ -1989,6 +1994,8 @@
           orderless-kwd-prefix ?`
           orderless-kwd-separator "`="
           orderless-matching-styles '(orderless-literal
+                                      orderless-initialism
+                                      orderless-prefixes
                                       orderless-regexp)
           orderless-style-dispatchers '(orderless-kwd-dispatch
                                         orderless-affix-dispatch
