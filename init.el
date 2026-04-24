@@ -84,7 +84,6 @@
       git-commit-major-mode 'log-edit-mode
       scroll-conservatively 0
       visual-order-cursor-movement t
-      register-use-preview nil
       comment-empty-lines 'eol
       vc-display-status 'no-backend
       comint-prompt-read-only t
@@ -100,7 +99,7 @@
       hi-lock-auto-select-face t
       mark-even-if-inactive t
       even-window-sizes nil
-      scroll-preserve-screen-position t
+      scroll-preserve-screen-position 'always
       delete-active-region nil
       fill-column 70
       use-short-answers t
@@ -154,6 +153,8 @@
                                restore)
       project-vc-extra-root-markers '(".projectile" ".project")
       kill-region-dwim 'emacs-word)
+
+(setopt register-use-preview nil)
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda () (setq-local sentence-end-double-space t)))
@@ -1430,6 +1431,14 @@
 ;;           (list heex-ts--sexp-regexp)))
 ;;   (add-hook 'elixir-ts-mode-hook 'my-ex-setup-ts-sexp))
 
+;;;; incomplete
+
+(elpaca (incomplete :host github
+                    :depth nil
+                    :repo "mtll/incomplete")
+  (with-eval-after-load 'elisp-mode
+    (incomplete-mode 1)))
+
 
 ;;;; conn
 
@@ -1485,7 +1494,8 @@
 
   (setq conn-simple-label-characters
         (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
-              "i" "q" "p" "c" "b" "n" "m" "e" "d" "k"))
+              "i" "q" "p" "c" "b" "n" "m" "e" "d" "k")
+        conn-read-args-message-delay 0.66)
 
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-w" 'conn-kill-thing)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "M-h" conn-edit-remap)
@@ -1638,6 +1648,9 @@
 
 (elpaca cape
   (cl-pushnew #'cape-file completion-at-point-functions)
+
+  (with-eval-after-load 'cape
+    (setq cape-dabbrev-buffer-function 'current-buffer))
 
   (with-eval-after-load 'lsp-mode
     (defun wrap-lsp-capf ()
