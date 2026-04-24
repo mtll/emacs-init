@@ -407,14 +407,7 @@
   (when-let* ((buf (get-buffer "*scratch*")))
     (with-current-buffer buf
       (lisp-interaction-mode)
-      (setq-local trusted-content :all)))
-  (define-keymap
-    :keymap emacs-lisp-mode-map
-    "C-c x" 'eval-defun)
-
-  (define-keymap
-    :keymap lisp-interaction-mode-map
-    "C-c x" 'eval-defun))
+      (setq-local trusted-content :all))))
 
 (defun lexical-in-temp ()
   (unless (buffer-file-name)
@@ -1474,6 +1467,9 @@
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-edit-mode)
                   "C-c e" 'occur-cease-edit)))
+
+  (with-eval-after-load 'conn-extras
+    (keymap-set (conn-get-state-map 'conn-special-state) "&" 'conn-other-buffer))
 
   (setq conn-read-string-timeout 0.35)
 
@@ -2800,7 +2796,10 @@
 (elpaca macrostep
   (define-keymap
     :keymap emacs-lisp-mode-map
-    "C-c e" 'macrostep-expand)
+    "C-c x" 'macrostep-expand)
+  (define-keymap
+    :keymap lisp-interaction-mode-map
+    "C-c x" 'macrostep-expand)
   (with-eval-after-load 'macrostep
     (define-keymap
       :keymap (conn-get-minor-mode-map 'conn-command-state 'macrostep-mode)
