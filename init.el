@@ -376,7 +376,112 @@
 
 ;;;; Gnus
 
-(setq gnus-select-method '(nntp "news.yhetil.org"))
+(setq gnus-select-method '(nntp "news.yhetil.org")
+      gnus-summary-goto-unread 'never)
+
+(with-eval-after-load 'gnus
+  (with-eval-after-load 'conn
+    ;; From hyperbole
+    (defun conn-dwim-gnus-group ()
+      (when (eq major-mode 'gnus-group-mode)
+        (cond ((save-excursion (forward-line 1) (eobp))
+               'gnus-group-get-new-news)
+	      ((save-excursion (skip-chars-backward " U") (bolp))
+	       'gnus-group-unsubscribe-current-group)
+	      ((gnus-topic-mode-p) 'gnus-topic-read-group)
+	      (t 'gnus-group-read-group))))
+
+    (defun conn-dwim-alt-gnus-group ()
+      (when (eq major-mode 'gnus-group-mode)
+        (cond ((save-excursion (forward-line 1) (eobp))
+               'gnus-group-exit)
+	      ((save-excursion (skip-chars-backward " U") (bolp))
+	       'gnus-group-unsubscribe-group)
+	      ((gnus-topic-mode-p) 'gnus-topic-read-group)
+	      (t 'gnus-group-read-group))))
+
+    (defun conn-dwim-gnus-last-line ()
+      (interactive)
+      (if gnus-current-article
+          (progn
+            (goto-char (point-min))
+	    (re-search-forward
+	     (format "^.[ ]+%d:" gnus-current-article) nil t)
+	    (gnus-summary-next-page))
+        (goto-char (point-min))
+        (gnus-summary-first-unread-article)))
+
+    (defun conn-dwim-gnus-mark-unread-forward ()
+      (interactive)
+      (gnus-summary-mark-article-as-unread ?\ )
+      (forward-line 1))
+
+    (defun conn-dwim-gnus-mark-unread-backward ()
+      (interactive)
+      (gnus-summary-mark-article-as-unread ?\ )
+      (forward-line -1))
+
+    (defun conn-dwim-gnus-summary ()
+      (when (eq major-mode 'gnus-summary-mode)
+        (cond ((save-excursion (forward-line 1) (eobp))
+               'conn-dwim-gnus-last-line)
+	      ((save-excursion (skip-chars-backward " D") (bolp))
+               'conn-dwim-gnus-mark-unread-forward)
+	      (t 'gnus-summary-next-page))))
+
+    (defun conn-dwim-alt-gnus-summary ()
+      (when (eq major-mode 'gnus-summary-mode)
+        (cond ((save-excursion (forward-line 1) (eobp))
+               'gnus-summary-exit)
+	      ((save-excursion (skip-chars-backward " D") (bolp))
+               'conn-dwim-gnus-mark-unread-backward)
+	      (t 'gnus-summary-prev-page-or-article))))
+
+    (defun conn-gnus-next-unread ()
+      (interactive)
+      (unwind-protect
+          (progn
+            (set-buffer gnus-summary-buffer)
+	    (gnus-summary-next-unread-article)
+	    (gnus-summary-goto-subject gnus-current-article))
+        (let ((artic (get-buffer-window gnus-article-buffer)))
+          (if artic (select-window artic)))))
+
+    (defun conn-dwim-gnus-article ()
+      (when (eq 'major-mode 'gnus-article-mode)
+        (cond ((or (save-excursion (forward-line 1) (eobp))
+                   (and (not (eolp))
+                        (save-excursion (goto-char (pos-bol)) (eobp))))
+               'conn-gnus-next-unread)
+	      ((and (not (eolp)) 'Info-handle-in-note))
+	      (t 'conn-scroll-down))))
+
+    (defun conn-gnus-previous-article ()
+      (interactive)
+      (unwind-protect
+          (progn
+            (set-buffer gnus-summary-buffer)
+	    (gnus-summary-prev-article)
+	    (gnus-summary-goto-subject gnus-current-article))
+        (let ((artic (get-buffer-window gnus-summary-buffer)))
+          (if artic (select-window artic)))))
+
+    (defun conn-dwim-alt-gnus-article ()
+      (when (eq 'major-mode 'gnus-article-mode)
+        (cond ((or (save-excursion (forward-line 1) (eobp))
+                   (and (not (eolp))
+                        (save-excursion (goto-char (pos-bol)) (eobp))))
+               'conn-gnus-previous-article)
+	      ((and (not (eolp)) 'Info-handle-in-note))
+	      (t 'conn-scroll-down))))
+
+    (add-hook 'conn-dwim-at-point-hook #'conn-dwim-gnus-group -50)
+    (add-hook 'conn-dwim-at-point-hook #'conn-dwim-gnus-summary -50)
+    (add-hook 'conn-dwim-at-point-hook #'conn-dwim-gnus-article -50)
+
+    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-alt-gnus-article -50)
+    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-alt-gnus-summary -50)
+    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-alt-gnus-group -50)))
 
 ;;;; Project
 
