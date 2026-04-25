@@ -423,16 +423,16 @@
 
     (defun conn-dwim-gnus-summary ()
       (when (eq major-mode 'gnus-summary-mode)
-        (cond ((save-excursion (forward-line 1) (eobp))
-               'conn-dwim-gnus-last-line)
+        (cond ;; ((save-excursion (forward-line 1) (eobp))
+              ;;  'conn-dwim-gnus-last-line)
 	      ((save-excursion (skip-chars-backward " D") (bolp))
                'conn-dwim-gnus-mark-unread-forward)
 	      (t 'gnus-summary-next-page))))
 
     (defun conn-dwim-alt-gnus-summary ()
       (when (eq major-mode 'gnus-summary-mode)
-        (cond ((save-excursion (forward-line 1) (eobp))
-               'gnus-summary-exit)
+        (cond ;; ((save-excursion (forward-line 1) (eobp))
+              ;;  'gnus-summary-exit)
 	      ((save-excursion (skip-chars-backward " D") (bolp))
                'conn-dwim-gnus-mark-unread-backward)
 	      (t 'gnus-summary-prev-page-or-article))))
@@ -3026,6 +3026,11 @@
       (cl-defmethod conn-argument-predicate ((_arg conn-transpose-thing-argument)
                                              (_cmd (eql paredit-convolute-sexp)))
         t))))
+
+;;;; Olivetti
+
+(elpaca olivetti
+  (add-hook 'gnus-article-mode-hook 'olivetti-mode))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
