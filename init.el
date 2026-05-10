@@ -77,7 +77,7 @@
 ;; visual-order-cursor-movement t
 ;; elisp-fontify-semantically t
 
-(setq mode-line-collapse-minor-modes t ; '(not conn-local-mode)
+(setq mode-line-collapse-minor-modes nil ; '(not conn-local-mode)
       kill-buffer-quit-windows t
       kill-do-not-save-duplicates t
       window-combination-resize t
@@ -536,9 +536,11 @@
       hs-allow-nesting t)
 (setq max-lisp-eval-depth 5000)
 (with-eval-after-load 'hideshow
-  (when (< emacs-major-version 31)
-    (with-eval-after-load 'diminish
-      (diminish 'hs-minor-mode "")))
+  (if (< emacs-major-version 31)
+      (with-eval-after-load 'diminish
+        (diminish 'hs-minor-mode ""))
+    (cl-pushnew 'hs-minor-mode
+                mode-line-collapse-minor-modes))
 
   (define-keymap
     :keymap hs-minor-mode-map
@@ -694,8 +696,8 @@
 (add-hook 'prog-mode-hook 'abbrev-mode)
 (add-hook 'text-mode-hook 'abbrev-mode)
 
-(with-eval-after-load 'abbrev
-  (setf (alist-get 'abbrev-mode minor-mode-alist) (list "")))
+(cl-pushnew 'abbrev-mode
+            mode-line-collapse-minor-modes)
 
 
 ;;;; electric pair
@@ -766,6 +768,9 @@
 ;;;; outline-minor-mode
 
 (add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
+
+(cl-pushnew 'outline-minor-mode
+            mode-line-collapse-minor-modes)
 
 (with-eval-after-load 'outline
   (setq outline-minor-mode-prefix (kbd "C-c u"))
@@ -1011,8 +1016,12 @@
                    (remove-hook 'pre-command-hook loader))))
   (when (< emacs-major-version 31)
     (add-hook 'pre-command-hook loader)))
-(with-eval-after-load 'diminish
-  (diminish 'auto-revert-mode))
+
+(static-if (< emacs-major-version 31)
+    (with-eval-after-load 'diminish
+      (diminish 'auto-revert-mode))
+  (cl-pushnew 'auto-revert-mode
+              mode-line-collapse-minor-modes))
 
 
 ;;;; recentf
@@ -1032,13 +1041,8 @@
 
 (keymap-global-set "C-c L" 'outline-minor-mode)
 (with-eval-after-load 'outline
-  (with-eval-after-load 'nerd-icons
-    (setf (alist-get 'outline-minor-mode minor-mode-alist)
-          (list (concat (nerd-icons-codicon "nf-cod-blank")
-                        (nerd-icons-mdicon "nf-md-file_tree_outline")))))
-  ;; (with-eval-after-load 'diminish
-  ;;   (diminish 'outline-minor-mode " *"))
-  )
+  (setf (alist-get 'outline-minor-mode minor-mode-alist)
+        (list " *")))
 
 
 ;;;; ibuffer
@@ -1070,9 +1074,11 @@
 
 ;;;; eldoc
 
-(when (< emacs-major-version 31)
-  (with-eval-after-load 'diminish
-    (diminish 'eldoc-mode)))
+(if (< emacs-major-version 31)
+    (with-eval-after-load 'diminish
+      (diminish 'eldoc-mode))
+  (cl-pushnew 'eldoc-mode
+              mode-line-collapse-minor-modes))
 
 (setq eldoc-echo-area-prefer-doc-buffer t)
 
@@ -1158,9 +1164,11 @@
 
 ;;;; Diminish
 
-(when (< emacs-major-version 31)
-  (elpaca diminish
-    (diminish 'visual-line-mode)))
+(if (< emacs-major-version 31)
+    (elpaca diminish
+      (diminish 'visual-line-mode))
+  (cl-pushnew 'visual-line-mode
+              mode-line-collapse-minor-modes))
 
 
 ;;;; expreg
@@ -1424,9 +1432,11 @@
 (elpaca dtrt-indent
   (my-incremental-load (lambda () (dtrt-indent-global-mode 1)))
   (with-eval-after-load 'dtrt-indent
-    (when (< emacs-major-version 31)
-      (with-eval-after-load 'diminish
-        (diminish 'dtrt-indent-mode)))))
+    (if (< emacs-major-version 31)
+        (with-eval-after-load 'diminish
+          (diminish 'dtrt-indent-mode))
+      (cl-pushnew 'dtrt-indent-mode
+                  mode-line-collapse-minor-modes))))
 
 
 ;;;; exec-path-from-shell
@@ -1550,6 +1560,8 @@
 (elpaca (conn :host github
               :depth nil
               :repo "mtll/conn")
+  (cl-pushnew 'conn-local-mode
+              mode-line-collapse-minor-modes)
   (defun my-scratch-buffer-state ()
     (when (buffer-match-p "\\*scratch\\*.*" (current-buffer))
       (conn-push-state 'conn-command-state)
@@ -1693,7 +1705,8 @@
                    (require 'posframe)
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
-  (setq conn-window-label-function 'conn-posframe-window-labels)
+  (setq conn-window-label-function 'conn-posframe-window-labels
+        conn-quick-ref-display-function 'conn-quick-ref-posframe)
   ;; (setq conn-quick-ref-display-function 'conn--quick-ref-minibuffer)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
@@ -2061,9 +2074,11 @@
 
 (elpaca nerd-icons-dired
   (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
-  (when (< emacs-major-version 31)
-    (with-eval-after-load 'diminish
-      (diminish 'nerd-icons-dired-mode))))
+  (if (< emacs-major-version 31)
+      (with-eval-after-load 'diminish
+        (diminish 'nerd-icons-dired-mode))
+    (cl-pushnew 'nerd-icons-dired-mode
+                mode-line-collapse-minor-modes)))
 
 (elpaca nerd-icons-corfu
   (with-eval-after-load 'corfu
@@ -2071,9 +2086,11 @@
 
 (elpaca nerd-icons-ibuffer
   (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
-  (when (< emacs-major-version 31)
-    (with-eval-after-load 'diminish
-      (diminish 'nerd-icons-ibuffer-mode))))
+  (if (< emacs-major-version 31)
+      (with-eval-after-load 'diminish
+        (diminish 'nerd-icons-ibuffer-mode))
+    (cl-pushnew 'nerd-icons-ibuffer-mode
+                mode-line-collapse-minor-modes)))
 
 (elpaca nerd-icons-completion
   (with-eval-after-load 'marginalia
@@ -2670,11 +2687,8 @@
   (my-incremental-load (lambda () (global-jinx-mode 1)))
 
   (with-eval-after-load 'jinx
-    (with-eval-after-load 'nerd-icons
-      (setf (alist-get 'jinx-mode minor-mode-alist)
-            (list (concat (nerd-icons-codicon "nf-cod-blank")
-                          (nerd-icons-mdicon "nf-md-spellcheck")))))
-
+    (cl-pushnew 'jinx-mode
+                mode-line-collapse-minor-modes)
     (define-keymap
       :keymap (conn-get-minor-mode-map 'conn-command-state 'jinx-mode)
       "^" 'jinx-correct-nearest)
@@ -2721,10 +2735,11 @@
     (cl-pushnew 'defining-kbd-macro aggressive-indent-dont-indent-if)
     (cl-pushnew 'executing-kbd-macro aggressive-indent-dont-indent-if)
     ;; (cl-pushnew 'conn-dispatch-in-progress aggressive-indent-dont-indent-if)
-    (with-eval-after-load 'nerd-icons
-      (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
-            (list (concat (nerd-icons-codicon "nf-cod-blank")
-                          (nerd-icons-mdicon "nf-md-keyboard_tab"))))))
+    ;; (with-eval-after-load 'nerd-icons
+    ;;   (setf (alist-get 'aggressive-indent-mode minor-mode-alist)
+    ;;         (list (concat (nerd-icons-codicon "nf-cod-blank")
+    ;;                       (nerd-icons-mdicon "nf-md-keyboard_tab")))))
+    )
   (add-hook 'lisp-data-mode-hook 'aggressive-indent-mode))
 
 ;;;; org-modern
@@ -2959,9 +2974,11 @@
     (when-let* ((buf (get-buffer "*scratch*")))
       (with-current-buffer buf
         (paredit-mode)))
-    (when (< emacs-major-version 31)
-      (with-eval-after-load 'diminish
-        (diminish 'paredit-mode))))
+    (if (< emacs-major-version 31)
+        (with-eval-after-load 'diminish
+          (diminish 'paredit-mode))
+      (cl-pushnew 'paredit-mode
+                  mode-line-collapse-minor-modes)))
 
   (add-hook 'lisp-data-mode-hook 'paredit-mode)
 
