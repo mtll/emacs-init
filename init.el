@@ -75,7 +75,11 @@
 
 ;; help-window-select t
 ;; visual-order-cursor-movement t
-(setq kill-do-not-save-duplicates t
+;; elisp-fontify-semantically t
+
+(setq mode-line-collapse-minor-modes t ; '(not conn-local-mode)
+      kill-buffer-quit-windows t
+      kill-do-not-save-duplicates t
       window-combination-resize t
       completions-format 'one-column
       igc-step-interval 0.1
@@ -379,23 +383,21 @@
 (setq gnus-select-method '(nntp "news.yhetil.org")
       gnus-summary-goto-unread 'never)
 
+(keymap-global-set "C-c G" 'gnus)
+
 (with-eval-after-load 'gnus
   (with-eval-after-load 'conn
     ;; From hyperbole
     (defun conn-dwim-gnus-group ()
       (when (eq major-mode 'gnus-group-mode)
-        (cond ((save-excursion (forward-line 1) (eobp))
-               'gnus-group-get-new-news)
-	      ((save-excursion (skip-chars-backward " U") (bolp))
+        (cond ((save-excursion (skip-chars-backward " U") (bolp))
 	       'gnus-group-unsubscribe-current-group)
 	      ((gnus-topic-mode-p) 'gnus-topic-read-group)
 	      (t 'gnus-group-read-group))))
 
     (defun conn-dwim-alt-gnus-group ()
       (when (eq major-mode 'gnus-group-mode)
-        (cond ((save-excursion (forward-line 1) (eobp))
-               'gnus-group-exit)
-	      ((save-excursion (skip-chars-backward " U") (bolp))
+        (cond ((save-excursion (skip-chars-backward " U") (bolp))
 	       'gnus-group-unsubscribe-group)
 	      ((gnus-topic-mode-p) 'gnus-topic-read-group)
 	      (t 'gnus-group-read-group))))
@@ -423,19 +425,19 @@
 
     (defun conn-dwim-gnus-summary ()
       (when (eq major-mode 'gnus-summary-mode)
-        (cond ;; ((save-excursion (forward-line 1) (eobp))
-              ;;  'conn-dwim-gnus-last-line)
-	      ((save-excursion (skip-chars-backward " D") (bolp))
-               'conn-dwim-gnus-mark-unread-forward)
-	      (t 'gnus-summary-next-page))))
+        (cond ;; ((save-excursion (goto-char (pos-eol)) (eobp))
+         ;;  'conn-dwim-gnus-last-line)
+	 ((save-excursion (skip-chars-backward " D") (bolp))
+          'conn-dwim-gnus-mark-unread-forward)
+	 (t 'gnus-summary-next-page))))
 
     (defun conn-dwim-alt-gnus-summary ()
       (when (eq major-mode 'gnus-summary-mode)
-        (cond ;; ((save-excursion (forward-line 1) (eobp))
-              ;;  'gnus-summary-exit)
-	      ((save-excursion (skip-chars-backward " D") (bolp))
-               'conn-dwim-gnus-mark-unread-backward)
-	      (t 'gnus-summary-prev-page-or-article))))
+        (cond ;; ((save-excursion (goto-char (pos-eol)) (eobp))
+         ;;  'gnus-summary-exit)
+	 ((save-excursion (skip-chars-backward " D") (bolp))
+          'conn-dwim-gnus-mark-unread-backward)
+	 (t 'gnus-summary-prev-page-or-article))))
 
     (defun conn-gnus-next-unread ()
       (interactive)
@@ -454,7 +456,7 @@
                         (save-excursion (goto-char (pos-bol)) (eobp))))
                'conn-gnus-next-unread)
 	      ((and (not (eolp)) 'Info-handle-in-note))
-	      (t 'conn-scroll-down))))
+	      (t 'conn-scroll-up))))
 
     (defun conn-gnus-previous-article ()
       (interactive)
@@ -532,10 +534,11 @@
 (setq hs-indicator-type 'fringe
       hs-show-indicators nil
       hs-allow-nesting t)
-
+(setq max-lisp-eval-depth 5000)
 (with-eval-after-load 'hideshow
-  (with-eval-after-load 'diminish
-    (diminish 'hs-minor-mode ""))
+  (when (< emacs-major-version 31)
+    (with-eval-after-load 'diminish
+      (diminish 'hs-minor-mode "")))
 
   (define-keymap
     :keymap hs-minor-mode-map
@@ -1006,7 +1009,8 @@
 (letrec ((loader (lambda ()
                    (global-auto-revert-mode 1)
                    (remove-hook 'pre-command-hook loader))))
-  (add-hook 'pre-command-hook loader))
+  (when (< emacs-major-version 31)
+    (add-hook 'pre-command-hook loader)))
 (with-eval-after-load 'diminish
   (diminish 'auto-revert-mode))
 
@@ -1066,8 +1070,9 @@
 
 ;;;; eldoc
 
-(with-eval-after-load 'diminish
-  (diminish 'eldoc-mode))
+(when (< emacs-major-version 31)
+  (with-eval-after-load 'diminish
+    (diminish 'eldoc-mode)))
 
 (setq eldoc-echo-area-prefer-doc-buffer t)
 
@@ -1080,8 +1085,9 @@
 ;;;; erc
 
 (with-eval-after-load 'erc
-  (setq erc-fill-function 'erc-fill-static
-        erc-fill-static-center 22
+  (setq erc-fill-function 'erc-fill-variable
+        ;; erc-fill-static-center 22
+        erc-fill-prefix "	"
         erc-header-line-format "%n on %t (%m)"
         erc-hide-list '("JOIN" "PART" "QUIT")
         erc-lurker-threshold-time 43200
@@ -1129,6 +1135,11 @@
 
 ;;; Packages
 
+;;;; Compat
+
+(static-if (< emacs-major-version 31)
+    (elpaca compat))
+
 ;;;; Transient
 
 (elpaca transient
@@ -1145,16 +1156,11 @@
       (global-treesit-auto-mode 1))))
 
 
-;;;; Compat
-
-;; (elpaca (compat :repo "emacs-compat/compat"
-;;                 :host github))
-
-
 ;;;; Diminish
 
-(elpaca diminish
-  (diminish 'visual-line-mode))
+(when (< emacs-major-version 31)
+  (elpaca diminish
+    (diminish 'visual-line-mode)))
 
 
 ;;;; expreg
@@ -1418,8 +1424,9 @@
 (elpaca dtrt-indent
   (my-incremental-load (lambda () (dtrt-indent-global-mode 1)))
   (with-eval-after-load 'dtrt-indent
-    (with-eval-after-load 'diminish
-      (diminish 'dtrt-indent-mode))))
+    (when (< emacs-major-version 31)
+      (with-eval-after-load 'diminish
+        (diminish 'dtrt-indent-mode)))))
 
 
 ;;;; exec-path-from-shell
@@ -1531,11 +1538,11 @@
 
 ;;;; incomplete
 
-(elpaca (incomplete :host github
-                    :depth nil
-                    :repo "mtll/incomplete")
-  (with-eval-after-load 'elisp-mode
-    (incomplete-mode 1)))
+;; (elpaca (incomplete :host github
+;;                     :depth nil
+;;                     :repo "mtll/incomplete")
+;;   (with-eval-after-load 'elisp-mode
+;;     (incomplete-mode 1)))
 
 
 ;;;; conn
@@ -1592,6 +1599,12 @@
   (conn-wincontrol-label-mode-line-mode 1)
   (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
+
+  (defun my/conn-dwim-elpaca-punt ()
+    (and (derived-mode-p 'elpaca-ui-mode)
+         :punt))
+  (add-hook 'conn-dwim-at-point-hook #'my/conn-dwim-elpaca-punt -60)
+  (add-hook 'conn-alt-dwim-at-point-hook #'my/conn-dwim-elpaca-punt -60)
 
   (setq conn-simple-label-characters
         (list "s" "j" "f" "l" "g" "h" "r" "w" "y" "u"
@@ -1654,6 +1667,15 @@
      (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
      "M-h" 'conn-outline-state-up-heading)))
 
+(with-eval-after-load 'conn
+  (defun conn-dwim-elpaca-ui ()
+    (when (eq major-mode 'elpaca-ui-mode) :punt))
+  (add-hook 'conn-dwim-at-point-hook 'conn-dwim-elpaca-ui -80)
+
+  (defun conn-dwim-alt-elpaca-ui ()
+    (when (eq major-mode 'elpaca-ui-mode) :punt))
+  (add-hook 'conn-alt-dwim-at-point-hook 'conn-dwim-alt-elpaca-ui -80))
+
 ;;;;; conn extensions
 
 (elpaca (conn-tree-sitter
@@ -1672,6 +1694,7 @@
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
   (setq conn-window-label-function 'conn-posframe-window-labels)
+  ;; (setq conn-quick-ref-display-function 'conn--quick-ref-minibuffer)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
 
@@ -1741,8 +1764,8 @@
 
 ;;;; flycheck
 
-(elpaca flycheck
-  (setq lsp-diagnostics-flycheck-default-level 'warning))
+;; (elpaca flycheck
+;;   (setq lsp-diagnostics-flycheck-default-level 'warning))
 
 
 ;;;; cape
@@ -1991,13 +2014,15 @@
   (setq corfu-scroll-margin 2
         corfu-bar-width 0.4
         corfu-quit-at-boundary 'separator
-        corfu-quit-no-match nil
+        corfu-quit-no-match 'separator
         corfu-preview-current nil
         corfu-on-exact-match nil
         corfu-auto nil
         corfu-preselect 'valid
-        corfu-auto-delay nil
+        corfu-auto-delay 0.15
         corfu-auto-prefix 3)
+
+  (add-hook 'prog-mode-hook (lambda () (setq-local corfu-auto t)))
 
   (with-eval-after-load 'corfu
     (define-keymap
@@ -2024,7 +2049,7 @@
       (defun my/cancel-completion ()
         (when conn-local-mode
           (conn-state-on-exit _type
-            :label 'cancel-completion
+            :name 'cancel-completion
             (completion-in-region-mode -1))))
       (add-hook 'completion-in-region-mode-hook #'my/cancel-completion))))
 
@@ -2036,8 +2061,9 @@
 
 (elpaca nerd-icons-dired
   (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
-  (with-eval-after-load 'diminish
-    (diminish 'nerd-icons-dired-mode)))
+  (when (< emacs-major-version 31)
+    (with-eval-after-load 'diminish
+      (diminish 'nerd-icons-dired-mode))))
 
 (elpaca nerd-icons-corfu
   (with-eval-after-load 'corfu
@@ -2045,8 +2071,9 @@
 
 (elpaca nerd-icons-ibuffer
   (add-hook 'ibuffer-mode-hook #'nerd-icons-ibuffer-mode)
-  (with-eval-after-load 'diminish
-    (diminish 'nerd-icons-ibuffer-mode)))
+  (when (< emacs-major-version 31)
+    (with-eval-after-load 'diminish
+      (diminish 'nerd-icons-ibuffer-mode))))
 
 (elpaca nerd-icons-completion
   (with-eval-after-load 'marginalia
@@ -2076,7 +2103,8 @@
 
 ;;;; wgrep
 
-;; (elpaca wgrep)
+(static-if (< emacs-major-version 31)
+    (elpaca wgrep))
 
 
 ;;;; separedit
@@ -2094,6 +2122,7 @@
 
 
 ;;;; orderless
+
 (elpaca orderless
   (letrec ((loader (lambda ()
                      (require 'orderless)
@@ -2103,7 +2132,8 @@
   (with-eval-after-load 'orderless
     (setq orderless-affix-dispatch-alist '((?\= . orderless-literal)
                                            (?! . orderless-without-literal)
-                                           (?, . orderless-initialism))
+                                           ;; (?, . orderless-initialism)
+                                           )
           completion-styles '(orderless basic)
           orderless-kwd-prefix ?`
           orderless-kwd-separator "`="
@@ -2114,7 +2144,7 @@
           orderless-style-dispatchers '(orderless-kwd-dispatch
                                         orderless-affix-dispatch
                                         flex-first-if-completing)
-          completion-category-overrides '((file (styles orderless+flex
+          completion-category-overrides '((file (styles orderless
                                                         partial-completion
                                                         basic))
                                           (lsp-capf (styles orderless+flex))
@@ -2134,7 +2164,8 @@
     (defun flex-first-if-completing (pattern index _total)
       (when (and (= index 0)
                  (or completion-in-region-mode
-                     (bound-and-true-p company-candidates)))
+                     (bound-and-true-p company-candidates))
+                 (not (derived-mode-p 'lisp-data-mode)))
         `(orderless-flex . ,pattern)))
 
     (defun orderless-toggle-smart-case ()
@@ -2157,6 +2188,7 @@
     (orderless-define-completion-style orderless+flex
       (orderless-matching-styles '(orderless-literal
                                    orderless-initialism
+                                   orderless-prefixes
                                    orderless-regexp))
       (orderless-style-dispatchers '(orderless-kwd-dispatch
                                      orderless-affix-dispatch
@@ -2167,10 +2199,11 @@
       (orderless-affix-dispatch '((?\= . orderless-literal)))
       (orderless-style-dispatchers '(orderless-affix-dispatch)))
 
-    (orderless-define-completion-style orderless-literal
-      (orderless-matching-styles '(orderless-literal))
-      (orderless-affix-dispatch '((?\~ . orderless-regexp)))
-      (orderless-style-dispatchers '(orderless-affix-dispatch)))))
+    ;; (orderless-define-completion-style orderless-literal
+    ;;   (orderless-matching-styles '(orderless-literal))
+    ;;   (orderless-affix-dispatch '((?\~ . orderless-regexp)))
+    ;;   (orderless-style-dispatchers '(orderless-affix-dispatch)))
+    ))
 
 
 ;;;; consult
@@ -2637,9 +2670,6 @@
   (my-incremental-load (lambda () (global-jinx-mode 1)))
 
   (with-eval-after-load 'jinx
-    ;; (with-eval-after-load 'diminish
-    ;;   (diminish 'jinx-mode " $"))
-
     (with-eval-after-load 'nerd-icons
       (setf (alist-get 'jinx-mode minor-mode-alist)
             (list (concat (nerd-icons-codicon "nf-cod-blank")
@@ -2699,55 +2729,55 @@
 
 ;;;; org-modern
 
-(elpaca org-modern
-  (setq org-auto-align-tags nil
-        org-tags-column 0
-        org-catch-invisible-edits 'show-and-error
-        org-special-ctrl-a/e t
-        org-insert-heading-respect-content t
-        org-pretty-entities t
-        org-agenda-tags-column 0
-        org-ellipsis "…")
-
-  (setq org-modern-hide-stars nil
-        org-modern-todo-faces
-        '(("STARTED" :foreground "yellow")
-          ("CANCELED" org-special-keyword :inverse-video t :weight bold))
-        org-modern-list '((?* . "•")
-                          (?+ . "‣"))
-        org-modern-fold-stars '(("▶" . "▼")
-                                ("▷" . "▽")
-                                ("▸" . "▾")
-                                ("▹" . "▿"))
-        org-modern-checkbox '((?X . "✔")
-                              (?- . "┅")
-                              (?\s . " "))
-        org-modern-label-border 1)
-
-  (with-eval-after-load 'org
-    (global-org-modern-mode 1)))
+;; (elpaca org-modern
+;;   (setq org-auto-align-tags nil
+;;         org-tags-column 0
+;;         org-catch-invisible-edits 'show-and-error
+;;         org-special-ctrl-a/e t
+;;         org-insert-heading-respect-content t
+;;         org-pretty-entities t
+;;         org-agenda-tags-column 0
+;;         org-ellipsis "…")
+;; 
+;;   (setq org-modern-hide-stars nil
+;;         org-modern-todo-faces
+;;         '(("STARTED" :foreground "yellow")
+;;           ("CANCELED" org-special-keyword :inverse-video t :weight bold))
+;;         org-modern-list '((?* . "•")
+;;                           (?+ . "‣"))
+;;         org-modern-fold-stars '(("▶" . "▼")
+;;                                 ("▷" . "▽")
+;;                                 ("▸" . "▾")
+;;                                 ("▹" . "▿"))
+;;         org-modern-checkbox '((?X . "✔")
+;;                               (?- . "┅")
+;;                               (?\s . " "))
+;;         org-modern-label-border 1)
+;; 
+;;   (with-eval-after-load 'org
+;;     (global-org-modern-mode 1)))
 
 
 ;;;; org-ql
 
-(elpaca org-ql
-  (defun my-org-ql-search-denote-files ()
-    (interactive)
-    (require 'denote)
-    (require 'org)
-    (require 'org-ql)
-    (let ((org-directory denote-directory))
-      (org-ql-search
-        (org-ql-search-directories-files)
-        (read-string "Query: " (when org-ql-view-query
-                                 (format "%S" org-ql-view-query)))
-        :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
-        :super-groups (org-ql-view--complete-super-groups)
-        :sort (org-ql-view--complete-sort))))
-  (keymap-global-set "C-c n q" 'my-org-ql-search-denote-files)
-
-  (with-eval-after-load 'org
-    (require 'org-ql)))
+;; (elpaca org-ql
+;;   (defun my-org-ql-search-denote-files ()
+;;     (interactive)
+;;     (require 'denote)
+;;     (require 'org)
+;;     (require 'org-ql)
+;;     (let ((org-directory denote-directory))
+;;       (org-ql-search
+;;         (org-ql-search-directories-files)
+;;         (read-string "Query: " (when org-ql-view-query
+;;                                  (format "%S" org-ql-view-query)))
+;;         :narrow (or org-ql-view-narrow (equal current-prefix-arg '(4)))
+;;         :super-groups (org-ql-view--complete-super-groups)
+;;         :sort (org-ql-view--complete-sort))))
+;;   (keymap-global-set "C-c n q" 'my-org-ql-search-denote-files)
+;; 
+;;   (with-eval-after-load 'org
+;;     (require 'org-ql)))
 
 
 ;;;; org-super-agenda
@@ -2757,15 +2787,15 @@
 
 ;;;; spacious padding
 
-(elpaca spacious-padding
-  (setq spacious-padding-widths '( :internal-border-width 16
-                                   :header-line-width 4
-                                   :mode-line-width 1
-                                   :tab-width 4
-                                   :right-divider-width 20
-                                   :scroll-bar-width 8
-                                   :fringe-width 10))
-  (spacious-padding-mode 1))
+;; (elpaca spacious-padding
+;;   (setq spacious-padding-widths '( :internal-border-width 16
+;;                                    :header-line-width 4
+;;                                    :mode-line-width 1
+;;                                    :tab-width 4
+;;                                    :right-divider-width 20
+;;                                    :scroll-bar-width 8
+;;                                    :fringe-width 10))
+;;   (spacious-padding-mode 1))
 
 
 ;;;; rg
@@ -2929,8 +2959,9 @@
     (when-let* ((buf (get-buffer "*scratch*")))
       (with-current-buffer buf
         (paredit-mode)))
-    (with-eval-after-load 'diminish
-      (diminish 'paredit-mode)))
+    (when (< emacs-major-version 31)
+      (with-eval-after-load 'diminish
+        (diminish 'paredit-mode))))
 
   (add-hook 'lisp-data-mode-hook 'paredit-mode)
 
@@ -3018,19 +3049,27 @@
         :keymap (conn-get-minor-mode-map 'conn-transpose-state 'paredit-mode)
         "c" 'paredit-convolute-sexp)
 
+      (conn-define-argument-command ((arg conn-transpose-thing-argument)
+                                     (cmd (eql paredit-convolute-sexp)))
+        "Call `paredit-convolute-sexp'.")
+
       (cl-defmethod conn-transpose-things-do ((cmd (eql paredit-convolute-sexp))
                                               arg
                                               _at-point-and-mark)
-        (paredit-convolute-sexp arg))
-
-      (cl-defmethod conn-argument-predicate ((_arg conn-transpose-thing-argument)
-                                             (_cmd (eql paredit-convolute-sexp)))
-        t))))
+        (paredit-convolute-sexp arg)))))
 
 ;;;; Olivetti
 
 (elpaca olivetti
-  (add-hook 'gnus-article-mode-hook 'olivetti-mode))
+  (keymap-global-set "C-c O" 'olivetti-mode)
+  (with-eval-after-load 'olivetti
+    (setq-default olivetti-body-width 86)
+    (defvar-keymap my/olivetti-repeat-map
+      :repeat t
+      "}" #'olivetti-expand
+      "{" #'olivetti-shrink))
+  (add-hook 'gnus-article-mode-hook 'olivetti-mode)
+  (add-hook 'erc-mode 'olivetti-mode))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"

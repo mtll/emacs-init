@@ -88,4 +88,13 @@
 (load (expand-file-name "font.el" user-emacs-directory) t t)
 (load (expand-file-name "custom.el" user-emacs-directory) t t)
 
+(with-eval-after-load 'lisp-mode
+  (add-to-list 'lisp-imenu-generic-expression
+               (list "Packages"
+                     (concat "^\\s-*(\\(elpaca\\)\\s-+[( ]*\\("
+                             (or (bound-and-true-p lisp-mode-symbol-regexp)
+                                 "\\(?:\\sw\\|\\s_\\|\\\\.\\)+")
+                             "\\)")
+                     2)))
+
 (provide 'early-init)
