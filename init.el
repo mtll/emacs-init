@@ -539,8 +539,7 @@
   (if (< emacs-major-version 31)
       (with-eval-after-load 'diminish
         (diminish 'hs-minor-mode ""))
-    (cl-pushnew 'hs-minor-mode
-                mode-line-collapse-minor-modes))
+    (cl-pushnew 'hs-minor-mode mode-line-collapse-minor-modes))
 
   (define-keymap
     :keymap hs-minor-mode-map
@@ -1608,7 +1607,7 @@
 
   (conn-special-state-mode 1)
   (conn-mode 1)
-  (conn-wincontrol-label-mode-line-mode 1)
+  (conn-global-wincontrol-mode-line-label-mode 1)
   (conn-jump-ring-mode 1)
   (conn-setup-isearch-map)
 
@@ -2614,14 +2613,12 @@
   (keymap-global-set "C-c n o" #'my-denote-org)
   (keymap-global-set "C-c n d" #'denote-dired-directory)
 
-  (defun my-denote-consult-find ()
+  (defun my-denote-consult-fd ()
     (interactive)
     (require 'denote)
     (require 'consult)
-    (let ((consult-async-min-input 2)
-          (consult-async-input-debounce 0.08))
-      (consult-find denote-directory)))
-  (keymap-global-set "C-c n f" #'my-denote-consult-find)
+    (consult-fd denote-directory))
+  (keymap-global-set "C-c n f" #'my-denote-consult-fd)
 
   (defun my-consult-denote-ripgrep-make-builder (paths)
     "Create ripgrep command line builder given PATHS."
@@ -3086,7 +3083,9 @@
       "}" #'olivetti-expand
       "{" #'olivetti-shrink))
   (add-hook 'gnus-article-mode-hook 'olivetti-mode)
-  (add-hook 'erc-mode 'olivetti-mode))
+  (add-hook 'erc-mode 'olivetti-mode)
+  (cl-pushnew 'olivetti-mode
+              mode-line-collapse-minor-modes))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"

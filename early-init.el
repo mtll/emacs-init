@@ -25,8 +25,7 @@
                                (float-time
                                 (time-subtract (current-time) before-init-time)))))))
 
-(setq-default mode-line-format nil
-              inhibit-message t
+(setq-default inhibit-message t
               inhibit-redisplay t)
 
 ;; (load (expand-file-name "elpaca/sources/benchmark-init-el/benchmark-init.el" user-emacs-directory) t  t)
