@@ -28,6 +28,8 @@
 (setq-default inhibit-message t
               inhibit-redisplay t)
 
+;; (setq native-comp-jit-compilation nil)
+
 ;; (load (expand-file-name "elpaca/sources/benchmark-init-el/benchmark-init.el" user-emacs-directory) t  t)
 ;; (load (expand-file-name "elpaca/sources/benchmark-init-el/benchmark-init-modes.el" user-emacs-directory) t  t)
 ;; (require 'benchmark-init)

@@ -378,6 +378,11 @@
 (with-eval-after-load 'c-ts-mode
   (setq c-ts-mode-indent-offset 4))
 
+;;;; Backup
+
+(setq vc-make-backup-files t
+      kept-old-versions 2)
+
 ;;;; Gnus
 
 (setq gnus-select-method '(nntp "news.yhetil.org")
@@ -1371,11 +1376,11 @@
 
 ;;;;; org-pdf-tools
 
-;; (elpaca org-pdftools
-;;   (with-eval-after-load 'pdf-tools
-;;     (require 'org)
-;;     (require 'org-pdftools)
-;;     (org-pdftools-setup-link)))
+(elpaca org-pdftools
+  (with-eval-after-load 'pdf-tools
+    (require 'org)
+    (require 'org-pdftools)
+    (org-pdftools-setup-link)))
 
 
 ;;;; tex
@@ -1704,9 +1709,8 @@
                    (require 'posframe)
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
-  (setq conn-window-label-function 'conn-posframe-window-labels
+  (setq conn-window-label-display-function 'conn-posframe-window-labels
         conn-quick-ref-display-function 'conn-quick-ref-posframe)
-  ;; (setq conn-quick-ref-display-function 'conn--quick-ref-minibuffer)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
 
@@ -2902,7 +2906,39 @@
       :query (buffer-substring-no-properties (region-beginning) (region-end))
       :format literal
       :files (rg-get-buffer-file-name)
-      :dir project)))
+      :dir project))
+
+  (with-eval-after-load 'conn
+    (defun my-rg-thing (thing arg transform &optional files dir confirm)
+      (interactive
+       (conn-read-args (conn-rgrep-state
+                        :prompt "Rgrep Thing")
+           ((`(,thing ,arg) (conn-grep-thing-argument))
+            (transform (conn-transform-argument))
+            (files (conn-grep-files-argument))
+            (directory (conn-grep-directory-argument))
+            (confirm
+             (conn-boolean-argument "confirm"
+                                    'conn-grep-confirm
+                                    conn-grep-confirm-argument-map
+                                    :reference "Edit the grep command before it is run.")))
+         (list thing arg transform files directory confirm)))
+      (require 'rg)
+      (pcase (conn-bounds-of thing arg)
+        ((conn-bounds `(,beg . ,end) transform)
+         (rg-run (buffer-substring-no-properties beg end)
+                 files
+                 dir
+                 'literal
+                 confirm)))
+      (conn-push-command-history 'my-rg-thing
+                                 thing
+                                 arg
+                                 transform
+                                 files
+                                 dir
+                                 confirm))
+    (keymap-set conn-default-edit-map "r" 'my-rg-thing)))
 
 
 ;;;; goto-chg
@@ -3086,6 +3122,10 @@
   (add-hook 'erc-mode 'olivetti-mode)
   (cl-pushnew 'olivetti-mode
               mode-line-collapse-minor-modes))
+
+;;;; Breadcrumb
+
+(elpaca breadcrumb)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"
