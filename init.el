@@ -3099,7 +3099,7 @@
         :keymap (conn-get-minor-mode-map 'conn-transpose-state 'paredit-mode)
         "c" 'paredit-convolute-sexp)
 
-      (conn-define-argument-command ((arg conn-transpose-thing-argument)
+      (define-conn-argument-command ((arg conn-transpose-thing-argument)
                                      (cmd (eql paredit-convolute-sexp)))
         "Call `paredit-convolute-sexp'.")
 
