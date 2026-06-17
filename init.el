@@ -78,6 +78,7 @@
 ;; elisp-fontify-semantically t
 
 (setq mode-line-collapse-minor-modes nil ; '(not conn-local-mode)
+      echo-keystrokes 0.33
       kill-buffer-quit-windows t
       kill-do-not-save-duplicates t
       window-combination-resize t
@@ -381,7 +382,10 @@
 ;;;; Backup
 
 (setq vc-make-backup-files t
-      kept-old-versions 2)
+      kept-old-versions 3
+      kept-new-versions 10
+      version-control t
+      delete-old-versions t)
 
 ;;;; Gnus
 
@@ -550,7 +554,7 @@
     :keymap hs-minor-mode-map
     ;; "<end>" 'my-hs-toggle-hiding
     "<home>" 'hs-show-all
-    "C-." 'hs-toggle-hiding
+    ;; "C-." 'hs-toggle-hiding
     "M-s h h" #'hs-hide-all
     "M-s h s" #'hs-show-all
     "M-s h v" #'hs-hide-level))
@@ -1247,7 +1251,7 @@
             (interactive)
             (helpful-symbol sym)))))
     (remove-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-describe-symbol)
-    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-helpful-symbol 0)))
+    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-helpful-symbol -20)))
 
 
 ;;;; sly
@@ -1571,6 +1575,7 @@
       (conn-push-state 'conn-command-state)
       t))
   (add-hook 'conn-setup-state-functions 'my-scratch-buffer-state)
+  (add-hook 'conn-quick-ref-start-hook (lambda () (completion-in-region-mode -1)))
   (keymap-global-set "C-c r" 'conn-register-prefix)
   (keymap-global-set "C-M-," 'conn-dispatch-on-buttons)
   (put 'conn-recenter-on-region 'repeat-continue t)
@@ -1628,6 +1633,12 @@
         conn-read-args-message-delay 0.66)
 
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-w" 'conn-kill-thing)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-r" 'conn-change-thing)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-." 'conn-repeat)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-TAB" conn-dwim-at-point)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "C-<tab>" conn-dwim-at-point)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-TAB" conn-alt-dwim-at-point)
+  (keymap-set (conn-get-state-map 'conn-emacs-state) "M-<tab>" conn-alt-dwim-at-point)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "M-h" conn-edit-remap)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "M-s" conn-search-remap)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "M-g" conn-goto-remap)
@@ -1649,7 +1660,7 @@
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
-    "C-;" 'conn-wincontrol
+    "C-;" 'conn-wincontrol-mode
     "C-S-w" 'conn-wincontrol-one-command
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
@@ -1710,7 +1721,8 @@
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
   (setq conn-window-label-display-function 'conn-posframe-window-labels
-        conn-quick-ref-display-function 'conn-quick-ref-posframe)
+        conn-quick-ref-display-function 'conn-quick-ref-posframe
+        conn-quick-ref-posframe-fringe 6)
   (with-eval-after-load 'posframe
     (conn-posframe-mode 1)))
 
@@ -2066,6 +2078,8 @@
         (when conn-local-mode
           (conn-state-on-exit _type
             :name 'cancel-completion
+            (when corfu-auto--timer
+              (cancel-timer corfu-auto--timer))
             (completion-in-region-mode -1))))
       (add-hook 'completion-in-region-mode-hook #'my/cancel-completion))))
 
@@ -2502,8 +2516,8 @@
 
 (elpaca tempel
   (require 'tempel)
-  (keymap-global-set "C-<tab>" 'tempel-insert)
-  (keymap-global-set "C-TAB" 'tempel-insert)
+  ;; (keymap-global-set "C-<tab>" 'tempel-insert)
+  ;; (keymap-global-set "C-TAB" 'tempel-insert)
 
   (with-eval-after-load 'conn
     (defun conn-tab-tempel-expand ()
