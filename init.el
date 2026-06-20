@@ -1648,12 +1648,12 @@
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-z" 'conn-yank-replace)
   (keymap-set (conn-get-state-map 'conn-emacs-state) "C-," 'conn-dispatch)
 
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-w" 'conn-kill-thing)
-  (keymap-set (conn-get-state-map 'conn-command-state) "M-w" 'conn-copy-thing)
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-t" 'conn-transpose-things)
-  (keymap-set (conn-get-state-map 'conn-command-state) "M-t" 'conn-duplicate-thing)
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-z" 'conn-yank-replace)
-  (keymap-set (conn-get-state-map 'conn-command-state) "C-," 'conn-dispatch)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "C-w" 'conn-kill-thing)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "M-w" 'conn-copy-thing)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "C-t" 'conn-transpose-things)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "M-t" 'conn-duplicate-thing)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "C-z" 'conn-yank-replace)
+  ;; (keymap-set (conn-get-state-map 'conn-command-state) "C-," 'conn-dispatch)
 
   (define-keymap
     :keymap global-map
@@ -1720,7 +1720,7 @@
                    (require 'posframe)
                    (remove-hook 'conn-wincontrol-mode-hook hook))))
     (add-hook 'conn-wincontrol-mode-hook hook))
-  (setq conn-window-label-display-function 'conn-posframe-window-labels
+  (setq conn-window-label-default-display-function 'conn-setup-posframe-window-label
         conn-quick-ref-display-function 'conn-quick-ref-posframe
         conn-quick-ref-posframe-fringe 6)
   (with-eval-after-load 'posframe
