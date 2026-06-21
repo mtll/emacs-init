@@ -215,9 +215,9 @@
 
 (keymap-global-set "C-S-l" 'move-to-window-line-top-bottom)
 
-(keymap-global-set "M-l" 'downcase-dwim)
-(keymap-global-set "M-u" 'upcase-dwim)
-(keymap-global-set "M-c" 'capitalize-dwim)
+;; (keymap-global-set "M-l" 'downcase-dwim)
+;; (keymap-global-set "M-u" 'upcase-dwim)
+;; (keymap-global-set "M-c" 'capitalize-dwim)
 
 (keymap-global-set "C-x t u" #'tab-previous)
 (keymap-global-set "C-x t /" #'tab-undo)
@@ -511,6 +511,12 @@
     (let ((project (project-current)))
       (ibuffer nil (format "*%s Buffers*" (project-name project))
                (list (cons 'my-project-files project))))))
+
+(defun my-ibuffer-dired-buffers (&optional all)
+  (interactive "P")
+  (require 'ibuf-ext)
+  (ibuffer nil "Dired Buffers*" (list (cons 'mode 'dired-mode))))
+(keymap-global-set "C-x J" 'my-ibuffer-dired-buffers)
 
 ;;;; Eshell
 
@@ -1465,6 +1471,7 @@
          'list
          `((bg-main "#fff5e8")
            (fg-active-argument "#630863")
+           (bg-hl-line "#b2e4dc")
            (bg-active-argument "#fcd1fc")
            (cursor "#7d0002")
            (bg-region "#f7dbd6")
@@ -1592,6 +1599,9 @@
 
   (with-eval-after-load 'conn
     (keymap-set (conn-get-state-map 'conn-emacs-state) "M-i" 'conn-one-command)
+    (keymap-set conn-local-mode-map "M-l" 'conn-downcase-thing)
+    (keymap-set conn-local-mode-map "M-u" 'conn-upcase-thing)
+    (keymap-set conn-local-mode-map "M-c" 'conn-capitalize-thing)
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-mode)
@@ -2594,6 +2604,42 @@
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
   (my-incremental-load (lambda () (require 'denote)))
+
+  (defvar-local my-local-inbox nil)
+  (defun my-open-local-inbox ()
+    (interactive)
+    (require 'denote)
+    (find-file
+     (with-memoization
+         (buffer-local-value 'my-local-inbox (current-buffer))
+       (read-file-name "Note File: " denote-directory nil t))))
+  (keymap-global-set "C-c n L" 'my-open-local-inbox)
+
+  (defun my-capture-local-note ()
+    (require 'denote)
+    (when-let* ((buf (find-file-noselect
+                      (with-memoization
+                          (buffer-local-value 'my-local-inbox (current-buffer))
+                        (read-file-name "Note File: " denote-directory nil t)))))
+      (set-buffer buf)
+      (end-of-buffer)
+      (unless (bolp) (insert "\n"))))
+
+  (with-eval-after-load 'org-capture
+    (setf (alist-get "l" org-capture-templates nil nil #'equal)
+          `("Local inbox" entry
+            (function my-capture-local-note)
+            "* %?\n%T\n  %i\n"
+            :no-save t
+            :immediate-finish nil
+            :kill-buffer t))
+    (setf (alist-get "L" org-capture-templates nil nil #'equal)
+          `("Local inbox w/ link" entry
+            (function my-capture-local-note)
+            "* TODO %?\n  %i\n  %a\n\n"
+            :no-save t
+            :immediate-finish nil
+            :kill-buffer t)))
 
   (with-eval-after-load 'denote
     (denote-rename-buffer-mode 1)

@@ -64,7 +64,7 @@
 (setq use-dialog-box nil)
 
 (setq window-resize-pixelwise t
-      custom-file (make-temp-file "emacs-custom-")
+      custom-file (expand-file-name "custom.el" user-emacs-directory)
       frame-resize-pixelwise t
       visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow)
       frame-title-format (list '(:eval (alist-get 'name (tab-bar--current-tab))))
