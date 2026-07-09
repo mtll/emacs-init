@@ -36,9 +36,10 @@
 ;; (benchmark-init/activate)
 ;; (add-hook 'elpaca-after-init-hook 'benchmark-init/deactivate)
 
-(setq-default truncate-lines nil
-              ;; truncate-partial-width-windows nil
-              window-resize-pixelwise nil)
+(setq-default
+ ;; truncate-lines nil
+ ;; truncate-partial-width-windows nil
+ window-resize-pixelwise nil)
 
 ;; (setq-default bidi-paragraph-direction 'left-to-right)
 (setq bidi-inhibit-bpa t)
@@ -87,7 +88,6 @@
 (advice-add #'x-apply-session-resources :override #'ignore)
 
 (load (expand-file-name "font.el" user-emacs-directory) t t)
-(load (expand-file-name "custom.el" user-emacs-directory) t t)
 
 (with-eval-after-load 'lisp-mode
   (add-to-list 'lisp-imenu-generic-expression

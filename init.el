@@ -1587,13 +1587,11 @@
   (keymap-global-set "C-M-," 'conn-dispatch-on-buttons)
   (put 'conn-recenter-on-region 'repeat-continue t)
 
-  (with-eval-after-load 'org
-    (require 'conn-org))
-
   (with-eval-after-load 'dired
     (keymap-set dired-mode-map "f" 'conn-dispatch-on-things))
 
   (with-eval-after-load 'org
+    (require 'conn-org)
     (keymap-set org-mode-map "<conn-thing-map> M" 'conn-mark-org-math)
     (keymap-set org-mode-map "<conn-thing-map> m" 'conn-mark-org-inner-math))
 
@@ -2121,7 +2119,8 @@
 
 (elpaca nerd-icons-completion
   (with-eval-after-load 'marginalia
-    (nerd-icons-completion-marginalia-setup)))
+    (when marginalia-mode (nerd-icons-completion-mode))
+    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))
 
 
 ;;;; bicycle
@@ -2526,6 +2525,7 @@
 
 (elpaca tempel
   (require 'tempel)
+  (global-tempel-abbrev-mode)
   ;; (keymap-global-set "C-<tab>" 'tempel-insert)
   ;; (keymap-global-set "C-TAB" 'tempel-insert)
 
@@ -2629,14 +2629,14 @@
     (setf (alist-get "l" org-capture-templates nil nil #'equal)
           `("Local inbox" entry
             (function my-capture-local-note)
-            "* %?\n%T\n  %i\n"
+            "* %?\n:PROPERTIES:\n:CAPTURED: %U\n:END:\n\n%i\n"
             :no-save t
             :immediate-finish nil
             :kill-buffer t))
     (setf (alist-get "L" org-capture-templates nil nil #'equal)
           `("Local inbox w/ link" entry
             (function my-capture-local-note)
-            "* TODO %?\n  %i\n  %a\n\n"
+            "* %?\n:PROPERTIES:\n:CAPTURED: %U\n:END:\n\n%a\n%i\n"
             :no-save t
             :immediate-finish nil
             :kill-buffer t)))
@@ -3172,16 +3172,19 @@
 
 (elpaca olivetti
   (keymap-global-set "C-c O" 'olivetti-mode)
+  (remove-hook 'olivetti-mode-on-hook 'visual-line-mode)
+  (add-hook 'gnus-article-mode-hook 'olivetti-mode)
+  (add-hook 'erc-mode-hook 'olivetti-mode)
+  (add-hook 'dired-mode-hook 'olivetti-mode)
+  (add-hook 'ibuffer-mode-hook 'olivetti-mode)
+  (cl-pushnew 'olivetti-mode
+              mode-line-collapse-minor-modes)
   (with-eval-after-load 'olivetti
     (setq-default olivetti-body-width 86)
     (defvar-keymap my/olivetti-repeat-map
       :repeat t
       "}" #'olivetti-expand
-      "{" #'olivetti-shrink))
-  (add-hook 'gnus-article-mode-hook 'olivetti-mode)
-  (add-hook 'erc-mode 'olivetti-mode)
-  (cl-pushnew 'olivetti-mode
-              mode-line-collapse-minor-modes))
+      "{" #'olivetti-shrink)))
 
 ;;;; Breadcrumb
 
