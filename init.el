@@ -77,7 +77,9 @@
 ;; visual-order-cursor-movement t
 ;; elisp-fontify-semantically t
 
-(setq mode-line-collapse-minor-modes nil ; '(not conn-local-mode)
+(setq help-enable-variable-value-editing t
+      split-window-preferred-direction 'horizontal
+      mode-line-collapse-minor-modes nil ; '(not conn-local-mode)
       echo-keystrokes 0.33
       kill-buffer-quit-windows t
       kill-do-not-save-duplicates t
@@ -212,6 +214,7 @@
 (keymap-global-set "C-x j" #'dired-jump)
 (keymap-global-set "C-x C-j" #'previous-buffer)
 (keymap-global-set "C-x C-l" #'next-buffer)
+(keymap-global-set "M-R" #'move-to-window-line-top-bottom)
 
 (keymap-global-set "C-S-l" 'move-to-window-line-top-bottom)
 
@@ -322,11 +325,6 @@
                   (use-region-p)))
 (keymap-global-set "M-w" 'my-copy-line-or-region)
 
-(defun ediff-split-fn ()
-  (if (> (frame-width) 150)
-      'split-window-horizontally
-    'split-window-vertically))
-
 ;; (find-function-setup-keys)
 
 (defun my-forward-page ()
@@ -378,6 +376,10 @@
 
 (with-eval-after-load 'c-ts-mode
   (setq c-ts-mode-indent-offset 4))
+
+;;;; Help
+
+(setq help-window-select t)
 
 ;;;; Backup
 
@@ -581,7 +583,8 @@
         org-confirm-babel-evaluate nil
         org-startup-indented nil
         org-agenda-files (list "~/Documents/notes/")
-        org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'")
+        org-agenda-file-regexp "\\`[^.].*_agenda\\(_.*\\.\\|\\.\\)\\org\\'"
+        org-todo-keywords '((sequence "TODO" "|" "DONE" "NOPE")))
 
   (keymap-global-set "C-c c" 'org-capture)
   (keymap-global-set "C-c o" 'org-store-link)
@@ -1157,8 +1160,7 @@
 
 ;;;; Compat
 
-(static-if (< emacs-major-version 31)
-    (elpaca compat))
+(elpaca compat)
 
 ;;;; Transient
 
@@ -1238,26 +1240,26 @@
 
 ;;;; helpful
 
-(elpaca helpful
-  (keymap-global-set "C-h v" 'helpful-variable)
-  (keymap-global-set "C-h k" 'helpful-key)
-  (keymap-global-set "C-h ," 'display-local-help)
-  (keymap-global-set "C-h ." 'helpful-at-point)
-  (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
-  (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
-
-  (push '(help-mode . helpful-mode) major-mode-remap-alist)
-  (with-eval-after-load 'conn
-    (defun conn-dwim-helpful-symbol ()
-      (when (and (derived-mode-p '(emacs-lisp-mode
-                                   lisp-interaction-mode))
-                 (bounds-of-thing-at-point 'symbol))
-        (when-let* ((sym (intern-soft (thing-at-point 'symbol))))
-          (lambda ()
-            (interactive)
-            (helpful-symbol sym)))))
-    (remove-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-describe-symbol)
-    (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-helpful-symbol -20)))
+;; (elpaca helpful
+;;   (keymap-global-set "C-h v" 'helpful-variable)
+;;   (keymap-global-set "C-h k" 'helpful-key)
+;;   (keymap-global-set "C-h ," 'display-local-help)
+;;   (keymap-global-set "C-h ." 'helpful-at-point)
+;;   (keymap-global-set "<remap> <describe-function>" 'helpful-callable)
+;;   (keymap-global-set "<remap> <describe-variable>" 'helpful-variable)
+;; 
+;;   (push '(help-mode . helpful-mode) major-mode-remap-alist)
+;;   (with-eval-after-load 'conn
+;;     (defun conn-dwim-helpful-symbol ()
+;;       (when (and (derived-mode-p '(emacs-lisp-mode
+;;                                    lisp-interaction-mode))
+;;                  (bounds-of-thing-at-point 'symbol))
+;;         (when-let* ((sym (intern-soft (thing-at-point 'symbol))))
+;;           (lambda ()
+;;             (interactive)
+;;             (helpful-symbol sym)))))
+;;     (remove-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-describe-symbol)
+;;     (add-hook 'conn-alt-dwim-at-point-hook #'conn-dwim-helpful-symbol -20)))
 
 
 ;;;; sly
@@ -1268,16 +1270,17 @@
           sly-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4096"))
                                      (clisp ("clisp" "-ansi"))))
 
-    (defun sly-setup-embark ()
-      (require 'embark)
-      (make-local-variable 'embark-default-action-overrides)
-      (make-local-variable 'conn-embark-alt-default-action-overrides)
-      (setf (alist-get 'expression embark-default-action-overrides) 'sly-interactive-eval
-            (alist-get 'defun embark-default-action-overrides) 'sly-eval-defun
-            (alist-get 'identifier embark-default-action-overrides) 'sly-edit-definition
-            (alist-get 'identifier conn-embark-alt-default-action-overrides) 'sly-documentation-lookup))
-    (add-hook 'sly-mode-hook #'sly-setup-embark)
-    (add-hook 'sly-repl-mode-hook #'sly-setup-embark))
+    ;; (defun sly-setup-embark ()
+    ;;   (require 'embark)
+    ;;   (make-local-variable 'embark-default-action-overrides)
+    ;;   (make-local-variable 'conn-embark-alt-default-action-overrides)
+    ;;   (setf (alist-get 'expression embark-default-action-overrides) 'sly-interactive-eval
+    ;;         (alist-get 'defun embark-default-action-overrides) 'sly-eval-defun
+    ;;         (alist-get 'identifier embark-default-action-overrides) 'sly-edit-definition
+    ;;         (alist-get 'identifier conn-embark-alt-default-action-overrides) 'sly-documentation-lookup))
+    ;; (add-hook 'sly-mode-hook #'sly-setup-embark)
+    ;; (add-hook 'sly-repl-mode-hook #'sly-setup-embark)
+    )
 
   (with-eval-after-load 'smartparens
     (add-hook 'sly-mrepl-mode-hook 'smartparens-mode)))
@@ -1357,6 +1360,16 @@
 ;;;; ess
 
 (elpaca ess)
+
+;;;; bufferlo
+
+(elpaca bufferlo
+  (bufferlo-mode 1))
+
+
+;;;; Reader
+
+;; (elpaca (reader :host codeberg :repo "MonadicSheep/emacs-reader"))
 
 
 ;;;; pdf-tools
@@ -1597,9 +1610,9 @@
 
   (with-eval-after-load 'conn
     (keymap-set (conn-get-state-map 'conn-emacs-state) "M-i" 'conn-one-command)
-    (keymap-set conn-local-mode-map "M-l" 'conn-downcase-thing)
-    (keymap-set conn-local-mode-map "M-u" 'conn-upcase-thing)
-    (keymap-set conn-local-mode-map "M-c" 'conn-capitalize-thing)
+    (keymap-set (conn-get-state-map 'conn-command-state) "M-l" 'conn-downcase-thing)
+    (keymap-set (conn-get-state-map 'conn-command-state) "M-u" 'conn-upcase-thing)
+    (keymap-set (conn-get-state-map 'conn-command-state) "M-c" 'conn-capitalize-thing)
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-mode)
@@ -1668,7 +1681,7 @@
     "<remap> <scroll-other-window>" 'conn-wincontrol-other-window-scroll-up
     "<remap> <scroll-other-window-down>" 'conn-wincontrol-other-window-scroll-down
     "C-x ," 'subword-mode
-    "C-;" 'conn-wincontrol-mode
+    "C-;" 'conn-wincontrol
     "C-S-w" 'conn-wincontrol-one-command
     "M-o" 'conn-open-line
     "C-o" 'conn-open-line-above
@@ -1699,7 +1712,7 @@
   (keymap-global-set "<mouse-3>" 'conn-last-dispatch-at-mouse)
   (with-eval-after-load 'outline
     (keymap-set
-     (conn-get-minor-mode-map 'conn-command-state 'outline-minor-mode)
+     (conn-get-minor-mode-map 'conn-command-common-state 'outline-minor-mode)
      "M-h" 'conn-outline-state-up-heading)))
 
 (with-eval-after-load 'conn
@@ -1891,7 +1904,7 @@
 
     (keymap-set embark-region-map "RET" 'copy-region-as-kill)
     (keymap-set embark-defun-map "n" 'narrow-to-defun)
-    (keymap-set embark-symbol-map "h" 'helpful-symbol)
+    ;; (keymap-set embark-symbol-map "h" 'helpful-symbol)
     (keymap-set embark-collect-mode-map "C-j" 'consult-preview-at-point)
     (keymap-set embark-heading-map "RET" #'outline-cycle)
     (keymap-set embark-symbol-map "RET" #'xref-find-definitions)
@@ -3147,7 +3160,7 @@
        'paredit-backward-down)
 
       (define-keymap
-        :keymap (conn-get-minor-mode-map 'conn-command-state 'paredit-mode)
+        :keymap (conn-get-minor-mode-map 'conn-command-common-state 'paredit-mode)
         "M-s" 'paredit-splice-sexp
         "M-r" 'paredit-raise-sexp
         "(" 'paredit-backward-up
@@ -3189,6 +3202,8 @@
 ;;;; Breadcrumb
 
 (elpaca breadcrumb)
+
+(load (expand-file-name "local-init.el" user-emacs-directory) t t)
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* [^    \n]"

@@ -8,8 +8,7 @@
             (lambda ()
               "Restore default values after init."
               (setq-default mode-line-format format
-                            inhibit-message nil
-                            inhibit-redisplay nil)
+                            inhibit-message nil)
               (setq file-name-handler-alist default-file-name-handler-alist)
               (setq gc-cons-threshold (* 32 1024 1024)
                     gc-cons-percentage 0.6)
@@ -25,8 +24,7 @@
                                (float-time
                                 (time-subtract (current-time) before-init-time)))))))
 
-(setq-default inhibit-message t
-              inhibit-redisplay t)
+(setq-default inhibit-message t)
 
 ;; (setq native-comp-jit-compilation nil)
 
@@ -72,7 +70,7 @@
       native-comp-async-report-warnings-errors 'silent
       frame-inhibit-implied-resize t
       package-enable-at-startup nil
-      initial-buffer-choice t
+      initial-buffer-choice nil
       ring-bell-function #'ignore
       pulse-face-duration 0.15
       inhibit-startup-screen t
@@ -88,6 +86,7 @@
 (advice-add #'x-apply-session-resources :override #'ignore)
 
 (load (expand-file-name "font.el" user-emacs-directory) t t)
+(load (expand-file-name "local-early-init.el" user-emacs-directory) t t)
 
 (with-eval-after-load 'lisp-mode
   (add-to-list 'lisp-imenu-generic-expression
