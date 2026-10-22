@@ -161,6 +161,11 @@
       project-vc-extra-root-markers '(".projectile" ".project")
       kill-region-dwim 'emacs-word)
 
+;; ???
+(advice-add 'isearch-mode :before
+            (lambda (&rest _)
+              (show-paren--delete-context-child-frame)))
+
 (setopt register-use-preview nil)
 
 (add-hook 'emacs-lisp-mode-hook
@@ -1737,22 +1742,23 @@
 (elpaca (conn-posframe :host github
                        :repo "mtll/conn"
                        :files ("extensions/conn-posframe.el"))
-  (letrec ((hook (lambda ()
-                   (require 'posframe)
-                   (remove-hook 'conn-wincontrol-mode-hook hook))))
-    (add-hook 'conn-wincontrol-mode-hook hook))
-  (setq conn-window-label-default-display-function 'conn-setup-posframe-window-label
-        conn-quick-ref-display-function 'conn-quick-ref-posframe
-        conn-quick-ref-posframe-fringe 6)
-  (with-eval-after-load 'posframe
-    (conn-posframe-mode 1)))
+  (with-eval-after-load 'conn
+    (letrec ((hook (lambda ()
+                     (require 'posframe)
+                     (remove-hook 'conn-wincontrol-mode-hook hook))))
+      (add-hook 'conn-wincontrol-mode-hook hook))
+    (setq conn-window-label-default-display-function 'conn-setup-posframe-window-label
+          conn-quick-ref-display-function 'conn-quick-ref-posframe
+          conn-quick-ref-posframe-fringe 6)
+    (with-eval-after-load 'posframe
+      (conn-posframe-mode 1))))
 
 (elpaca (conn-consult :host github
                       :repo "mtll/conn"
                       :files ("extensions/conn-consult.el"))
-  (with-eval-after-load 'consult
-    (require 'conn-consult))
   (with-eval-after-load 'conn
+    (with-eval-after-load 'consult
+      (require 'conn-consult))
     (keymap-global-set "<conn-edit-map> f" 'conn-consult-line-thing)
     (keymap-global-set "<conn-edit-map> F" 'conn-consult-line-multi-thing)
     (keymap-global-set "<conn-edit-map> g" 'conn-consult-ripgrep-thing)
