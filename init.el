@@ -46,30 +46,37 @@
 
 (setq magit-define-global-key-bindings nil)
 
-(defvar my--to-incremental-load nil)
+(defvar my--incremental-load-list nil)
 (defvar my--incremental-load-timer nil)
 
-(defun my-incremental-load (fn)
-  (push fn my--to-incremental-load)
-  (unless my--incremental-load-timer
-    (setq my--incremental-load-timer
-          (run-with-idle-timer 3 nil 'my--do-incremental-load))))
+(defun my--incremental-loader ()
+  (unwind-protect
+      (while (and my--incremental-load-list
+                  (not (input-pending-p)))
+        (with-demoted-errors "Error in incremental loader: %s"
+          (let ((inhibit-message t)
+                (throw-on-input nil))
+            (require (pop my--incremental-load-list)))))
+    (unless my--incremental-load-list
+      (cancel-timer my--incremental-load-timer))))
 
-(defun my--do-incremental-load ()
-  (when my--incremental-load-timer
-    (cancel-timer my--incremental-load-timer)
-    (setq my--incremental-load-timer nil))
-  (while (and my--to-incremental-load
-              (not (input-pending-p)))
-    (with-demoted-errors "Error in incremental loader: %s"
-      (let ((inhibit-message t))
-        (funcall (pop my--to-incremental-load)))))
-  (when my--to-incremental-load
-    (setq my--incremental-load-timer
-          (run-with-idle-timer 3 nil 'my--do-incremental-load))))
-(setq my--incremental-load-timer
-      (run-with-idle-timer 3 nil 'my--do-incremental-load))
-(add-hook 'focus-out-hook 'my--do-incremental-load)
+(defun my--incremental-load (feature)
+  (if (daemonp) (require feature)
+    (cl-callf nconc my--incremental-load-list (list feature))
+    (cond ((null my--incremental-load-timer)
+           (setq my--incremental-load-timer
+                 (run-with-idle-timer 3 t 'my--incremental-loader)))
+          ((not (memq my--incremental-load-timer timer-idle-list))
+           (timer-activate-when-idle my--incremental-load-timer t)))))
+
+(defmacro my-incremental-load (feature &rest body)
+  (declare (indent 1))
+  (if (null body) `(my--incremental-load ,feature)
+    (macroexp-let2 nil feature feature
+      `(progn
+         (my--incremental-load ,feature)
+         (with-eval-after-load ,feature
+           ,@body)))))
 
 ;;;; emacs
 
@@ -288,11 +295,6 @@
   (setq show-trailing-whitespace t))
 (add-hook 'prog-mode-hook 'my-show-trailing-whitespace)
 
-(defun my-quit-other-window-for-scrolling ()
-  (interactive)
-  (with-selected-window (other-window-for-scrolling)
-    (quit-window)))
-(keymap-global-set "C-M-S-u" 'my-quit-other-window-for-scrolling)
 (keymap-global-set "C-M-S-i" #'scroll-other-window-down)
 (keymap-global-set "C-M-S-k" #'scroll-other-window)
 (keymap-global-set "C-M-S-." #'end-of-buffer-other-window)
@@ -384,7 +386,7 @@
 
 ;;;; Help
 
-(setq help-window-select t)
+;; (setq help-window-select t)
 
 ;;;; Backup
 
@@ -576,7 +578,6 @@
 ;;;; org
 
 (elpaca org
-  (my-incremental-load (lambda () (require 'org)))
   (setq org-highlight-latex-and-related '(native script entities)
         org-refile-use-outline-path nil
         org-outline-path-complete-in-steps nil
@@ -598,7 +599,7 @@
 
   (add-hook 'org-mode-hook 'word-wrap-whitespace-mode)
 
-  (with-eval-after-load 'org
+  (my-incremental-load 'org
     (keymap-set org-mode-map "C-c t" 'org-todo)
     (with-eval-after-load 'conn
       (keymap-set org-mode-map "C-M-<return>" #'org-insert-subheading)
@@ -1069,8 +1070,7 @@
 
 ;;;; ibuffer
 
-(my-incremental-load (lambda () (require 'ibuffer)))
-(with-eval-after-load 'ibuffer
+(my-incremental-load 'ibuffer
   (setq ibuffer-human-readable-size t))
 (add-hook 'ibuffer-mode-hook 'hl-line-mode)
 
@@ -1079,12 +1079,7 @@
 
 (keymap-global-set "C-x h" 'dired-jump)
 
-(my-incremental-load (lambda () (require 'dired)))
-
-(add-hook 'dired-mode-hook 'dired-hide-details-mode)
-(add-hook 'dired-mode-hook 'hl-line-mode)
-
-(with-eval-after-load 'dired
+(my-incremental-load 'dired
   (setq dired-omit-files (rx (or (seq string-start (1+ ".") (1+ (not ".")))
                                  (seq string-start (1+ "#"))))
         dired-dwim-target 'dired-dwim-target-recent
@@ -1092,6 +1087,9 @@
         dired-recursive-deletes 'top
         dired-recursive-copies 'always
         dired-create-destination-dirs 'ask))
+
+(add-hook 'dired-mode-hook 'dired-hide-details-mode)
+(add-hook 'dired-mode-hook 'hl-line-mode)
 
 
 ;;;; eldoc
@@ -1462,8 +1460,8 @@
 ;;;; dtrt-indent
 
 (elpaca dtrt-indent
-  (my-incremental-load (lambda () (dtrt-indent-global-mode 1)))
-  (with-eval-after-load 'dtrt-indent
+  (my-incremental-load 'dtrt-indent
+    (dtrt-indent-global-mode 1)
     (if (< emacs-major-version 31)
         (with-eval-after-load 'diminish
           (diminish 'dtrt-indent-mode))
@@ -1565,7 +1563,7 @@
 (when window-system
   (elpaca posframe
     (setq posframe-inhibit-double-buffering t)
-    (my-incremental-load (lambda () (require 'posframe)))))
+    (my-incremental-load 'posframe)))
 
 
 ;;;; elixir-ts
@@ -1808,7 +1806,7 @@
 (elpaca (cond-let :host github :repo "tarsius/cond-let"))
 
 (elpaca (magit :host github :repo "magit/magit" :files (:defaults "git-commit.el"))
-  (my-incremental-load (lambda () (require 'magit)))
+  (my-incremental-load 'magit)
   (with-eval-after-load 'nerd-icons
     (setq magit-format-file-function #'magit-format-file-nerd-icons))
 
@@ -2114,7 +2112,7 @@
 ;;;; nerd icons
 
 (elpaca nerd-icons
-  (my-incremental-load (lambda () (require 'nerd-icons))))
+  (my-incremental-load 'nerd-icons))
 
 (elpaca nerd-icons-dired
   (add-hook 'dired-mode-hook #'nerd-icons-dired-mode)
@@ -2622,7 +2620,7 @@
 ;;;; denote
 
 (elpaca (denote :files (:defaults "denote-org-extras.el"))
-  (my-incremental-load (lambda () (require 'denote)))
+  (my-incremental-load 'denote)
 
   (defvar-local my-local-inbox nil)
   (defun my-open-local-inbox ()
@@ -2764,9 +2762,8 @@
 ;;;; jinx
 
 (elpaca jinx
-  (my-incremental-load (lambda () (global-jinx-mode 1)))
-
-  (with-eval-after-load 'jinx
+  (my-incremental-load 'jinx
+    (global-jinx-mode 1)
     (cl-pushnew 'jinx-mode
                 mode-line-collapse-minor-modes)
     (define-keymap
