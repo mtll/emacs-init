@@ -84,7 +84,8 @@
 ;; visual-order-cursor-movement t
 ;; elisp-fontify-semantically t
 
-(setq help-enable-variable-value-editing t
+(setq debugger-stack-frame-as-list t
+      help-enable-variable-value-editing t
       split-window-preferred-direction 'horizontal
       mode-line-collapse-minor-modes nil ; '(not conn-local-mode)
       echo-keystrokes 0.33
@@ -855,6 +856,10 @@
 (keymap-set isearch-mode-map "M-DEL" 'isearch-delete-char)
 (keymap-set isearch-mode-map "M-DEL" 'isearch-del-char)
 (keymap-set isearch-mode-map "M-z"   'transient-resume)
+
+(with-eval-after-load 'conn
+  (keymap-global-set "C-S-s" 'conn-wincontrol-isearch-other-window)
+  (keymap-global-set "C-S-r" 'conn-wincontrol-isearch-other-window-backward))
 
 ;; (defun isearch-escapable-split-on-char (string char)
 ;;   "Split STRING on CHAR, which can be escaped with backslash."
