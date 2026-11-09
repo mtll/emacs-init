@@ -84,7 +84,8 @@
 ;; visual-order-cursor-movement t
 ;; elisp-fontify-semantically t
 
-(setq debugger-stack-frame-as-list t
+(setq query-replace-show-preview 'both
+      debugger-stack-frame-as-list t
       help-enable-variable-value-editing t
       split-window-preferred-direction 'horizontal
       mode-line-collapse-minor-modes nil ; '(not conn-local-mode)
@@ -115,7 +116,6 @@
       mark-even-if-inactive t
       even-window-sizes nil
       scroll-preserve-screen-position 'always
-      delete-active-region nil
       fill-column 70
       use-short-answers t
       y-or-n-p-use-read-key t
@@ -168,6 +168,8 @@
                                restore)
       project-vc-extra-root-markers '(".projectile" ".project")
       kill-region-dwim 'emacs-word)
+
+(setq delete-active-region t)
 
 ;; ???
 (advice-add 'isearch-mode :before
@@ -1290,8 +1292,20 @@
     ;; (add-hook 'sly-repl-mode-hook #'sly-setup-embark)
     )
 
+  (with-eval-after-load 'sly-package-fu
+    (define-keymap
+      :keymap sly-mode-map
+      "C-c x" 'macrostep-expand)
+    (keymap-unset sly-mode-map "C-c i"))
+
   (with-eval-after-load 'smartparens
     (add-hook 'sly-mrepl-mode-hook 'smartparens-mode)))
+
+;;;;; sly-macrostep
+
+(elpaca sly-macrostep
+  (with-eval-after-load 'sly
+    (require 'sly-macrostep-autoloads)))
 
 
 ;;;; bqn-mode
@@ -1413,14 +1427,14 @@
     (require 'org-pdftools)
     (org-pdftools-setup-link)))
 
+;;;; emureader
+
+;; (elpaca emureader)
+
 
 ;;;; tex
 
-(elpaca (auctex :build
-                (:before (("./autogen.sh")
-                          ("./configure"
-                           "--with-texmf-dir=$(kpsewhich -var-value TEXMFHOME)")
-                          ("make"))))
+(elpaca auctex
   (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex))
 
 
@@ -1621,6 +1635,7 @@
     (keymap-set (conn-get-state-map 'conn-command-state) "M-l" 'conn-downcase-thing)
     (keymap-set (conn-get-state-map 'conn-command-state) "M-u" 'conn-upcase-thing)
     (keymap-set (conn-get-state-map 'conn-command-state) "M-c" 'conn-capitalize-thing)
+    (keymap-set (conn-get-state-map 'conn-command-state) "S-SPC" 'conn-self-insert-after)
 
     (dolist (state '(conn-command-state conn-emacs-state))
       (keymap-set (conn-get-major-mode-map state 'occur-mode)
@@ -2066,7 +2081,8 @@
                      (global-corfu-mode 1)
                      (corfu-popupinfo-mode 1)
                      (corfu-echo-mode 1)
-                     (corfu-history-mode 1))))
+                     (corfu-history-mode 1)
+                     (remove-hook 'prog-mode-hook loader))))
     (add-hook 'prog-mode-hook loader))
 
   (setq corfu-scroll-margin 2
@@ -2085,10 +2101,10 @@
   (with-eval-after-load 'corfu
     (define-keymap
       :keymap corfu-map
-      "M-f" 'corfu-info-documentation
-      "M-b" 'corfu-info-location
-      "C-M-f" 'scroll-other-window
-      "C-M-b" 'scroll-other-window-down
+      "M-F" 'corfu-info-documentation
+      "M-B" 'corfu-info-location
+      "C-M-F" 'scroll-other-window
+      "C-M-B" 'scroll-other-window-down
       "M-TAB" 'corfu-insert-separator
       "M-SPC" 'corfu-insert-separator
       "TAB" 'corfu-insert
@@ -3064,6 +3080,10 @@
   (define-keymap
     :keymap lisp-interaction-mode-map
     "C-c x" 'macrostep-expand)
+  (with-eval-after-load 'sly
+    (define-keymap
+      :keymap sly-mode-map
+      "C-c x" 'macrostep-expand))
   (with-eval-after-load 'macrostep
     (define-keymap
       :keymap (conn-get-minor-mode-map 'conn-command-state 'macrostep-mode)
